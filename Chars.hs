@@ -1,3 +1,5 @@
+-- | A variety of useful constant documents representing many unicode characters.
+
 module Doc.Chars where
 
 import Char(chr)

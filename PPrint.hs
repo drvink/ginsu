@@ -1,5 +1,8 @@
-module Doc.PPrint where
 
+-- | A Pretty printing class using multiparameter type classes for 
+-- maximal generality with some useful instances.
+
+module Doc.PPrint where
 
 import Doc.DocLike
 
