@@ -11,6 +11,11 @@
 --
 -- Haskell98 compatible
 -----------------------------------------------------------
+
+-- | Modification od Daan Leijens pretty printer. main changes are use of
+-- Doc.DocLike framework and the addition of out-of-band data for html tags 
+-- or ansi escape codes
+
 module Doc.Pretty
         ( Doc
         
@@ -212,6 +217,10 @@ mychar c          = Char c
 
 mytext ""         = Empty
 mytext s          = Text (length s) s
+
+-- | out of band data. This text will appear in the pretty printed output but
+-- won't count towards formatting, as far as pretty printing is concerned, it
+-- is of length 0.
 
 oob :: String -> Doc
 oob "" = Empty
