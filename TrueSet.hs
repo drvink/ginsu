@@ -16,7 +16,7 @@ module Boolean.TrueSet(
     ) where
 
 import Prelude hiding(not,(&&),(||),and,or)
-import qualified Set 
+import qualified Data.Set as Set
 import Boolean.Algebra
 
 infixl 9 \\
