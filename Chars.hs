@@ -9,7 +9,7 @@ lCorner, llCorner, urCorner, lrCorner, rTee, lTee, bTee, tTee, hLine,
  vLine, plus, s1, s9, diamond, ckBoard, degree, plMinus, bullet, lArrow,
  rArrow, dArrow, uArrow, board, lantern, block, s3, s7, lEqual, gEqual,
  pi, nEqual, sterling, coloncolon, alpha, beta, lambda, forall, exists,
- box, bot, bottom, top, pI, lAmbda, star  :: DocLike a => a
+ box, bot, bottom, top, pI, lAmbda, star, elem, notElem, and, or, sqoparen, sqcparen  :: DocLike a => a
 
 lCorner  = char $ chr 0x250C
 llCorner = char $ chr 0x2514
@@ -59,7 +59,13 @@ bot      = char $ chr 0x22a5  -- ⊥
 bottom   = char $ chr 0x22a5  -- ⊥
 top      = char $ chr 0x22a4  -- T
 pI       = char $ chr 0x03a0     
-lAmbda   = char $ chr 0x039b  -- Λ
+lAmbda   = char $ chr 0x039b  -- Λ  (capital λ)
+and      = char $ chr 0x2227  -- ∧ 
+or       = char $ chr 0x2228  -- ∨
 star     = char $ chr 0x22c6   
+elem     = char $ chr 0x2208  -- ∈
+notElem  = char $ chr 0x2209 
 
+sqoparen = char $ chr 0x3014  -- 〔
+sqcparen = char $ chr 0x3015  --  〕
 
