@@ -15,6 +15,7 @@ module Doc.Pretty
         ( Doc
         
         , putDoc, hPutDoc
+        , putDocM
         --, (<>)
         --, (<+>)
         , (</>), (<//>)
@@ -36,13 +37,13 @@ module Doc.Pretty
         
         , SimpleDoc(..)
         , renderPretty, renderCompact
-        , displayS, displayIO
+        , displayS, displayIO, displayM
         , textProc, oob
         ) where
 
 import IO      (Handle,hPutStr,hPutChar,stdout)
 import Doc.DocLike hiding(empty)
-import qualified DocLike
+import qualified Doc.DocLike as DocLike
 import Data.Monoid
 
 infixr 5 </>,<//>,<$>,<$$>
@@ -335,6 +336,12 @@ displayIO handle simpleDoc
       display (SText l s x) = do{ hPutStr handle s; display x}
       display (SLine i x)   = do{ hPutStr handle ('\n':indentation i); display x}
 
+displayM :: Monad m => (String -> m ()) -> SimpleDoc -> m ()
+displayM putStr simpleDoc = display simpleDoc where
+      display SEmpty        = return ()
+      display (SChar c x)   = do{ putStr [c]; display x}  
+      display (SText l s x) = do{ putStr s; display x}
+      display (SLine i x)   = do{ putStr ('\n':indentation i); display x}
 
 -----------------------------------------------------------
 -- default pretty printers: show, putDoc and hPutDoc
@@ -344,6 +351,9 @@ instance Show Doc where
 
 putDoc :: Doc -> IO ()
 putDoc doc              = hPutDoc stdout doc
+
+putDocM :: Monad m => (String -> m ()) -> Doc -> m ()
+putDocM putStr d = displayM putStr (renderPretty 0.4 80 d)
 
 hPutDoc :: Handle -> Doc -> IO ()
 hPutDoc handle doc      = displayIO handle (renderPretty 0.4 80 doc)
