@@ -20,7 +20,7 @@ module Doc.Pretty
         ( Doc
         
         , putDoc, hPutDoc
-        , putDocM
+        , putDocM, putDocMLn
         --, (<>)
         --, (<+>)
         , (</>), (<//>)
@@ -363,6 +363,9 @@ putDoc doc              = hPutDoc stdout doc
 
 putDocM :: Monad m => (String -> m ()) -> Doc -> m ()
 putDocM putStr d = displayM putStr (renderPretty 0.4 80 d)
+
+putDocMLn :: Monad m => (String -> m ()) -> Doc -> m ()
+putDocMLn putStr d = displayM putStr (renderPretty 0.4 80 d) >> putStr "\n"
 
 hPutDoc :: Handle -> Doc -> IO ()
 hPutDoc handle doc      = displayIO handle (renderPretty 0.4 80 doc)
