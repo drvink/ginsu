@@ -9,7 +9,7 @@
 module Boolean.Set where
 
 -- needs 'Map' from DData
-import Map hiding(member)
+import Data.Map as Map hiding(member) 
 
 data Set k v = Set v (Map k v) 
 
