@@ -34,7 +34,7 @@ instance BooleanAlgebra v => BooleanAlgebra (Set k v) where
 
 combine :: (v -> v -> v) -> Set k v -> Set k v -> Set k v
 combine f a@(Set da mapa) b@(Set db mapb) = Set (f da db) (Map.fromList $ map g $  keys mapa ++ keys mapb) where
-    g k = (k,f (member k a) (member k b) 
+    g k = (k,f (member k a) (member k b)) 
 
 empty = false
 single x (Set d map) = Set d (Map.insert x true map)
