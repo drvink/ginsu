@@ -3,7 +3,6 @@
 -- Daan Leijen (c) 2000, http://www.cs.uu.nl/~daan
 -- modified by John Meacham 2003
 --
--- $version: $
 --
 -- Pretty print module based on Philip Wadlers "prettier printer"
 --      "A prettier printer"
