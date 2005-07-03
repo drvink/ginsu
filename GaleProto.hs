@@ -1,19 +1,18 @@
--- arch-tag: 394d1501-8a65-4923-9d9e-415d7751edb3
 module GaleProto where
 
-import Word
-import Puff
-import PackedString
-import GenUtil
-import System
-import Bits
-import SimpleParser
-import Char
-import System.Time
-import Data.Array.Unboxed
 import Atom
-  
-pubkey_magic3 :: [Word8]    
+import Bits
+import Char
+import Data.Array.Unboxed
+import GenUtil
+import PackedString
+import Puff
+import SimpleParser
+import System
+import System.Time
+import Word
+
+pubkey_magic3 :: [Word8]
 pubkey_magic3 = map (fromIntegral . ord) "GALE\000\001"
 
 decodeFragments :: [Word8] -> FragmentList

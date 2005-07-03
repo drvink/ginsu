@@ -1,4 +1,3 @@
--- arch-tag: c076ffd6-9a5c-4d21-91be-8c8128598fca
 module Puff(
     Puff(..),
     Fragment(..),
@@ -7,10 +6,9 @@ module Puff(
     FragmentList,
     HasFragmentList(..),
     Category, readPuffs, writePuffs, emptyPuff,
-    catParseNew, catShowNew, 
-    --parseCategoryOld, catShowOld, 
+    catParseNew, catShowNew,
     subCategory, fragmentData,
-    getFragmentString, getFragmentStrings, getFragmentForceStrings, showPuff, showKey, showFragments, 
+    getFragmentString, getFragmentStrings, getFragmentForceStrings, showPuff, showKey, showFragments,
     fragmentString, mergeFrags, getFragmentData, getFragmentTime,
     getAuthor, getSigner, hasFragment, hasFragmentString, emptyKey,
     getAllFragmentForceStrings,
@@ -44,30 +42,28 @@ module Puff(
     f_answerKeyError'
     ) where
 
-import Word(Word8)
-import Int(Int32)
-import Time(ClockTime)
-import Binary
-import ErrorLog
-import List
-import GenUtil
---import SimpleParser
-import Maybe(isJust)
-import Time
-import System.IO
-import EIO
-import PackedString
-import Control.Exception
-import SHA1
-import Data.Array.Unboxed
-import Char
 import Atom
+import Binary
+import Char
+import Control.Exception
+import Data.Array.Unboxed
+import EIO
+import ErrorLog
+import GenUtil
+import Int(Int32)
+import List
+import Maybe(isJust)
+import PackedString
+import SHA1
+import System.IO
+import Time
+import Word(Word8)
 
 type Category = (String,String)
 
 type FragmentList = [(Atom,Fragment)]
 
-data Puff = Puff {cats :: ![Category], signature :: ![Signature], fragments :: !FragmentList} 
+data Puff = Puff {cats :: ![Category], signature :: ![Signature], fragments :: !FragmentList}
 data Fragment = FragmentText !PackedString | FragmentData !(UArray Int Word8) | FragmentTime !ClockTime | FragmentInt !Int32 | FragmentNest !FragmentList
 data Signature = Unverifyable !Key | Signed !Key | Encrypted ![String]
 data Key = Key !String !FragmentList
@@ -78,7 +74,7 @@ instance Eq Key where
     (==) (Key kn _) (Key kn' _) = kn == kn'
 instance Ord Key where
     compare (Key kn _) (Key kn' _) = compare kn kn'
-    
+
 
 f_answerKeyError' = fromString "answer/key/error"
 f_answerKey' = fromString "answer/key"
@@ -121,7 +117,7 @@ catParseNew cs = (c,(drop 1) d) where
 
 
 catShowNew :: Category -> String
-catShowNew (x,"") = x 
+catShowNew (x,"") = x
 catShowNew (x,y) = x ++ "@" ++ y
 
 ---------------------
@@ -167,20 +163,20 @@ getFragmentStrings :: HasFragmentList fl => fl -> Atom -> [PackedString]
 getFragmentStrings fl s = [v|(n,FragmentText v) <- getFragmentList fl, n == s]
 
 getFragmentForceStrings :: HasFragmentList fl => fl -> Atom -> [PackedString]
-getFragmentForceStrings fl s = concatMap f [v|(n,v) <- getFragmentList fl, n == s] where
+getFragmentForceStrings fl s = concatMap f [v | (n,v) <- getFragmentList fl, n == s] where
     f (FragmentText t) = [t]
-    f (FragmentData t) = []
+    f (FragmentData _) = []
     f (FragmentTime t) = [packString (show t)]
     f (FragmentInt i) = [packString (show i)]
     f (FragmentNest fl) = getFragmentForceStrings fl s
 
 getAllFragmentForceStrings :: HasFragmentList fl => fl -> [PackedString]
-getAllFragmentForceStrings fl  = concatMap f [v|(n,v) <- getFragmentList fl] where
+getAllFragmentForceStrings fl  = concatMap f [v | (_,v) <- getFragmentList fl] where
     f (FragmentText t) = [t]
-    f (FragmentData t) = []
+    f (FragmentData _) = []
     f (FragmentTime t) = [packString (show t)]
     f (FragmentInt i) = [packString (show i)]
-    f (FragmentNest fl) = getAllFragmentForceStrings fl 
+    f (FragmentNest fl) = getAllFragmentForceStrings fl
 
 showPuff (Puff {cats = s, fragments =  fl, signature = sigs}) = unwords (map catShowNew s) ++ "\n" ++ unlines (map showSignature sigs) ++ indentLines 2 (showFragments fl)
 showFragments fl = concatMap (\(n,f) -> toString n ++ ": " ++ show f ++ "\n") fl
@@ -254,11 +250,11 @@ readPuffs :: String -> IO [Puff]
 readPuffs fn = tryElse [] $ getFile fn
 
 
-putFile fn a = atomicWrite fn $ \h -> do 
+putFile fn a = atomicWrite fn $ \h -> do
     hSetBuffering h (BlockBuffering Nothing)
     --h <- openBinaryFile fn WriteMode
     bh <- openBinIO h
-    put_ bh a 
+    put_ bh a
     hClose h
 
 --getFile fn = do
@@ -270,7 +266,7 @@ getFile :: Binary a => FilePath -> IO a
 getFile fn = Control.Exception.bracket (openBinaryFile fn ReadMode) hClose $ \bh -> do
 	hSetBuffering bh (BlockBuffering Nothing)
 	bh <- openBinIO bh
-	get bh 
+	get bh
 
 --getFile fn = do
 --    z <- readBinMem fn

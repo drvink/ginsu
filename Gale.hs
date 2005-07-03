@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -fallow-overlapping-instances #-}
 module Gale(
     GaleContext,
-    galeNextPuff, 
-    reconnectGaleContext, 
+    galeNextPuff,
+    reconnectGaleContext,
     connectionStatus,
-    galeSendPuff, 
+    galeSendPuff,
     hostStrings,
-    galeWillPuff, 
+    galeWillPuff,
     withGale,
     galeSetProxys,
     galeAddCategories,
@@ -19,36 +19,36 @@ module Gale(
 import Char(chr,ord)
 import IO hiding(bracket, bracket_)
 import List
+import Maybe
 import System.Time
 import Time
-import Maybe
 
-import Network.BSD
-import Network.Socket
-import Data.Word(Word8, Word32)
+import Control.Concurrent
 import Control.Exception
 import Control.Exception as E
-import Control.Concurrent
 import Data.Bits
+import Data.Word(Word8, Word32)
+import Network.BSD
+import Network.Socket
 import PackedString
 
-import ErrorLog
-import GenUtil hiding(replicateM)
-import Puff
-import RSA
-import SimpleParser
-import EIO
-import SHA1
-import qualified System.Posix as Posix
-import Data.Array.IO
-import KeyCache
-import GaleProto
-import Data.Monoid
-import UArrayParser
-import Data.Array.IArray
 import Atom
-import Doc.DocLike((<+>))
 import Control.Monad.Error
+import Data.Array.IArray
+import Data.Array.IO
+import Data.Monoid
+import Doc.DocLike((<+>))
+import EIO
+import ErrorLog
+import GaleProto
+import GenUtil hiding(replicateM)
+import KeyCache
+import Puff
+import qualified System.Posix as Posix
+import RSA
+import SHA1
+import SimpleParser
+import UArrayParser
 
 -- TODO - prove concurrent-correctness, make sure all network errors are accounted for.
 
@@ -63,16 +63,14 @@ hostStrings s = [s, "gale." ++ s, s ++ ".gale.org."]
 
 type PuffStatus = ()
 
-data GaleContext = GaleContext { 
+data GaleContext = GaleContext {
     connectionStatus :: !(MVar (Either String String)),
-    channel :: !(Chan Puff), 
-    proxy :: !(MVar [String]), 
+    channel :: !(Chan Puff),
+    proxy :: !(MVar [String]),
     gThread :: ThreadId,
     gHandle :: !(MVar Handle),
     gCategory :: !(MVar [Category]),
     keyCache :: !KeyCache
-    --keyCache :: !(MVar [(Key,EvpPkey)]), 
-    --publicKeyCache :: !(MVar (FiniteMap String (Key,EvpPkey))) 
     }
 
 void a = a >> return ()
@@ -87,7 +85,7 @@ void a = a >> return ()
 withGale :: [String] -> (GaleContext -> IO a) -> IO a
 withGale ps io = withSocketsDo $ do
     Posix.installHandler Posix.sigPIPE Posix.Ignore Nothing
-    bracket (newGaleContext ps []) destroyGaleContext io 
+    bracket (newGaleContext ps []) destroyGaleContext io
     --gc <- newGaleContext ps []
     --r- <- io gc
     --destroyGaleContext gc
@@ -112,8 +110,8 @@ newGaleContext ps cs = do
 
 galeAddCategories :: GaleContext -> [Category] -> IO ()
 galeAddCategories gc cs = do
-    action <- modifyMVar (gCategory gc) $ \cs' -> 
-        let ncs = snub (cs ++ cs') in 
+    action <- modifyMVar (gCategory gc) $ \cs' ->
+        let ncs = snub (cs ++ cs') in
          if ncs == cs' then return (ncs,return ()) else return (ncs,sendGimme gc)
     action
     --sendGimme gc
@@ -154,8 +152,8 @@ bracketOnError
 	-> IO c		-- returns the value from the in-between computation
 bracketOnError before after thing =
   block (do
-    a <- before 
-    r <- E.catch 
+    a <- before
+    r <- E.catch
 	   (unblock (thing a))
 	   (\e -> do { after a; throw e })
     return r
@@ -204,7 +202,7 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
                 hash <- evaluate $ sha1 d
                 arr <- unsafeFreeze arr
                 --(cat,puff) <- runUArrayParser decodePuff $  arr
-                case  runUArrayParser decodePuff  arr of 
+                case  runUArrayParser decodePuff  arr of
                     Right (cat,puff) -> do
                         cat <- tryMapM parseCategoryOld (spc $ cat)
                         ct <- getClockTime
@@ -219,7 +217,7 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
                             (_,_) -> return ()
                     Left err -> do
                         putLog LogError err
-                        
+
                 {-
     doit = bracket openHandle (hClose . fst) $ \(h,hn) -> do
 	putWord32 h 1
@@ -262,7 +260,7 @@ decodeFrags = df [] where
     df xs = do
         b <- atEof
         if b then return (reverse xs) else do
-        z <- decodeFrag 
+        z <- decodeFrag
         df (z:xs)
 
 decodeFrag = do
@@ -277,7 +275,7 @@ decodeFrag = do
             tx <- times (dl `div` 2) word16
             return $ FragmentText $ packString (map (chr . fromIntegral) tx)
         1 -> do
-            d <- bytes dl 
+            d <- bytes dl
             --d <- times dl byte
             return $ FragmentData d
         2 -> do
@@ -289,15 +287,15 @@ decodeFrag = do
             return $ FragmentInt (fromIntegral w)
         4 -> do
             up <- bytes dl
-            fl <- runUArrayParser decodeFrags up 
+            fl <- runUArrayParser decodeFrags up
             return $ FragmentNest fl
-        _ -> fail $ "unknown fragment type: " <+> show ty <+> show ln <+> show fnl <+> show fn' 
+        _ -> fail $ "unknown fragment type: " <+> show ty <+> show ln <+> show fnl <+> show fn'
     return (fn', fr)
-    
 
-    
 
-    
+
+
+
 
 galeNextPuff :: GaleContext -> IO Puff
 galeNextPuff gc = do
@@ -331,8 +329,8 @@ galeWillPuff gc puff = void $ forkIO $ do
     retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> putRaw h d >> hFlush h
 
 
-getPrivateKey kc kn = getPKey kc kn >>= \n -> case n of 
-    Just (k,_) | not $ keyIsPrivKey k -> return Nothing 
+getPrivateKey kc kn = getPKey kc kn >>= \n -> case n of
+    Just (k,_) | not $ keyIsPrivKey k -> return Nothing
     o -> return o
 
 collectSigs :: [Signature] -> ([String],[String])
@@ -359,8 +357,8 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
 	    sig <- signAll pkey fl
 	    let sd = signature_magic1 ++ xdrWriteUInt (fromIntegral $ length sig) [] ++ sig ++ pubkey_magic3 ++ xdrWriteUInt (fromIntegral $ length kn) [] ++ galeEncodeString kn
                 fd = xdrWriteUInt (fromIntegral $ length sd) $ sd ++ fl
-                fragments = [(f_securitySignature,FragmentData (listArray (0, length fd - 1) fd))]    
-            nfragments <- cryptFragments gc es fragments 
+                fragments = [(f_securitySignature,FragmentData (listArray (0, length fd - 1) fd))]
+            nfragments <- cryptFragments gc es fragments
 	    createPuff gc will $ p {signature = [], fragments = nfragments }
 createPuff _ _ _ = error "createPuff: invalid arguments"
 
@@ -375,26 +373,26 @@ cryptFragments gc ss fl = do
         fl' = xdrWriteUInt 0 (createFragments fl)
         n = fromIntegral (length ks')
     --putStrLn $ show (ks,ks',fl')
-    (d,ks,iv) <- encryptAll (snds ks') fl'  
+    (d,ks,iv) <- encryptAll (snds ks') fl'
     --putLog LogDebug $ show (d,ks,iv)
     return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ iv ++ xdrWriteUInt n (foldr f d $ zip (fsts ks') ks) ))]
-  where 
-     f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x) 
-    
+  where
+     f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
 
-    
+
+
 --keyIsPublic key = any nullPS (getFragmentStrings key f_keyMember)
 
 expandEncryptionList :: GaleContext -> Puff -> IO Puff
 expandEncryptionList gc p = do
     ks <- fmap (normalizeDest . mconcat) $ mapM (findDest gc ) (cats p)
-    case ks of 
+    case ks of
         DestPublic -> return p
         DestUnknown _ -> return p
-        DestEncrypted ks -> return p { signature = Encrypted [ n | k@(Key n _) <- ks, keyIsPubKey k ]: signature p } 
+        DestEncrypted ks -> return p { signature = Encrypted [ n | k@(Key n _) <- ks, keyIsPubKey k ]: signature p }
 
 --    if any (maybe True (keyIsPublic ) ) (snds ks) then return p else do
---        return p { signature = Encrypted [ n | Just k@(Key n _) <-  snds ks, keyIsPubKey k ]: signature p } 
+--        return p { signature = Encrypted [ n | Just k@(Key n _) <-  snds ks, keyIsPubKey k ]: signature p }
 
 
 createFragments :: FragmentList -> [Word8]
@@ -417,7 +415,7 @@ parseCategoryOld :: Monad m => String -> m Category
 parseCategoryOld = parser p where
     con cs | [nv] <- [x ++ (con $ drop (length y) cs) |(x,y) <- catfixes, y `isPrefixOf` cs] = nv
     con (c:cs) = c:con cs
-    con "" = "" 
+    con "" = ""
     bl [] = []
     bl [_] = []
     bl (x:xs) = x:bl xs
@@ -429,10 +427,10 @@ parseCategoryOld = parser p where
 	return (con (bl c),d)
 
 catShowOld :: Category -> String
-catShowOld (c,d) = "@" ++ d ++ "/user/" ++ con c ++ "/" where 
+catShowOld (c,d) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
     con cs | [nv] <- [x ++ (con $ drop (length y) cs) |(y,x) <- catfixes, y `isPrefixOf` cs] = nv
     con (c:cs) = c:con cs
-    con "" = "" 
+    con "" = ""
 
 
 --------------------
@@ -448,10 +446,10 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tr
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
     key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
-    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl} 
+    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = tryElse p $ do
     (cd,ks) <- parser pe (elems xs)
-    dfl <- first (map (td' cd) ks) 
+    dfl <- first (map (td' cd) ks)
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
 	pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
@@ -477,19 +475,19 @@ _parseSecuritySignature = do
     l <- word32
     dropBytes 4 -- signature_magic1
     sb <- word32
-    dropBytes (fromIntegral sb)  
+    dropBytes (fromIntegral sb)
     kb <- times (fromIntegral $ l - (8 + sb)) byte
     word32
-    fl <- decodeFrags 
+    fl <- decodeFrags
     return (kb,fl)
     --fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
     --key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
-    --galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl} 
+    --galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
 --galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tryElse p $ do
 --    (kb,fl) <- runUArrayParser parseSecuritySignature xs
 --    key <- parseKey $ kb
 --    let fl' = fl ++ [ f | f <- fragments p, fst f /= f_securitySignature]
---    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl' } 
+--    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl' }
 
 galeDecryptPuff :: GaleContext -> Puff -> IO Puff
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tryElse p $ do
@@ -497,10 +495,10 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tr
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
     key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
-    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl} 
+    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = tryElse p $ do
     (cd,ks) <- parser pe (elems xs)
-    dfl <- first (map (td' cd) ks) 
+    dfl <- first (map (td' cd) ks)
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
 	pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
@@ -522,7 +520,7 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 galeDecryptPuff _ x = return x
 
 
---data DestinationStatus = DSPublic { dsComment :: String } | DSPrivate { dsComment :: String } | DSGroup { dsComment :: String, dsComponents :: [DestinationStatus] } | DSUnknown 
+--data DestinationStatus = DSPublic { dsComment :: String } | DSPrivate { dsComment :: String } | DSGroup { dsComment :: String, dsComponents :: [DestinationStatus] } | DSUnknown
 
 
 --verifyDestinations :: [Category] -> [(Category,DestinationStatus)]
@@ -532,38 +530,38 @@ galeDecryptPuff _ x = return x
 
 verifyDestinations' :: GaleContext -> [Category] -> IO [(Category, String)]
 verifyDestinations' gc cs = mapM dc cs where
-    dc c | categoryIsSystem c = return (c,"Special location (puff will not be encrypted)") 
+    dc c | categoryIsSystem c = return (c,"Special location (puff will not be encrypted)")
     dc c = dc' c >>= return . (,) c
     dc' c = do
         ks <- findDest gc c
-        case ks of 
+        case ks of
             DestPublic -> return "Public Category (puff will not be encrypted)"
             DestEncrypted _ -> return "Private Category"
             -- DestUnknown _ | Just x <- nextTry (fst c) -> dc' (x,snd c)
-            DestUnknown _ -> return "*UNKNOWN*  (puff will not be encrypted)" 
+            DestUnknown _ -> return "*UNKNOWN*  (puff will not be encrypted)"
 --    nextTry "*" = fail "no more"
 --    nextTry ss = return $ reverse (nt (reverse ss)) where
---        nt ('*':'.':ss)  = nt ss 
+--        nt ('*':'.':ss)  = nt ss
 --        nt ss =  '*' : dropWhile (/= '.') ss
 
 
 {-
-        if any isNothing (snds ks) then 
+        if any isNothing (snds ks) then
             if fst c == "*" then
-                return "*UNKNOWN*  (puff will not be encrypted)" 
-             else 
+                return "*UNKNOWN*  (puff will not be encrypted)"
+             else
                 dc' (nextTry (fst c), snd c)
          else
           pp [ (x,y) | (x,Just y) <- ks]
-        
-    pp ks | any isPublic (snds ks) = return "Public Category (puff will not be encrypted)"  
+
+    pp ks | any isPublic (snds ks) = return "Public Category (puff will not be encrypted)"
     pp _ = return "Private Category"
     isPublic key = any nullPS (getFragmentStrings key f_keyMember)
 
 fetchKeymembers :: GaleContext -> String -> IO [(String,Maybe Key)]
-fetchKeymembers gc s = do    
-    km <- fk [s] [] 
-    putLog LogNotice $ "fetchKeymembers " ++ s ++ "\n" ++ show km 
+fetchKeymembers gc s = do
+    km <- fk [s] []
+    putLog LogNotice $ "fetchKeymembers " ++ s ++ "\n" ++ show km
     return km
    where
     fk [] xs = return xs      -- we are done
@@ -575,9 +573,9 @@ fetchKeymembers gc s = do
 
 fetchKeymembers :: GaleContext -> String -> IO [(String,Maybe Key)]
 fetchKeymembers _ s | "_gale." `isPrefixOf` s = return [(s,Just $ emptyKey s)]
-fetchKeymembers gc s = do    
-    km <- fk [s] [] 
-    putLog LogNotice $ "fetchKeymembers: " ++ s ++  show km 
+fetchKeymembers gc s = do
+    km <- fk [s] []
+    putLog LogNotice $ "fetchKeymembers: " ++ s ++  show km
     return km
    where
     fk [] xs = return xs      -- we are done
@@ -607,9 +605,9 @@ normalizeDest (DestEncrypted xs) = DestEncrypted $ snub xs
 fetchKeys :: GaleContext -> String -> IO Dest
 fetchKeys _ s | "_gale." `isPrefixOf` s = return DestPublic
 fetchKeys _ s | "_gale@" `isPrefixOf` s = return DestPublic
-fetchKeys gc s = do    
-    km <- fk [s] [] 
-    putLog LogDebug $ "fetchKeys: " ++ s ++  show km 
+fetchKeys gc s = do
+    km <- fk [s] []
+    putLog LogDebug $ "fetchKeys: " ++ s ++  show km
     return $ normalizeDest (mconcat $ snds km) where
         fk [] xs = return xs      -- we are done
         fk ("":_) _ = return [("",DestPublic)]
@@ -626,7 +624,7 @@ categoryIsSystem (_,_) = False
 requestKey _ c | categoryIsSystem c = return ()
 requestKey gc c = do
     let c' = catShowNew c
-    v <- getKey (keyCache gc) c' 
+    v <- getKey (keyCache gc) c'
     when (isNothing v) $ do
         galeAddCategories gc [("_gale.key", snd c)]
         d <- createPuff  gc False $ keyRequestPuff c'
@@ -638,32 +636,32 @@ findDest gc c = fd c >>= res where
     -- cn = catShowNew c
     fd c = do
         ks <- fetchKeys gc (catShowNew c)
-        case ks of 
+        case ks of
                 DestUnknown _ | (a,b) <- c, Just x <- nextTry a -> fd (x,b)
                 k -> return k
-    res x = case x of 
+    res x = case x of
         DestUnknown _ -> do
 --            let cs = map catParseNew ss
 --            galeAddCategories gc (("_gale.key", snd c):[("_gale.key", x) | x <- snds cs])
 --            let f Nothing = []
 --                f (Just x) = x:f (nextTry x)
---                ac = snub $ concat $ map (flip (,) (snd c)) (f $ Just $ fst c) : [ map (flip (,) d)  (f $ Just n) | (n,d) <- cs] 
+--                ac = snub $ concat $ map (flip (,) (snd c)) (f $ Just $ fst c) : [ map (flip (,) d)  (f $ Just n) | (n,d) <- cs]
 --                g x = requestKey gc x
 --            putLog LogDebug $ "attempting to lookup: " ++ show ac
 --            --mapM_ g (f $ Just $ fst c)
 --            mapM_ g ac
             threadDelay 1000000  -- try again after one second
-            fd c 
+            fd c
         k -> return k
 
 
-            
+
 
 
 
 nextTry "*" = fail "no more"
 nextTry ss = return $ reverse (nt (reverse ss)) where
-    nt ('*':'.':ss)  = nt ss 
+    nt ('*':'.':ss)  = nt ss
     nt ss =  '*' : dropWhile (/= '.') ss
 
 
@@ -671,11 +669,11 @@ verifyDestinations :: GaleContext -> [Category] -> IO String
 
 verifyDestinations _ [] = return "** No Destinations **"
 verifyDestinations gc cs = do
-    (ds) <- verifyDestinations' gc cs 
+    (ds) <- verifyDestinations' gc cs
     let --x = "DestinationStatus: " ++ d
-        xs = map f ds 
+        xs = map f ds
         f (c,x) =  (catShowNew c) ++ ": " ++ x
-    return (unlines (xs)) 
+    return (unlines (xs))
 
 
 
@@ -690,22 +688,22 @@ xdrWriteUInt x bs = (b1:b2:b3:b4:bs) where
     b1 = fromIntegral $ (x `shiftR` 24) .&. 0xFF
     b2 = fromIntegral $ (x `shiftR` 16) .&. 0xFF
     b3 = fromIntegral $ (x `shiftR` 8) .&. 0xFF
-    b4 = fromIntegral $ x .&. 0xFF 
+    b4 = fromIntegral $ x .&. 0xFF
 
 putWord32 :: Handle -> Word32 -> IO ()
 putWord32 h x = do
-    hPutChar h $ chr $ fromIntegral $ (x `shiftR` 24) 
+    hPutChar h $ chr $ fromIntegral $ (x `shiftR` 24)
     hPutChar h $ chr $ fromIntegral $ (x `shiftR` 16) .&. 0xFF
     hPutChar h $ chr $ fromIntegral $ (x `shiftR` 8) .&. 0xFF
     hPutChar h $ chr $ fromIntegral $ x .&. 0xFF
-    
+
     --putRaw h $ xdrWriteUInt x []
 
 readWord32 :: Handle -> IO Word32
 readWord32 h = do
     a <- newArray_ (0,3)
-    n <- hGetArray h a 4 
-    when (n /= 4) $ fail "short read." 
+    n <- hGetArray h a 4
+    when (n /= 4) $ fail "short read."
     [b1,b2,b3,b4] <- getElems a
     return $ (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
 	     (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
@@ -736,24 +734,5 @@ cipher_magic1 = stons "h\DC3\002\000"
 cipher_magic2 = stons "h\DC3\002\001"
 
 signature_magic1 = stons "h\DC3\001\000"
-
-
-
-
-{-
-getRawContents :: String -> IO [Word8]
-getRawContents fn = do
-    c <- readFile fn
-    return (map (fromIntegral . ord) c)
-
--}
-
-
-
-
-
-
-
-
 
 

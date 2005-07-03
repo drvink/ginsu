@@ -1,17 +1,19 @@
--- arch-tag: b90cd0fe-a09e-470c-8eba-a10fd06aafb9
-module Options(Env(..), ginsuOpts) where
+module Options(
+    Env(..),
+    ginsuOpts
+    ) where
 
-import System.Console.GetOpt
-import GenUtil
-import Help
-import System
-import ExampleConf
-import Version
 import Curses
-import GinsuConfig
-import KeyName
-import KeyCache
 import ErrorLog
+import ExampleConf
+import GenUtil
+import GinsuConfig
+import Help
+import KeyCache
+import KeyName
+import System
+import System.Console.GetOpt
+import Version
 
 -------------------------
 -- options/initialization
@@ -27,15 +29,15 @@ data Env = Env {
     }
 
 
-env = Env { 
+env = Env {
     envAction = return (),
-    envVerbose = 0, 
+    envVerbose = 0,
     envConfig = Nothing,
     envJustArgs = False,
     envNoPufflog = False,
     envNoWritePufflog = False,
     envErrorLog = Nothing
-} 
+}
 
 
 options :: [OptDescr (Env -> Env)]
@@ -69,17 +71,17 @@ ginsuOpts = do
 	   (as,n,[]) -> return (foldr ($) env as ,n)
     	   (_,_,errs) -> putErrDie (concat errs ++ usage)
     case (envVerbose env) of
-	1 -> do 
+	1 -> do
 	    setLogLevel LogInfo
-	    putLog LogNotice $ "Verbosity Level: Info" 
+	    putLog LogNotice $ "Verbosity Level: Info"
 	n | n > 1 -> do
 	    setLogLevel LogDebug
-	    putLog LogNotice $ "Verbosity Level: Debug" 
+	    putLog LogNotice $ "Verbosity Level: Debug"
 	_ -> return ()
     envAction env
     return r
 
-doMan = getHelpTable >>= putStrLn 
+doMan = getHelpTable >>= putStrLn
 
 usage = usageInfo usageHeader options ++ usageTrailer
 

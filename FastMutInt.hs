@@ -1,34 +1,25 @@
-{-# OPTIONS -cpp #-}
---
--- (c) The University of Glasgow 2002
---
--- Unboxed mutable Ints
-
--- arch-tag: cc964025-cbad-4910-8f56-5d54d5b1a006
-
-
-{-# OPTIONS -cpp #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
 module FastMutInt(
-	FastMutInt, newFastMutInt,
-	readFastMutInt, writeFastMutInt
+	FastMutInt,
+        newFastMutInt,
+	readFastMutInt,
+        writeFastMutInt
   ) where
-
-
-
-#define SIZEOF_HSINT 4
 
 
 import GHC.Base
 import GHC.IOBase
-
+import Foreign.Storable
 
 data FastMutInt = FastMutInt (MutableByteArray# RealWorld)
+
+sSIZEOF_HSINT = sizeOf (undefined :: Int)
 
 newFastMutInt :: IO FastMutInt
 newFastMutInt = IO $ \s ->
   case newByteArray# size s of { (# s, arr #) ->
   (# s, FastMutInt arr #) }
-  where I# size = SIZEOF_HSINT
+  where I# size = sSIZEOF_HSINT
 
 {-# INLINE readFastMutInt  #-}
 readFastMutInt :: FastMutInt -> IO Int

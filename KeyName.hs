@@ -1,14 +1,18 @@
--- arch-tag: 3cd3756b-1302-4008-b643-b6cf49386549
-module KeyName(stringToKeys, keyCanon ,keysToString, showKeyInfo, buildKeyTable, getKeyHelpTable) where
+module KeyName(
+    stringToKeys,
+    keyCanon,
+    keysToString,
+    showKeyInfo,
+    buildKeyTable,
+    getKeyHelpTable
+    ) where
 
-import Screen(Key(..))
 import Char
-import List
-import GenUtil
 import ConfigFile
+import GenUtil
 import KeyHelpTable
-
-
+import List
+import Screen(Key(..))
 
 stringToKeys :: String -> [Key]
 stringToKeys "" = []
@@ -20,7 +24,7 @@ stringToKeys ('\\':'x':a:b:cs) = (dh [a,b]) : stringToKeys cs  where
 stringToKeys ('<':cs) = let (n,r) = span (/= '>') cs in
      case lookup ((map toLower $ filter (not . isSpace) n)) ftl of
 	Just k -> k
-	Nothing -> KeyUnknown 0 
+	Nothing -> KeyUnknown 0
       : stringToKeys (drop 1 r)
 stringToKeys (c:cs) = KeyChar c : stringToKeys cs
 
@@ -73,13 +77,13 @@ ft = fTable ++ namedKeyTableKey ++ map (\(x,y) -> (x, KeyChar (chr y))) namedKey
 ftl = map (\(x,y) -> (map toLower x,y)) ft
 
 kg :: [[Key]]
-kg = transitiveGroup $ map (snub . map snd) (groupBy (\(x,_) (y,_) -> x == y) 
+kg = transitiveGroup $ map (snub . map snd) (groupBy (\(x,_) (y,_) -> x == y)
 	(sort ftl))
 
-lkg :: Key -> [Key] 
+lkg :: Key -> [Key]
 lkg k = case lookup k kgm of
         Just g -> g
-        Nothing -> [k] 
+        Nothing -> [k]
 kgm = concatMap (\xs -> map (\x -> (x,xs)) xs) kg
 
 transitiveGroup :: Eq a => [[a]] -> [[a]]
@@ -92,7 +96,7 @@ transitiveGroup gs = tg [] gs where
 
 showKeyInfo :: String
 showKeyInfo = unlines $ (buildTableRL $ map (\(x,y) -> (x,show y)) ft) ++ sort (map (show . sort) kg)
-    
+
 
 keyCanon :: Key -> Key
 keyCanon k | ((y:_):_) <- [z| z <- kg, k `elem` z] = y
@@ -100,7 +104,7 @@ keyCanon k = k
 
 keysToString ks = concatMap ck ks where
     ck c | (x:_) <- [n| (n,k) <- ft, k == c] = '<' : (x ++ ">")
-    ck (KeyChar c) | ord c >= 0x80 && ord c < 0xa0 = "<" ++ show c ++ ">" 
+    ck (KeyChar c) | ord c >= 0x80 && ord c < 0xa0 = "<" ++ show c ++ ">"
     ck (KeyChar c) = [c]
     ck k = "<KeyUnknown:" ++ show k ++ ">"
 
@@ -114,24 +118,24 @@ buildKeyTable = do
     cl <- configLookupList "bind"
     let fl = concatMap ((\x -> do (a:b:_) <- return x ; return (a,b)) . words) cl
     return  (concatMap mk fl) where
-        mk (k,a) | (k:_) <- stringToKeys k = map (rtup a) (lkg k) 
+        mk (k,a) | (k:_) <- stringToKeys k = map (rtup a) (lkg k)
         mk _ = []
-     
-    
+
+
 {-# NOTINLINE getKeyHelpTable #-}
-getKeyHelpTable :: (Int,Int) -> IO String 
-getKeyHelpTable (_,_) = buildKeyTable >>= \kt -> let 
+getKeyHelpTable :: (Int,Int) -> IO String
+getKeyHelpTable (_,_) = buildKeyTable >>= \kt -> let
     tl = concatMap f (keyHelpTable gk)
     f (Right (x,y)) = [(x,y)]
     f (Left x) = [("",""),(x ++ ":","")]
     gk :: String -> String
     gk s = maybe "" id $ lookup s m
     m :: [(String,String)]
-    m = [ (fst (head xs),ks (snub (snds xs))) | xs <- groupFst (sort [ (y,x) | (x,y) <- kt])] 
+    m = [ (fst (head xs),ks (snub (snds xs))) | xs <- groupFst (sort [ (y,x) | (x,y) <- kt])]
     ks ks = concatInter ", " (snub $ map (\x -> keysToString [x]) ks)
-    
+
       in return $ unlines (bTableRL tl)
-    
+
 bTableRL :: [(String,String)] -> [String]
 bTableRL ps = map f ps where
     f ("","") = ""

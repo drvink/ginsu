@@ -52,30 +52,27 @@ module Binary
 --import FastString
 import FastMutInt
 
-import Data.Array.IO
-import Data.Array
-import Data.Bits
-import Data.Int
-import Data.Word
-import Data.IORef
-import Data.Char		( ord, chr )
-import Data.Array.Base  	( unsafeRead, unsafeWrite )
-import Control.Monad		( when )
+import Atom
 import Control.Exception	( throwDyn )
-import System.IO as IO
-import System.IO.Unsafe		( unsafeInterleaveIO )
-import System.IO.Error		( mkIOError, eofErrorType )
-import GHC.Real			( Ratio(..) )
+import Control.Monad		( when )
+import Data.Array
+import Data.Array.Base
+import Data.Array.IArray
+import Data.Array.IO
+import Data.Bits
+import Data.Char		( ord, chr )
+import Data.Int
+import Data.IORef
+import Data.Word
 import GHC.Exts
 import GHC.IOBase	 	( IO(..) )
+import GHC.Real			( Ratio(..) )
 import GHC.Word			( Word8(..) )
-import System.IO		( openBinaryFile )
 import PackedString
-import Atom
+import System.IO as IO
+import System.IO.Error		( mkIOError, eofErrorType )
+import System.IO.Unsafe		( unsafeInterleaveIO )
 import Time
-import Monad
-import Data.Array.IArray
-import Data.Array.Base
 
 
 {-
@@ -216,7 +213,7 @@ isEOFBin (BinIO  ix_r h) = hIsEOF h
 writeBinMem :: BinHandle -> FilePath -> IO ()
 writeBinMem (BinIO  _ _) _ = error "Data.Binary.writeBinMem: not a memory handle"
 writeBinMem (BinMem  ix_r sz_r arr_r) fn = do
-  h <- openBinaryFile fn WriteMode
+  h <- IO.openBinaryFile fn WriteMode
   arr <- readIORef arr_r
   ix  <- readFastMutInt ix_r
   hPutArray h arr ix
@@ -225,7 +222,7 @@ writeBinMem (BinMem  ix_r sz_r arr_r) fn = do
 readBinMem :: FilePath -> IO BinHandle
 -- Return a BinHandle with a totally undefined State
 readBinMem filename = do
-  h <- openBinaryFile filename ReadMode
+  h <- IO.openBinaryFile filename ReadMode
   filesize' <- hFileSize h
   let filesize = fromIntegral filesize'
   arr <- newArray_ (0,filesize-1)

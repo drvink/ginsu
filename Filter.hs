@@ -1,18 +1,20 @@
--- arch-tag: 17540d73-d26c-4eaf-a439-721b92c76b42
+module Filter(
+    Filter,
+    BasicFilter(..),
+    parseFilter,
+    showFilter,
+    filterAp
+    ) where
 
-module Filter(Filter, BasicFilter(..), parseFilter, showFilter, filterAp) where
-
-import Char
-import List hiding (and,or,any,all)
-import Puff
-import Monad
-import Regex
 import Atom
 import Boolean.Algebra
 import Boolean.Boolean
-import Prelude hiding((&&),(||),not,and,or,any,all)
-import Text.ParserCombinators.Parsec
+import Char
 import PackedString
+import Prelude hiding((&&),(||),not,and,or,any,all)
+import Puff
+import Regex
+import Text.ParserCombinators.Parsec
 
 ------------------------
 -- Filter implementation
@@ -20,13 +22,13 @@ import PackedString
 
 type Filter = Boolean BasicFilter
 
-data BasicFilter = 
-    FilterAuthor String 
-    | FilterCategory Category  
+data BasicFilter =
+    FilterAuthor String
+    | FilterCategory Category
     | FilterRegex Atom Rx
-    | FilterSearchAll Rx 
-    | FilterFlag Atom  
-    | FilterMark !Char
+    | FilterSearchAll Rx
+    | FilterFlag Atom
+    | FilterMark {-# UNPACK #-} !Char
     | FilterAlias Atom
 
 
@@ -35,22 +37,22 @@ parseFlag = do
     char '?'
     n <- many1 (satisfy isAlpha)
     spaces
-    return $ FilterFlag (toAtom n) 
+    return $ FilterFlag (toAtom n)
 
 
 parseTrue = try $ do
-    FilterFlag n <- parseFlag 
+    FilterFlag n <- parseFlag
     if n == toAtom "true" then return () else fail "true"
-parseFalse = try $ do 
-    FilterFlag n <- parseFlag 
+parseFalse = try $ do
+    FilterFlag n <- parseFlag
     if n == toAtom "false" then return () else fail "false"
 
 
 parseBasic = parseMark <|> parseFlag <|> parseSlash <|> parseTwiddle <|> parseAlias where
-    parseSlash = do 
+    parseSlash = do
         char '/'
         s <- string
-        spaces 
+        spaces
         s <- compileRx s
         return $ FilterSearchAll s
     parseTwiddle = do
@@ -58,14 +60,14 @@ parseBasic = parseMark <|> parseFlag <|> parseSlash <|> parseTwiddle <|> parseAl
         f <- satisfy isAlpha
 	option ':' (char ':')
         s <- string
-        spaces 
+        spaces
         z f s
     parseMark = do
         char '"'
-        c <- satisfy isAlphaNum 
+        c <- satisfy isAlphaNum
         spaces
         return $ FilterMark c
-        
+
     z 'a' s = return $ FilterAuthor s
     z 'c' s = return $ FilterCategory (catParseNew s)
     z 't' s = return $ FilterCategory (catParseNew s) -- TODO
@@ -74,24 +76,24 @@ parseBasic = parseMark <|> parseFlag <|> parseSlash <|> parseTwiddle <|> parseAl
     z 'b' s = compileRx s >>= return . (FilterRegex f_messageBody)
     z x _ = fail $ "unknown filter type: ~" ++ [x]
     parseAlias = do
-        n <- many1 (satisfy isAlphaNum) 
+        n <- many1 (satisfy isAlphaNum)
         return $ FilterAlias (toAtom n)
     string = qstring <|> many1 (noneOf " \t\n':;|")
     qstring = between (char '\'') (char '\'') $ many ((char '\'' >> char '\'' >> return '\'') <|> noneOf "'")
 
 
 parseFilter :: Monad m => String -> m Filter
-parseFilter s = case parse (between spaces eof pb)  "" s  of 
+parseFilter s = case parse (between spaces eof pb)  "" s  of
         Left e -> fail (show e)
         Right x -> return x
     where
-    pb = parseBoolean' spaces parseTrue parseFalse parseBasic 
+    pb = parseBoolean' spaces parseTrue parseFalse parseBasic
 
 {-
 parseFilter :: Monad m => String -> m Filter
 parseFilter = parser (between spaces eof rmp) where
     rmp = do
-	fa <- mp 
+	fa <- mp
 	r <- rmp'
 	case r of
 	    [] -> return fa
@@ -105,7 +107,7 @@ parseFilter = parser (between spaces eof rmp) where
     mp = many1 fp >>= \v -> case v of
 	    [x] -> return x
 	    xs -> return $ FilterAnd xs
-    fp = nf <|> flt <|> pr <|> bool <|> do s <- (token string); liftM (FilterRegex f_messageBody) (compileRx s) 
+    fp = nf <|> flt <|> pr <|> bool <|> do s <- (token string); liftM (FilterRegex f_messageBody) (compileRx s)
     pr = do
 	char '('
 	spaces
@@ -139,15 +141,15 @@ parseFilter = parser (between spaces eof rmp) where
     b _ = FilterTrue
 -}
 
-showFilter f = showBoolean showBasicFilter f 
+showFilter f = showBoolean showBasicFilter f
 
 showBasicFilter :: BasicFilter -> String
 showBasicFilter (FilterAuthor a) = "~a:" ++  a
 showBasicFilter (FilterCategory c) = "~c:" ++ catShowNew c
-showBasicFilter (FilterRegex fn s) 
+showBasicFilter (FilterRegex fn s)
     | fn == f_messageKeyword = "~k:" ++ show s
     | fn == f_messageSender = "~s:" ++ show s
-    | fn == f_messageBody = "~b:" ++ show s 
+    | fn == f_messageBody = "~b:" ++ show s
     | otherwise = "~UNKNOWN"
 showBasicFilter (FilterSearchAll s) = "/" ++ show s
 showBasicFilter (FilterFlag s) = "?" ++ fromAtom s
@@ -191,7 +193,7 @@ data FilterEnv = FilterEnv {
 
 
 filterAp :: Filter -> Puff -> Bool
-filterAp f p = evaluate (filterAp' undefined p) f 
+filterAp f p = evaluate (filterAp' undefined p) f
 
 filterAp' :: FilterEnv -> Puff -> BasicFilter ->  Bool
 filterAp' _ p (FilterAuthor c)  = siglookup c (signature p)
@@ -199,15 +201,15 @@ filterAp' _ p (FilterCategory c) = any (`subCategory` c) (cats p)
 filterAp' _ p (FilterRegex fn re) = any (matchRx re) (getFragmentStrings p fn)
 filterAp' _ p (FilterSearchAll re)  = any (matchRx re) (concatMap (getFragmentForceStrings p) [f_messageBody, f_messageKeyword, f_messageSender, f_idTime] ++ cs ++ a)  where
     cs = map (packString . catShowNew) (cats p)
-    a = [packString $ getAuthor p] 
-filterAp' _ p (FilterFlag f) 
+    a = [packString $ getAuthor p]
+filterAp' _ p (FilterFlag f)
     | f == toAtom "signed" = any isSigned (signature p)
     | f == toAtom "encrypted" = any isEncrypted (signature p)
     | f == toAtom "true" = true
     | f == toAtom "false" = false
     | otherwise = false
-filterAp' _ _ (FilterMark m)  = False
-filterAp' _ _ (FilterAlias a) = False
+filterAp' _ _ (FilterMark _)  = False
+filterAp' _ _ (FilterAlias _) = False
 
 --filterAp (FilterAnd fs) p = all (`filterAp` p) fs
 --filterAp (FilterOr fs) p = any (`filterAp` p) fs

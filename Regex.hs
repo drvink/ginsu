@@ -1,21 +1,18 @@
-
--- arch-tag: 40ae7e96-571c-4e68-a110-a2890f802428
-
 module Regex where
 
-import Text.Regex.Posix
 import Char
-import System.IO.Unsafe
-import Monad
-import GenUtil
-import PackedString
-import Maybe
 import ConfigFile
 import Control.Exception
+import GenUtil
+import Maybe
+import Monad
+import PackedString
+import System.IO.Unsafe
+import Text.Regex.Posix
 
 subst :: String -> [String] -> String
 subst "" _ = ""
-subst ('$':'$':cs) xs  = '$':subst cs xs 
+subst ('$':'$':cs) xs  = '$':subst cs xs
 subst ('$':c:cs) xs | isDigit c = f xs (ord c - ord '0') ++ subst cs xs where
     f (x:_) 0 = x
     f (_:xs) n = f xs (n - 1)
@@ -44,7 +41,7 @@ buildMatchTable = do
         f [n,re,e,p] | Just rx <- compileRx re = [(n,Just (rxRegex rx, e, p))]
         f _ = []
     return zs
-    
+
 
 data Rx = Rx { rxString :: String, rxRegex :: Regex }
 
@@ -61,5 +58,5 @@ compileRx re = liftM (Rx re) $ unsafePerformIO ( handle (\e -> return (fail $ sh
 instance Show Rx where
     show (Rx s _) = s
 
-matchRx re body = isJust (unsafePerformIO $ regexec (rxRegex re) (unpackPS body)) 
+matchRx re body = isJust (unsafePerformIO $ regexec (rxRegex re) (unpackPS body))
 
