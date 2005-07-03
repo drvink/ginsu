@@ -1,24 +1,32 @@
--- arch-tag: 14582a8b-0a92-4018-a74c-1a124bf3089b
-module GinsuConfig(checkConfigIsGood, configureGinsu,doCheckConfig, getGaleProxy, getGaleId, getGaleDomain, getGaleAliases,  galeFile, getEditor) where
+module GinsuConfig(
+    checkConfigIsGood,
+    configureGinsu,
+    doCheckConfig,
+    getGaleProxy,
+    getGaleId,
+    getGaleDomain,
+    getGaleAliases,
+    galeFile,
+    getEditor
+    ) where
 
 import ConfigFile
+import Control.Exception
+import Data.Monoid
+import Directory
+import ErrorLog
+import ExampleConf
 import Gale
-import Monad
 import GenUtil
+import Monad
+import Puff
 import System
 import System.Posix as Posix hiding (getEnv)
-import Puff
-import Control.Exception
-import ErrorLog
-import Directory
---import RSA(readSymbolicLink)
-import Data.Monoid
-import ExampleConf
 import System.Posix.Files
 
-checkConfigIsGood = do 
+checkConfigIsGood = do
     gd <- configLookup "GALE_DOMAIN"
-    case gd of 
+    case gd of
         Just _ -> return ()
         Nothing -> putStrLn "GALE_DOMAIN is not set! either set $GALE_DOMAIN in the enviornment or set it in ~/.gale/conf or ~/.gale/ginsu.conf\n" >> doCheckConfig
 
@@ -26,7 +34,7 @@ configFileG xs = mapConfig ("GINSU_" ++) (configFile xs) `mappend` configFile xs
 
 configureGinsu = do
     galeDir <- getGaleDir
-    configSetup $  mconcat 
+    configSetup $  mconcat
             [mapConfig ("GINSU_" ++) configEnv,
             configFileG (galeDir  ++ "ginsu.config"),
             configEnv,
@@ -42,22 +50,22 @@ doCheckConfig = do
     gid <- configLookupElse "GALE_ID" "* Not Found *"
     galeDomain <- configLookupElse "GALE_DOMAIN" "* Not Found *"
     galeAliases <- getGaleAliases
-    galeSubscribe <- configLookupList "GALE_SUBSCRIBE" 
+    galeSubscribe <- configLookupList "GALE_SUBSCRIBE"
 
 
-    mapM_ putStrLn $ buildTableLL [ 
+    mapM_ putStrLn $ buildTableLL [
 	( "GALE_DIR ",  galeDir),
 	( "GALE_DOMAIN ", galeDomain),
 	( "GALE_ID ", gid),
-	( "GALE_PROXY ", simpleQuote gp), 
+	( "GALE_PROXY ", simpleQuote gp),
 	( "GALE_SUBSCRIBE ", unwords (snub galeSubscribe)) ]
-    when (galeAliases /= []) $ putStrLn $ "GALE_ALIASES \n" ++ 
-	unlines ( map  (\(l,(c,d)) -> "  " ++ l ++ " -> " ++ c ++ "@" ++ d)  galeAliases) 
+    when (galeAliases /= []) $ putStrLn $ "GALE_ALIASES \n" ++
+	unlines ( map  (\(l,(c,d)) -> "  " ++ l ++ " -> " ++ c ++ "@" ++ d)  galeAliases)
 
     let p = (galeDir ++ "/auth/private/")
 	knames = [p ++ gid, p ++ gid ++ ".gpri"]
     gn <- (mapM (\fn -> (doesFileExist fn >>= \b -> if b then return (Just fn) else return Nothing)) knames)
-    case msum gn of 
+    case msum gn of
 	Just fn -> putStrLn $ "Private key found in: " ++ fn
 	Nothing -> putStrLn $ "Private key for '" ++ gid ++ "' not found in " ++ p
     putStrLn ""
@@ -69,18 +77,18 @@ doCheckConfig = do
 configBuilder "GALE_ID" = do
     n <- first [getEnv "LOGNAME", getEnv "USER", Posix.getLoginName]
     d <- configLookup "GALE_DOMAIN"
-    case d of 
+    case d of
         Just d -> return [("<LOGIN>@$GALE_DOMAIN",("GALE_ID", n ++ "@" ++ d))]
         Nothing -> return []
 configBuilder _ = return []
-    
+
 getGaleProxy :: IO [String]
 getGaleProxy = do
     gps <- configLookup "GALE_PROXY"
-    case gps of 
+    case gps of
 	Nothing -> do
 	    v <- configLookup "GALE_DOMAIN"
-            case v of 
+            case v of
                 Just v -> return $ hostStrings v
                 Nothing -> return []
 	(Just x) -> return (words x)
@@ -89,18 +97,18 @@ getGaleProxy = do
 getGaleId :: IO String
 getGaleId = do
     v <- configLookup "GALE_ID"
-    case v of 
+    case v of
         Just x -> return x
         Nothing -> return ""
 
 getGaleDomain :: IO String
 getGaleDomain = do
     v <- configLookup "GALE_DOMAIN"
-    case v of 
+    case v of
         Just x -> return x
         Nothing -> do
             gid <- getGaleId
-            return $ drop 1 (dropWhile (/= '@') gid) 
+            return $ drop 1 (dropWhile (/= '@') gid)
 
 
 getGaleAliases :: IO [(String,Category)]
@@ -114,11 +122,11 @@ getGaleAliases = do
         --putLog LogDebug $ "readAlias " ++ (v ++ fn) ++ " " ++ fc
 	return (fn, catParseNew fc)
     ks <- mapM (\x -> tryMost (f x)) fs
-    return [x | (Right x) <- ks] 
+    return [x | (Right x) <- ks]
 
 
-readAlias :: String -> IO String 
-readAlias fn = getSymbolicLinkStatus fn >>= \s -> if isRegularFile s then readFile fn else 
+readAlias :: String -> IO String
+readAlias fn = getSymbolicLinkStatus fn >>= \s -> if isRegularFile s then readFile fn else
     (if isSymbolicLink s then  readSymbolicLink fn else fail "bad alias")
 
 

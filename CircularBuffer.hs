@@ -1,19 +1,18 @@
 {-# OPTIONS -fglasgow-exts #-}
--- arch-tag: d221a422-b124-4e51-a22a-1ea668da8c62
 module CircularBuffer(
-    CircularBuffer, 
-    new, 
-    get, 
-    append, 
-    toList, 
-    CircularBuffer.length 
+    CircularBuffer,
+    new,
+    get,
+    append,
+    toList,
+    CircularBuffer.length
     ) where
 
 import Control.Concurrent
 import Data.Array.IO
 
 data Meta = Full {-# UNPACK #-} !Int | Partial {-# UNPACK #-} !Int
-data CircularBuffer e = CB { arr :: !(IOArray Int e), mvar :: !(MVar Meta)} 
+data CircularBuffer e = CB { arr :: !(IOArray Int e), mvar :: !(MVar Meta)}
 --    FullCB    { start :: !Int, arr ::  }
 --    | PartialCB { len :: !Int, arr :: !(IOArray Int e) }
 
@@ -30,18 +29,18 @@ get CB { arr = arr, mvar = mvar} w = withMVar mvar go where
     go (Partial len) = do
         let m = w `mod` len
             w' = if m < 0 then m + len else m
-        readArray arr w' 
-    go (Full start) = do     
+        readArray arr w'
+    go (Full start) = do
         let m = (w + start) `mod` len
             w' = if m < 0 then m + len else m
-            len = snd (bounds arr) + 1 
-        readArray arr w' 
+            len = snd (bounds arr) + 1
+        readArray arr w'
 
 length :: CircularBuffer a -> IO Int
 length CB { arr = arr, mvar = mvar} = withMVar mvar go where
     go (Full _) = return $ (snd $ bounds arr) + 1
     go (Partial len) = return len
-    
+
 append :: CircularBuffer a -> [a] -> IO ()
 append CB {arr = arr, mvar = mvar} xs = modifyMVar_ mvar go where
     alen = snd (bounds arr) + 1
@@ -62,16 +61,16 @@ append CB {arr = arr, mvar = mvar} xs = modifyMVar_ mvar go where
     go (Partial len)  = do
         sequence_ [writeArray arr (i `mod` alen) e | i <- [len..] | e <-  xs  ]
         return (Full (xslen + len - alen))
-        
-        
+
+
 
 --prepend :: CircularBuffer a -> [a] -> IO ()
 
-toList :: CircularBuffer a -> IO [a] 
+toList :: CircularBuffer a -> IO [a]
 toList CB { arr = arr, mvar = mvar} = withMVar mvar go where
     go (Partial len) = do
         es <- getElems arr
-        return (take len es) 
+        return (take len es)
     go (Full start) = do
         es <- getElems arr
         let (a,b) = splitAt start es

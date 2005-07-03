@@ -1,5 +1,9 @@
--- arch-tag: b6c096b6-85f5-4582-8ae2-bc0e3bb1eeea
-module Help(bugMsg, {- helpTable,-} getHelpTable, usageHeader, usageTrailer) where
+module Help(
+    bugMsg,
+    getHelpTable,
+    usageHeader,
+    usageTrailer
+    ) where
 
 import GenUtil(buildTableRL, indentLines)
 import KeyName
@@ -7,13 +11,11 @@ import KeyName
 {-# NOINLINE usageHeader #-}
 {-# NOINLINE usageTrailer #-}
 {-# NOINLINE bugMsg #-}
-{-# NOINLINE helpTable #-}
 {-# NOINLINE getHelpTable #-}
 
 usageHeader :: String
 usageTrailer :: String
 bugMsg :: String
-helpTable :: String
 
 usageHeader = "Usage: ginsu [OPTION...] categories..."
 
@@ -34,7 +36,49 @@ bugMsg = unlines [
     ]
 
 
-keys = buildTableRL [
+
+
+getHelpTable = do
+    ht <- getKeyHelpTable (0,0)
+    return ("Keybindings:\n" ++ indentLines 2 ht ++ filters ++ "\nFor more info see the manual at\n  http://repetae.net/john/computer/ginsu/ginsu-manual.html\n")
+
+
+filters = "\nFilter Reference:\n" ++ indentLines 2 (unlines (buildTableRL [
+    ("",""),
+    ("Primitive Filters:",""),
+    (" ~a:<gale-id>","author of puff"),
+    (" ~c:<category>","category puff was sent too"),
+    (" ~k:<regex>","regex match against keyword"),
+    (" ~s:<regex>","regex match against senders real name"),
+    (" ~b:<regex>","regex match against message body"),
+    (" /<regex>","search for <regex> in visible fragments"),
+    ("",""),
+    ("Combining Filters:",""),
+    (" A ; B", "Filter A or filter B"),
+    (" A B", "Filter A and filter B"),
+    (" !A", "Not filter A"),
+    (" (A)", "Grouping, same as filter A"),
+    (" /'foo bar'", "Single quotes are used to quote strings")
+    ])) ++ "\n" ++ filterExamples
+
+
+filterExamples = "Filter Examples:\n"  ++ indentLines 4 (unlines es) where
+    es = [
+	"(~a:john@ugcs.caltech.edu)\n  all puffs by john@ugcs",
+	"(~c:pub.tv.buffy ~a:jtr@ofb.net)\n  puffs from jtr and to pub.tv.buffy",
+	"(/ginsu ; ~c:pub.gale.ginsu)\n  puffs containing the word ginsu or directed to pub.comp.ginsu",
+	"(!~k:spoil)\n  no spoilers",
+	"(~c:pub.tv.buffy !~c:pub.meow)\n  puffs to buffy which are not about cats"
+	]
+
+{-
+
+paragraph maxn xs = drop 1 (f maxn (words xs)) where
+    f n (x:xs) | lx <- length x + 1, lx < n = (' ':x) ++ f (n - lx) xs
+    f n (x:xs) = '\n': (x ++ f (maxn - length x) xs)
+    f n [] = "\n"
+
+ keys = buildTableRL [
     ("Keys:", ""),
     ("<F1>", "Help Screen"),
     ("<F2>", "Main Screen"),
@@ -79,47 +123,4 @@ keys = buildTableRL [
     ("<C-L>","redraw screen")
     ]
 
-helpTable = unlines keys ++ filters
-
-getHelpTable = do
-    ht <- getKeyHelpTable (0,0)
-    return ("Keybindings:\n" ++ indentLines 2 ht ++ filters ++ "\nFor more info see the manual at\n  http://repetae.net/john/computer/ginsu/ginsu-manual.html\n")
-    
-
-filters = "\nFilter Reference:\n" ++ indentLines 2 (unlines (buildTableRL [
-    ("",""),
-    ("Primitive Filters:",""),
-    (" ~a:<gale-id>","author of puff"),
-    (" ~c:<category>","category puff was sent too"),
-    (" ~k:<regex>","regex match against keyword"),
-    (" ~s:<regex>","regex match against senders real name"),
-    (" ~b:<regex>","regex match against message body"),
---    ("~t","thread - transitive closure of categories"),
-    (" /<regex>","search for <regex> in visible fragments"),
-    ("",""), 
-    ("Combining Filters:",""), 
-    (" A ; B", "Filter A or filter B"),
-    (" A B", "Filter A and filter B"),
-    (" !A", "Not filter A"),
-    (" (A)", "Grouping, same as filter A"),
-    (" /'foo bar'", "Single quotes are used to quote strings")
-    ])) ++ "\n" ++ filterExamples
-
-
---filterDoc = "Filters are implemented as boolean expressions. The building blocks are primitives which usually begin with ~ and are combined with semicolon for disjunction, space for conjunction, exclamation point for negation and parenthesis for grouping. The current filter stack is displayed on the bottom line of the screen when it is nonempty, the filters on the stack are conjoined together to determine which puffs are visible"
-
-
-paragraph maxn xs = drop 1 (f maxn (words xs)) where
-    f n (x:xs) | lx <- length x + 1, lx < n = (' ':x) ++ f (n - lx) xs 
-    f n (x:xs) = '\n': (x ++ f (maxn - length x) xs)
-    f n [] = "\n"
-    
-
-filterExamples = "Filter Examples:\n"  ++ indentLines 4 (unlines es) where
-    es = [
-	"(~a:john@ugcs.caltech.edu)\n  all puffs by john@ugcs",
-	"(~c:pub.tv.buffy ~a:jtr@ofb.net)\n  puffs from jtr and to pub.tv.buffy",
-	"(/ginsu ; ~c:pub.gale.ginsu)\n  puffs containing the word ginsu or directed to pub.comp.ginsu",
-	"(!~k:spoil)\n  no spoilers",
-	"(~c:pub.tv.buffy !~c:pub.meow)\n  puffs to buffy which are not about cats"
-	]
+-}

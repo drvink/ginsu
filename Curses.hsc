@@ -1,7 +1,7 @@
 -- arch-tag: b25d31d1-0529-4b27-87e3-01618e25c135
 module Curses (
     --------------------------------------------------------------------
-    
+
     Window,      -- data Window deriving Eq
     stdScr,      -- :: Window
     initScr,     -- :: IO Window
@@ -15,14 +15,14 @@ module Curses (
     useDefaultColors, -- :: IO ()
     endWin,      -- :: IO ()
     resizeTerminal,
-    
+
     --------------------------------------------------------------------
-    
+
     scrSize,          -- :: IO (Int, Int)
     refresh,          -- :: IO ()
-    
+
     --------------------------------------------------------------------
-    
+
     hasColors,      -- :: IO Bool
     startColor,     -- :: IO ()
     Pair(..),       -- newtype Pair = Pair Int deriving (Eq, Ord, Ix)
@@ -37,34 +37,34 @@ module Curses (
     colorContent,   -- :: Color -> IO (Int, Int, Int)
     withColor,
     withAttr,
-    
+
     --------------------------------------------------------------------
-    
+
     Attr,  -- data Attr deriving Eq
     attr0, -- :: Attr
-    
+
     isAltCharset, isBlink, isBold, isDim, isHorizontal, isInvis,
     isLeft, isLow, isProtect, isReverse, isRight, isStandout, isTop,
     isUnderline, isVertical,
         -- :: Attr -> Bool
-    
+
     setAltCharset, setBlink, setBold, setDim, setHorizontal, setInvis,
     setLeft, setLow, setProtect, setReverse, setRight, setStandout,
     setTop, setUnderline, setVertical,
         -- :: Attr -> Bool -> Attr
-    
+
     attrSet, -- :: Attr -> Pair -> IO ()
     attrOn, attrOff,
-    
+
     --------------------------------------------------------------------
 
-    wAddStr, 
+    wAddStr,
     addLn,         -- :: IO ()
     mvWAddStr,
     wMove,
-    
+
     --------------------------------------------------------------------
-    
+
     bkgrndSet,      -- :: Attr -> Pair -> IO ()
     erase,          -- :: IO ()
     wclear,         -- :: Window -> IO ()
@@ -72,7 +72,7 @@ module Curses (
     move,           -- :: Int -> Int -> IO ()
 
     -- Cursor Routines
-    CursorVisibility(..), 
+    CursorVisibility(..),
     withCursor,
 
     standout,standend,
@@ -80,18 +80,18 @@ module Curses (
     attrDimOn, attrDimOff,
     attrBoldOn, attrBoldOff,
     wAttrOn,
-    wAttrOff, 
+    wAttrOff,
     touchWin,
     --------------------------------------------------------------------
     -- Mouse Routines
     withMouseEventMask,
     ButtonEvent(..),
     MouseEvent(..),
-    
+
     --------------------------------------------------------------------
-    
+
     Key(..),
-    getCh, 
+    getCh,
     newPad, pRefresh, delWin, newWin,
     wClrToEol,
     withProgram,
@@ -105,13 +105,13 @@ module Curses (
 
     cursesSigWinch,
     cursesTest
-    ) 
-    
+    )
+
     --------------------------------------------------------------------
     where
 
 import Prelude hiding (pi)
-import Monad 
+import Monad
 import Char           (chr, ord, isPrint, isSpace, toLower)
 import Ix             (Ix)
 
@@ -126,7 +126,7 @@ import Control.Exception hiding(block)
 import GenUtil(foldl')
 import System.Posix.Signals
 import CWString
-import List 
+import List
 import Monad
 import Maybe
 
@@ -151,7 +151,7 @@ throwIfErr_ name act = void $ throwIfErr name act
 
 ------------------------------------------------------------------------
 
-data WindowTag 
+data WindowTag
 type Window = Ptr WindowTag
 
 stdScr :: Window
@@ -216,8 +216,8 @@ foreign import ccall unsafe "my_curses.h define_key" define_key :: Ptr CChar -> 
 defineKey k s =  withCString s (\s -> define_key s k) >> return ()
 
 useDefaultColors = do
-    b <- hasColors 
-    let f n = initPair (Pair n) (Color n) defaultBackground 
+    b <- hasColors
+    let f n = initPair (Pair n) (Color n) defaultBackground
     when b $ do
         use_default_colors
         mapM_ f [1 .. 7]
@@ -229,7 +229,7 @@ useDefaultColors = return ()
 
 
 defaultBackground = black
-defaultForeground = white 
+defaultForeground = white
 
 defineKey k s = return ()
 
@@ -241,7 +241,7 @@ initCurses = do
     b <- hasColors
     when b $ do
         startColor
-        let f n = initPair (Pair n) (Color n) (Color 0) 
+        let f n = initPair (Pair n) (Color n) (Color 0)
         mapM_ f [1 .. 7]
     --when b useDefaultColors
     --cBreak True
@@ -325,9 +325,9 @@ color "white"    = Just $ Color (#const COLOR_WHITE)
 color _ =  Nothing
 
 data Attribute = Attribute [String] String String
-parseAttr :: String -> Attribute 
+parseAttr :: String -> Attribute
 parseAttr s = Attribute as fg bg where
-    rs = filter (not . f . head) $ groupBy (\x y -> f x && f y) (map toLower s) 
+    rs = filter (not . f . head) $ groupBy (\x y -> f x && f y) (map toLower s)
     as = filter (`elem` attributes) rs
     col x = if isJust (color x) then return x else Nothing
     fg = fromJust $ msum (map (cGet "fg") rs)  `mplus` msum (map col rs) `mplus` return "default"
@@ -335,7 +335,7 @@ parseAttr s = Attribute as fg bg where
     f ',' = True
     f c | isSpace c = True
     f _ = False
-    cGet p r | (p ++ ":") `isPrefixOf` r = col (drop (length p + 1) r) 
+    cGet p r | (p ++ ":") `isPrefixOf` r = col (drop (length p + 1) r)
     cGet _ _ = Nothing
     attributes = ["normal", "bold", "blink", "dim", "reverse", "underline" ]
 
@@ -382,7 +382,7 @@ foreign import ccall unsafe "my_curses.h hs_curses_color_pair" colorPair :: Pair
 #def inline chtype hs_curses_color_pair (HsInt pair) {return COLOR_PAIR (pair);}
 
 -------------
--- Attributes 
+-- Attributes
 -------------
 
 foreign import ccall unsafe "my_curses.h attr_set" attr_set :: Attr -> CShort -> Ptr a -> IO Int
@@ -407,15 +407,15 @@ wAttrGet w =  alloca $ \pa -> alloca $ \pp -> (throwIfErr_ "wattr_get" $ wattr_g
 
 withColor :: Window -> Pair -> IO a -> IO a
 withColor win np action = do
-    x <- hasColors 
+    x <- hasColors
     if x then (do
         (a,p) <- wAttrGet win
         wAttrSet win (a,np)
-        x <- action 
+        x <- action
         wAttrSet win (a,p)
         return x)
       else action
-    
+
 
 newtype Attr = Attr (#type attr_t) deriving (Eq,Storable,Bits, Num, Show)
 
@@ -499,19 +499,19 @@ wAttrOff w x = throwIfErr_ "wattroff" $ wattroff w (fi x)
 
 attrDimOn :: IO ()
 attrDimOn  = throwIfErr_ "attron A_DIM" $
-    attron (#const A_DIM) 
+    attron (#const A_DIM)
 
 attrDimOff :: IO ()
 attrDimOff = throwIfErr_ "attroff A_DIM" $
-    attroff (#const A_DIM) 
+    attroff (#const A_DIM)
 
 attrBoldOn :: IO ()
 attrBoldOn  = throwIfErr_ "attron A_BOLD" $
-    attron (#const A_BOLD) 
+    attron (#const A_BOLD)
 
 attrBoldOff :: IO ()
 attrBoldOff = throwIfErr_ "attroff A_BOLD" $
-    attroff (#const A_BOLD) 
+    attroff (#const A_BOLD)
 
 
 attrDim :: Int
@@ -523,10 +523,10 @@ attrBold = (#const A_BOLD)
 
 
 mvWAddStr :: Window -> Int -> Int -> String -> IO ()
-mvWAddStr w y x str = wMove w y x >> wAddStr w str 
+mvWAddStr w y x str = wMove w y x >> wAddStr w str
 
 addLn :: IO ()
-addLn = wAddStr stdScr "\n" 
+addLn = wAddStr stdScr "\n"
 
 sanifyOutput :: String -> String
 sanifyOutput = map f . filter (/= '\r') where
@@ -537,7 +537,7 @@ sanifyOutput = map f . filter (/= '\r') where
 
 --wAddStr :: Window -> String -> IO ()
 --wAddStr w str = throwIfErr_ ("waddnwstr: " ++ show str) $ withCWStringLen (sanifyOutput str) (\(ws,len) -> waddnwstr w ws (fi len))
-    
+
 foreign import ccall unsafe waddnwstr :: Window -> CWString -> CInt -> IO CInt
 foreign import ccall unsafe waddch :: Window -> (#type chtype) -> IO CInt
 
@@ -556,11 +556,11 @@ wAddStr win str = do
                 convStr acc
                 throwIfErr "waddch" $ waddch win ch'
                 loop str' id)
-    loop str id 
+    loop str id
 
 #else
 
-    
+
 foreign import ccall unsafe waddnstr :: Window -> CString -> CInt -> IO CInt
 foreign import ccall unsafe waddch :: Window -> (#type chtype) -> IO CInt
 
@@ -579,7 +579,7 @@ wAddStr win str = do
                 convStr acc
                 throwIfErr "waddch" $ waddch win ch'
                 loop str' id)
-    loop str id 
+    loop str id
 #endif
 {-
 
@@ -602,7 +602,7 @@ wAddStr win str = do
                 convStr acc
                 throwIfErr "waddch" $ waddch win ch'
                 loop str' id)
-    loop str id 
+    loop str id
 -}
 ------------------------------------------------------------------------
 
@@ -659,14 +659,14 @@ vis_c vis = case vis of
     CursorInvisible   -> 0
     CursorVisible     -> 1
     CursorVeryVisible -> 2
-    
+
 foreign import ccall unsafe "my_curses.h curs_set" curs_set :: CInt -> IO CInt
 
 cursSet 0 = leaveOk True >> curs_set 0
-cursSet n = leaveOk False >> curs_set n 
+cursSet n = leaveOk False >> curs_set n
 
 withCursor :: CursorVisibility -> IO a -> IO a
-withCursor nv action = Control.Exception.bracket (cursSet (vis_c nv)) (\v -> case v of 
+withCursor nv action = Control.Exception.bracket (cursSet (vis_c nv)) (\v -> case v of
 		(#const ERR) -> return 0
 		x -> cursSet x) (\_ -> action)
 
@@ -688,7 +688,7 @@ pRefresh pad pminrow pmincol sminrow smincol smaxrow smaxcol = throwIfErr_ "pref
 
 delWin :: Window -> IO ()
 delWin w = throwIfErr_ "delwin" $ delwin w
-    
+
 foreign import ccall unsafe prefresh :: Window -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO CInt
 foreign import ccall unsafe newpad :: CInt -> CInt -> IO Window
 foreign import ccall unsafe delwin :: Window -> IO CInt
@@ -726,7 +726,7 @@ foreign import ccall unsafe "my_curses.h flash" c_flash :: IO CInt
 beep :: IO ()
 beep = do
     br <- c_beep
-    when (br /= (#const OK)) (c_flash >> return ()) 
+    when (br /= (#const OK)) (c_flash >> return ())
 
 
 ---------------
@@ -869,7 +869,7 @@ getCh = threadWaitRead 0 >> (liftM decodeKey $ throwIfErr "getch" getch)
 --     --halfdelay 1
 --     v <- getch
 --     case v of
--- 	(#const ERR) -> yield >> getCh 
+-- 	(#const ERR) -> yield >> getCh
 -- 	x -> return $ decodeKey x
 
 
@@ -909,20 +909,20 @@ cursesSigWinch = Nothing
 cursesTest :: IO ()
 cursesTest = do
     initScr
-    hc <- hasColors 
+    hc <- hasColors
     when hc startColor
     ccc <- canChangeColor
     (ys,xs) <- scrSize
     cp <- colorPairs
     cs <- colors
     endWin
-    putStrLn $ "ScreenSize: " ++ show (xs,ys) 
+    putStrLn $ "ScreenSize: " ++ show (xs,ys)
     putStrLn $ "hasColors: " ++ show hc
     putStrLn $ "canChangeColor: " ++ show ccc
     putStrLn $ "colorPairs: " ++ show cp
     putStrLn $ "colors: " ++ show cs
 
-    
+
 
 
 -----------------
@@ -930,15 +930,15 @@ cursesTest = do
 -----------------
 
 data MouseEvent = MouseEvent {
-    mouseEventId :: Int, 
-    mouseEventX :: Int, 
-    mouseEventY :: Int, 
-    mouseEventZ :: Int, 
+    mouseEventId :: Int,
+    mouseEventX :: Int,
+    mouseEventY :: Int,
+    mouseEventZ :: Int,
     mouseEventButton :: [ButtonEvent]
    } deriving(Show)
 
-data ButtonEvent = ButtonPressed Int | ButtonReleased Int | ButtonClicked Int | 
-    ButtonDoubleClicked Int | ButtonTripleClicked Int | ButtonShift | ButtonControl | ButtonAlt 
+data ButtonEvent = ButtonPressed Int | ButtonReleased Int | ButtonClicked Int |
+    ButtonDoubleClicked Int | ButtonTripleClicked Int | ButtonShift | ButtonControl | ButtonAlt
 	deriving(Eq,Show)
 
 withMouseEventMask :: [ButtonEvent] -> IO a -> IO a
@@ -948,9 +948,9 @@ withMouseEventMask :: [ButtonEvent] -> IO a -> IO a
 foreign import ccall unsafe "my_curses.h mousemask" mousemask :: (#type mmask_t) -> Ptr (#type mmask_t) -> IO (#type mmask_t)
 
 withMouseEventMask bes action = do
-    ov <- alloca (\a ->  mousemask (besToMouseMask bes) a >> peek a) 
-    r <- action 
-    mousemask ov nullPtr 
+    ov <- alloca (\a ->  mousemask (besToMouseMask bes) a >> peek a)
+    r <- action
+    mousemask ov nullPtr
     return r
 
 besToMouseMask :: [ButtonEvent] -> (#type mmask_t)
@@ -1021,7 +1021,7 @@ nEqual   = chr 0x2260
 sterling = chr 0x00A3
 
 -- #if defined(__STDC_ISO_10646__)  && defined(HAVE_WADDNWSTR)
--- #else 
+-- #else
 
 #if 1
 
@@ -1134,13 +1134,13 @@ foreign import ccall unsafe hs_curses_acs_sterling :: IO (#type chtype)
 #def inline chtype hs_curses_acs_sterling (void) {return ACS_STERLING;}
 #  endif
 
-#endif 
+#endif
 
 -------------------------
 -- code graveyard
 -------------------------
 
- 
+
 
 
 #if 0
