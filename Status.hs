@@ -1,22 +1,32 @@
 {-# OPTIONS_GHC -fallow-overlapping-instances #-}
 
-module Status(set,setS,clear, Status.get, setF, setFS, getStatus, Status.log, getLog) where
+module Status(
+    set,
+    setS,
+    clear,
+    Status.get,
+    setF,
+    setFS,
+    getStatus,
+    Status.log,
+    getLog
+    ) where
 
 
-import System.IO.Unsafe
-import Data.IORef
-import Data.FiniteMap 
-import GenUtil
-import Data.Tree
 import Char(chr)
-import Doc.Chars
-import List(intersperse,groupBy)
 import CircularBuffer as CB
+import Data.IORef
+import Data.Tree
+import Doc.Chars
+import GenUtil
+import List(intersperse,groupBy)
+import qualified Data.Map as Map
+import System.IO.Unsafe
 
 
 {-# NOINLINE status_var #-}
-status_var :: IORef (FiniteMap String (IO String))
-status_var  = unsafePerformIO $ newIORef emptyFM
+status_var :: IORef (Map.Map String (IO String))
+status_var  = unsafePerformIO $ newIORef Map.empty
 
 {-# NOINLINE log_var #-}
 log_var :: CB.CircularBuffer String
@@ -30,47 +40,47 @@ getLog = CB.toList log_var
 
 
 
-modify r f = atomicModifyIORef r (\x -> (f x,())) 
+modify r f = atomicModifyIORef r (\x -> (f x,()))
 
 setS :: Show a => String -> a -> IO ()
-setS w v = set w (show v) 
+setS w v = set w (show v)
 
 set :: String -> String -> IO ()
-set w v = modify status_var (\fm -> addToFM fm w (return v))  
+set w v = modify status_var (\fm -> Map.insert w (return v) fm)
 
 setF :: String -> IO String -> IO ()
-setF w v = modify status_var (\fm -> addToFM fm w v)  
+setF w v = modify status_var (\fm -> Map.insert w v fm)
 
 setFS :: Show a => String -> IO a -> IO ()
-setFS w v = modify status_var (\fm -> addToFM fm w (fmap show v))  
+setFS w v = modify status_var (\fm -> Map.insert w (fmap show v) fm)
 
 
 get :: String -> IO (IO String)
 get k = do
     fm <- readIORef status_var
-    case lookupFM fm k of
+    case Map.lookup k fm of
         Just x -> return x
         Nothing -> return (return "")
-    
+
 
 
 clear :: String -> IO ()
-clear k =  modify status_var (\fm -> delFromFM fm k)  
+clear k =  modify status_var (\fm -> Map.delete k fm)
 
 
 getall = do
     fm <- readIORef status_var
-    return $ fmToList fm
+    return $ Map.toList fm
 
 getTree :: IO (Forest (String,String))
 getTree = do
     xs <- getall
     let f (a,b) = do b <- b; return (split (== '.') a,b)
-    xs <- mapM f xs 
-    return $ createForest  xs 
+    xs <- mapM f xs
+    return $ createForest  xs
 
 createForest  xs = map f gs where
-    --[Node (concat $ intersperse "." (xs),y) [] | (xs,y) <- xs] 
+    --[Node (concat $ intersperse "." (xs),y) [] | (xs,y) <- xs]
     f [(xs,ys)] =  Node (concat $ intersperse "." (xs),ys) []
     f xs@((x:_,_):_) = Node (x,"") (createForest [ (xs,ys) | (_:xs,ys)<- xs])
     f _ = error "createForest: should not happen."
@@ -90,11 +100,11 @@ draw (Node x ts0) = x : drawSubTrees ts0
 
 getStatus :: IO String
 getStatus = do
-    t <- getTree 
+    t <- getTree
     let f (xs,"") = xs
         f (xs,ys) = xs ++ ": "  ++ ys
     return $ unlines (concatMap (draw . fmap f) t)
-    
-    
+
+
 
 

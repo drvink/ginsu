@@ -362,6 +362,7 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
                 fragments = [(f_securitySignature,FragmentData (listArray (0, length fd - 1) fd))]    
             nfragments <- cryptFragments gc es fragments 
 	    createPuff gc will $ p {signature = [], fragments = nfragments }
+createPuff _ _ _ = error "createPuff: invalid arguments"
 
 la xs = listArray (0, length xs - 1) xs
 
@@ -472,7 +473,7 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 galeDecryptPuff _ x = return x
 -}
 
-parseSecuritySignature = do
+_parseSecuritySignature = do
     l <- word32
     dropBytes 4 -- signature_magic1
     sb <- word32
@@ -617,9 +618,9 @@ fetchKeys gc s = do
             r (Key _ []) = fk ss ((s,DestUnknown [s]):xs)
             r k = fk (map unpackPS (getFragmentStrings k f_keyMember) ++ ss) ((s,DestEncrypted [k]):xs)
 
-categoryIsSystem (n,d) | "_gale." `isPrefixOf` n = True
-categoryIsSystem (n,d) | "_gale" == n = True
-categoryIsSystem (n,d) = False
+categoryIsSystem (n,_) | "_gale." `isPrefixOf` n = True
+categoryIsSystem (n,_) | "_gale" == n = True
+categoryIsSystem (_,_) = False
 
 
 requestKey _ c | categoryIsSystem c = return ()
@@ -634,14 +635,14 @@ requestKey gc c = do
 
 
 findDest gc c = fd c >>= res where
-    cn = catShowNew c
+    -- cn = catShowNew c
     fd c = do
         ks <- fetchKeys gc (catShowNew c)
         case ks of 
                 DestUnknown _ | (a,b) <- c, Just x <- nextTry a -> fd (x,b)
                 k -> return k
     res x = case x of 
-        DestUnknown ss -> do
+        DestUnknown _ -> do
 --            let cs = map catParseNew ss
 --            galeAddCategories gc (("_gale.key", snd c):[("_gale.key", x) | x <- snds cs])
 --            let f Nothing = []

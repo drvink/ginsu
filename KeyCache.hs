@@ -3,8 +3,6 @@ module KeyCache(
     dumpKey,
     KeyCache,
     newKeyCache,
---    getPrivateKey,
---    getPublicKey,
     getKey,
     getPKey,
     parseKey,
@@ -18,30 +16,28 @@ module KeyCache(
 
     ) where
 
-import Data.FiniteMap
-import Control.Concurrent
-import ErrorLog
-import EIO
-import Puff
-import Word
-import Bits
-import SimpleParser
-import RSA
-import PackedString
-import Char
-import GenUtil
-import Maybe
-import GaleProto
-import List
-import Monad
-import Foreign.Ptr
-import Control.Monad
-import Directory
-import System.Mem.Weak
-import Data.Array.Unboxed
-import Data.Array.MArray
-import Data.Array.IO
 import Atom
+import Bits
+import Char
+import Control.Concurrent
+import Data.Array.IO
+import Data.Array.MArray
+import Data.Array.Unboxed
+import Directory
+import EIO
+import ErrorLog
+import GaleProto
+import GenUtil
+import List
+import Maybe
+import Monad
+import PackedString
+import Puff
+import RSA
+import SimpleParser
+import System.Mem.Weak
+import Word
+import qualified Data.Map as Map
 
 stons :: [Char] -> [Word8]
 stons = map (fromIntegral . ord)
@@ -64,47 +60,43 @@ galeRSAPrimeLen = (galeRSAPrimeBits + 7) `div` 8
 
 
 data KeyCache = KeyCache {
-    pkeyCache :: !(MVar (FiniteMap String (Weak (Key,EvpPkey)))),
-    kkeyCache :: !(MVar (FiniteMap String (Weak Key))),
---    keyCache :: !(MVar [(Key,EvpPkey)]), 
---    publicKeyCache :: !(MVar (FiniteMap String (Key,EvpPkey))),
+    pkeyCache :: !(MVar (Map.Map String (Weak (Key,EvpPkey)))),
+    kkeyCache :: !(MVar (Map.Map String (Weak Key))),
     galeDir :: String
     }
 
-numberKeys kc = fmap sizeFM $ readMVar (kkeyCache kc)
+numberKeys kc = fmap Map.size $ readMVar (kkeyCache kc)
 
 keyIsPubKey k =  (hasFragment k f_rsaExponent)
 keyIsPrivKey k =  (hasFragment k f_rsaPrivateExponent)
 keyIsPublic k = any nullPS $ getFragmentStrings k f_keyMember
 
 newKeyCache galeDir = do
-    -- kc <- newMVar []
-    -- pkc <- newMVar emptyFM
-    pk <- newMVar emptyFM
-    kk <- newMVar emptyFM
+    pk <- newMVar Map.empty
+    kk <- newMVar Map.empty
     return KeyCache { {- keyCache = kc, publicKeyCache = pkc,-} galeDir = galeDir, pkeyCache = pk, kkeyCache = kk }
 
 
-keyToRSAElems :: Monad m => Key -> m (RSAElems [Word8]) 
+keyToRSAElems :: Monad m => Key -> m (RSAElems [Word8])
 keyToRSAElems fl = do
     if not (keyIsPubKey fl) then fail "key does not have bits" else do
-    n <- getFragmentData fl f_rsaModulus 
-    e <- getFragmentData fl f_rsaExponent 
-    if not (keyIsPrivKey fl) then 
+    n <- getFragmentData fl f_rsaModulus
+    e <- getFragmentData fl f_rsaExponent
+    if not (keyIsPrivKey fl) then
         return RSAElemsPublic { rsaN = elems n, rsaE = elems e } else do
-    d <- getFragmentData fl f_rsaPrivateExponent 
+    d <- getFragmentData fl f_rsaPrivateExponent
     iqmp <- getFragmentData fl f_rsaPrivateCoefficient
     pq <- getFragmentData fl f_rsaPrivatePrime
     dmpq1 <- getFragmentData fl f_rsaPrivatePrimeExponent
     let (p,q) = splitAt galeRSAPrimeLen (elems pq)     -- should be "rsa.bits"?
         (dmp1,dmq1) = splitAt galeRSAPrimeLen (elems dmpq1)
-    return RSAElemsPrivate { 
-        rsaN = elems n, 
-        rsaE = elems e, 
-        rsaD = elems d , 
-        rsaIQMP = elems iqmp, 
-        rsaP = p, 
-        rsaQ =  q, 
+    return RSAElemsPrivate {
+        rsaN = elems n,
+        rsaE = elems e,
+        rsaD = elems d ,
+        rsaIQMP = elems iqmp,
+        rsaP = p,
+        rsaQ =  q,
         rsaDMP1 = dmp1,
         rsaDMQ1 = dmq1
         }
@@ -115,18 +107,18 @@ keyToPkey :: Key -> IO EvpPkey
 keyToPkey key  = do
     re <- keyToRSAElems key
     createPkey re
- 
+
 getPKey :: KeyCache -> String -> IO (Maybe (Key,EvpPkey))
 getPKey kc kn =  modifyMVar (pkeyCache kc) f where
-    f pkeyCache | Just v <- lookupFM pkeyCache kn = do
+    f pkeyCache | Just v <- Map.lookup kn pkeyCache = do
         v <- deRefWeak v
         case v of
             Just _ -> return (pkeyCache, v)
-            Nothing -> g pkeyCache 
-    f pkeyCache = g pkeyCache 
+            Nothing -> g pkeyCache
+    f pkeyCache = g pkeyCache
     g pkeyCache = do
         k <- getKey kc kn
-        case k of 
+        case k of
             Nothing -> return (pkeyCache, Nothing)
             Just v | not (hasFragment v f_rsaModulus) ->  return (pkeyCache, Nothing)
             Just key -> do
@@ -135,53 +127,53 @@ getPKey kc kn =  modifyMVar (pkeyCache kc) f where
                 pkey <- keyToPkey key
                 let kp =  (key,pkey)
                 ptr <- mkWeakPtr kp Nothing
-                return (addToFM pkeyCache kn ptr, Just kp)
+                return (Map.insert  kn ptr pkeyCache, Just kp)
 
 blankKey kn = (Key kn [])
 
 noKey :: KeyCache -> String -> IO ()
 noKey kc kn = modifyMVar (kkeyCache kc) f where
-    f kkeyCache | Just _ <- lookupFM kkeyCache kn = return (kkeyCache, ())
+    f kkeyCache | Just _ <- Map.lookup kn kkeyCache = return (kkeyCache, ())
     f kkeyCache = do
         n <- mkWeakPtr (blankKey kn) Nothing
-        return (addToFM kkeyCache kn n, ())
+        return (Map.insert kn n  kkeyCache, ())
 
 
 
 
 putKey :: KeyCache -> (UArray Int Word8) -> IO ()
-putKey kc xs = do 
+putKey kc xs = do
     mk <- first [fmap Just (parseKey $ elems xs),return Nothing]
-    case mk of 
+    case mk of
         Nothing -> return ()
         Just v'@(Key kn _) -> do
             modifyMVar (kkeyCache kc) f where
-                f kkeyCache | Just _ <- lookupFM kkeyCache kn = return (kkeyCache, ())
+                f kkeyCache | Just _ <- Map.lookup kn kkeyCache = return (kkeyCache, ())
                 f kkeyCache = do
                     first [createDirectory $ galeDir kc ++ "/auth/", return ()]
                     first [createDirectory $ galeDir kc ++ "/auth/cache/", return ()]
-                    xs <- unsafeThaw xs 
-                    atomicWrite  (galeDir kc ++ "/auth/cache/" ++ kn ++ ".gpub")  $   
+                    xs <- unsafeThaw xs
+                    atomicWrite  (galeDir kc ++ "/auth/cache/" ++ kn ++ ".gpub")  $
                         \h -> hPutArray h xs (rangeSize (bounds xs))
                     v' <- mkWeakPtr v' Nothing
-                    return (addToFM kkeyCache kn v', ())
-    
+                    return (Map.insert kn v' kkeyCache, ())
+
 
 getKey :: KeyCache -> String -> IO (Maybe Key)
 getKey kc kn = modifyMVar (kkeyCache kc) f where
-    f kkeyCache | Just v <- lookupFM kkeyCache kn = do
+    f kkeyCache | Just v <- Map.lookup kn kkeyCache = do
         v <- deRefWeak v
-        case v of 
+        case v of
             Just _ -> return (kkeyCache, v)
             Nothing -> g kkeyCache
     f kkeyCache = g kkeyCache
     g kkeyCache = do
 	    v <- ioM getFromDisk
-            case v of 
+            case v of
                 Nothing -> return (kkeyCache, Nothing)
-                Just v' -> do 
+                Just v' -> do
                     v'' <- mkWeakPtr v' Nothing
-                    return (addToFM kkeyCache kn v'', Just v')
+                    return (Map.insert kn v'' kkeyCache, Just v')
     getFromDisk :: IO Key
     getFromDisk = do
         let pc = galeDir kc ++ "/auth/cache/"
@@ -190,14 +182,14 @@ getKey kc kn = modifyMVar (kkeyCache kc) f where
             gn = (map (\fn -> (readRawFile fn >>= parseKey >>= \c -> return (c,fn))) knames)
         --putLog LogDebug $ "Looking for: " ++ show  knames
         xs <- mapM tryMost gn
-        let ks = [ k | Right (k@(Key n _),_) <- xs, kn == n] 
+        let ks = [ k | Right (k@(Key n _),_) <- xs, kn == n]
         let nk = foldr (\(Key _ fl) (Key n fl') -> Key n (fl `mergeFrags` fl')) (Key kn []) ks
-        --(key_c, fn) <- (first  gn) 
+        --(key_c, fn) <- (first  gn)
 	--key <- parseKey key_c
 	--rsa <- pubKeyToRSA key
 	--pkey <- pkeyNewRSA rsa
         if null (getFragmentList nk) then ioError $ userError "bad key" else return nk
-        
+
 flipLocalPart :: String -> String
 flipLocalPart s | '@' `notElem` s = s
 flipLocalPart s = nbp ++ ep where
@@ -256,7 +248,7 @@ keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
 	(eof >> return (Key kn [])) <|> do
 	comment <- parseNullString
 	fl <- parsePublic12
-	signature <- parseRest
+	_signature <- parseRest
 	return $ Key kn ([(f_keyOwner, FragmentText (packString comment))] ++ fl)
     pk2 = do
 	parseExact pubkey_magic2
@@ -268,7 +260,7 @@ keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
 	(eof >> return (Key kn fl)) <|> do
 	ts <- parseSome 16
 	te <- parseSome 16
-	signature <- parseRest
+	_signature <- parseRest
 	return $ Key kn $ fl ++ [(f_keySigned,FragmentTime (decodeTime ts)), (f_keyExpires,FragmentTime (decodeTime te))]
     pk3 = do
 	parseExact pubkey_magic3
@@ -328,7 +320,7 @@ dumpKey arg = do
     gd <- getGaleDir
     kc <- newKeyCache gd
     nk <- getKey kc arg
-    key <- case nk of 
+    key <- case nk of
         Just key -> return key
         Nothing -> do
             c <- readRawFile arg
@@ -347,25 +339,25 @@ getPrivateKey gc kn = modifyMVar (keyCache gc) f where
 	    v <- ioMp getFromDisk
 	    return ((maybeToList v ++ kc),v)
     getFromDisk = do
-	let gd = galeDir gc 
+	let gd = galeDir gc
 	let p = (gd ++ "/auth/private/")
 	    knames = [p ++ kn, p ++ kn ++ ".gpri"]
 	    gn = (map (\fn -> (readRawFile fn >>= \c -> return (c,fn))) knames)
-	(key_c, fn) <- (first  gn) 
+	(key_c, fn) <- (first  gn)
 	key <- parseKey key_c
 	rsa <- privkeyToRSA key
 	pkey <- pkeyNewRSA rsa
 	putLog LogNotice $ "Retrieved private key from disk: " ++ fn
 	return (key,pkey)
 
-    
+
 
 getPublicKey :: KeyCache -> String -> IO (Maybe (Key,EvpPkey))
-getPublicKey gc kn = modifyMVar (publicKeyCache gc) f where 
+getPublicKey gc kn = modifyMVar (publicKeyCache gc) f where
     f keyCache | Just v <- lookupFM keyCache kn = return (keyCache, Just v)
     f keyCache = do
 	    v <- ioM getFromDisk
-            return $ case v of 
+            return $ case v of
                 Nothing -> (keyCache, Nothing)
                 Just v' -> (addToFM keyCache kn v', Just v')
     getFromDisk :: IO (Key,EvpPkey)
@@ -375,7 +367,7 @@ getPublicKey gc kn = modifyMVar (publicKeyCache gc) f where
             knames = [ p ++ kn ++ ".gpub"]
             gn = (map (\fn -> (readRawFile fn >>= \c -> return (c,fn))) knames)
         putLog LogDebug $ "Looking for: " ++ show  knames
-        (key_c, fn) <- (first  gn) 
+        (key_c, fn) <- (first  gn)
 	key <- parseKey key_c
 	rsa <- pubKeyToRSA key
 	pkey <- pkeyNewRSA rsa
@@ -427,7 +419,7 @@ keyToRSA (Key _ fl)  = do
     rsa <- rsaNew
     fragmentData' "rsa.modulus" fl >>= bn_bin2bn >>= rsaSetN rsa
     fragmentData' "rsa.exponent" fl >>= bn_bin2bn >>= rsaSetE rsa
-    if  (hasFragment fl (packString "rsa.private.exponent")) then  do  
+    if  (hasFragment fl (packString "rsa.private.exponent")) then  do
         fragmentData' "rsa.private.exponent" fl >>= bn_bin2bn >>= rsaSetD rsa
         fragmentData' "rsa.private.coefficient" fl >>= bn_bin2bn >>= rsaSetIQMP rsa
         xs <- fragmentData' "rsa.private.prime" fl
@@ -441,7 +433,7 @@ keyToRSA (Key _ fl)  = do
         rsaCheckKey rsa
       else do
         return ()
-      
+
        -- rsaSetD rsa nullPtr
        -- rsaSetIQMP rsa nullPtr
        -- rsaSetP rsa nullPtr
