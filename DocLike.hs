@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-undecidable-instances -fallow-overlapping-instances #-}
 module Doc.DocLike where
 
 -- arch-tag: a88f19fb-e18d-475f-b6d1-8da78676261a
@@ -41,9 +42,9 @@ class (TextLike a) => DocLike a where
     hsep xs = foldr1 (<+>) xs
     vcat [] = empty
     vcat xs = foldr1 (\x y -> x <> char '\n' <> y) xs
-    x <+> y = x <> char ' ' <> y 
+    x <+> y = x <> char ' ' <> y
     x <$> y = x <> char '\n' <> y
-    encloseSep l r s ds = enclose l r (hcat $ punctuate s ds) 
+    encloseSep l r s ds = enclose l r (hcat $ punctuate s ds)
     enclose l r x   = l <> x <> r
     list            = encloseSep lbracket rbracket comma
     tupled          = encloseSep lparen   rparen  comma
@@ -60,7 +61,7 @@ tshow x = text (show x)
 
 lparen,rparen,langle,rangle,
     lbrace,rbrace,lbracket,rbracket,squote,
-    dquote,semi,colon,comma,space,dot,backslash,equals 
+    dquote,semi,colon,comma,space,dot,backslash,equals
     :: TextLike a => a
 lparen          = char '('
 rparen          = char ')'
@@ -84,9 +85,9 @@ equals          = char '='
 
 squotes x = enclose squote squote x
 dquotes x = enclose dquote dquote x
-parens x = enclose lparen rparen x 
+parens x = enclose lparen rparen x
 braces x = enclose lbrace rbrace x
-brackets x = enclose lbracket rbracket x 
+brackets x = enclose lbracket rbracket x
 angles x = enclose langle rangle x
 
 -----------------------------------------------------------
@@ -110,15 +111,15 @@ instance DocLike String where
 
 instance TextLike ShowS where
     empty = id
-    text x = (x ++) 
+    text x = (x ++)
     char c = (c:)
 
 instance DocLike ShowS where
-    a <> b = a . b 
+    a <> b = a . b
 
 instance (TextLike a, Monad m) => TextLike (m a) where
     empty = return empty
-    char x = return (char x) 
+    char x = return (char x)
     text x = return (text x)
 
 
@@ -135,14 +136,14 @@ instance (DocLike a, Monad m,TextLike (m a)) => DocLike (m a) where
         a <- a
         b <- b
         return (a <+> b)
-    
+
 ---------------------
 -- HughesPJ instances
 ---------------------
-    
+
 instance TextLike P.Doc where
     empty = P.empty
-    text = P.text 
+    text = P.text
     char = P.char
 
 instance Monoid P.Doc where
@@ -156,19 +157,19 @@ instance DocLike P.Doc where
     (<$>) = (P.$$)
     hsep = P.hsep
     vcat = P.vcat
-    
+
     --brackets = P.brackets
     --parens = P.parens
 
 --------
--- simple instances to allow distribution of an environment 
+-- simple instances to allow distribution of an environment
 --------
 --instance Monoid a => Monoid (b -> a) where
---    mempty = \_ -> mempty 
+--    mempty = \_ -> mempty
 --    mappend x y = \a -> mappend (x a) (y a)
 --    mconcat xs = \a -> mconcat (map ($ a) xs)
 --
 --instance (DocLike a, Monoid (b -> a)) => DocLike (b -> a) where
 --    parens x = \a -> parens (x a)
 --    (<+>) x y = \a -> x a <+> y a
-    
+
