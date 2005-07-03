@@ -1,10 +1,10 @@
-{-# OPTIONS -fglasgow-exts #-} 
+{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
 
 -- arch-tag: 15d3cb07-cddc-4f7b-8fff-ca7132a88d7e
 
 -- | This module provides a data constructor which lifts any type into a
 -- boolean algebra and some operations on said lifted type.
--- 
+--
 
 module Boolean.Boolean(
     Boolean(..),
@@ -32,12 +32,12 @@ import Text.ParserCombinators.Parsec
 
 -- true is BoolAnd []
 -- false is BoolOr []
-data Boolean a = 
-    BoolNot (Boolean a) 
-    | BoolAnd [Boolean a] 
-    | BoolOr [Boolean a] 
+data Boolean a =
+    BoolNot (Boolean a)
+    | BoolAnd [Boolean a]
+    | BoolOr [Boolean a]
     | BoolJust a
-    deriving( Eq, Ord, Show, Read) 
+    deriving( Eq, Ord, Show, Read)
 
 instance Functor Boolean where
     fmap f (BoolNot x) = BoolNot (fmap f x)
@@ -67,7 +67,7 @@ showBoolean f (BoolAnd xs) = "(" ++ unwords (map (showBoolean f) xs) ++ ")"
 showBoolean f (BoolOr xs) = "(" ++ concat (intersperse " ; " (map (showBoolean f) xs)) ++ ")"
 
 
--- | very safe simplification routine. This will never duplicate terms 
+-- | very safe simplification routine. This will never duplicate terms
 -- or change the order terms occur in the formula, so is safe to use even
 -- when bottom is present.
 --
@@ -75,9 +75,9 @@ showBoolean f (BoolOr xs) = "(" ++ concat (intersperse " ; " (map (showBoolean f
 --
 -- * removes double negatives
 --
--- * evaluates constant terms 
+-- * evaluates constant terms
 --
--- * removes manifest tautologies 
+-- * removes manifest tautologies
 --
 -- * flattens and of and, or of or
 --
@@ -97,28 +97,28 @@ simplifyBoolean demorgan x = simplifyBoolean' x where
     simplifyBoolean' (BoolAnd [x]) = simplifyBoolean' x
     simplifyBoolean' (BoolOr [x]) = simplifyBoolean' x
     simplifyBoolean' x@(BoolJust _) = x
-    simplifyBoolean' (BoolNot z) 
+    simplifyBoolean' (BoolNot z)
         | BoolNot y <- x = simplifyBoolean' y
         | BoolAnd [] <- x = BoolOr []
         | BoolOr [] <- x = BoolAnd []
-        | demorgan, BoolAnd xs <- x = simplifyBoolean' $ BoolOr (map BoolNot xs) 
-        | demorgan, BoolOr xs <- x = simplifyBoolean' $ BoolAnd (map BoolNot xs) 
+        | demorgan, BoolAnd xs <- x = simplifyBoolean' $ BoolOr (map BoolNot xs)
+        | demorgan, BoolOr xs <- x = simplifyBoolean' $ BoolAnd (map BoolNot xs)
         | otherwise = BoolNot x
         where x = (simplifyBoolean' z)
     simplifyBoolean' (BoolAnd xs)
         | [x] <- xs' = x
         | Prelude.any isFalse xs' = false
         | otherwise = BoolAnd xs'
-        where 
+        where
             xs' = concat $ f [] (dropWhile isTrue (map simplifyBoolean' xs))
             f xs [] = reverse xs
             f z (BoolAnd x:xs) =  f (x:z) xs
             f z (x:xs) = f ([x]:z) xs
-    simplifyBoolean' (BoolOr xs) 
+    simplifyBoolean' (BoolOr xs)
         | [x] <- xs' = x
         | Prelude.any isTrue xs' = true
         | otherwise = BoolOr xs'
-        where 
+        where
             xs' = concat $ f [] (dropWhile isFalse (map simplifyBoolean' xs))
             f xs [] = reverse xs
             f z (BoolOr x:xs) =  f (x:z) xs
@@ -135,7 +135,7 @@ isFalse _ = False
 -- Boolean wrapper. This is useful for things like wrapping an expensive to
 -- compute predicate for the purposes of optimization.
 
-dropBoolean :: BooleanAlgebra a => Boolean a -> a 
+dropBoolean :: BooleanAlgebra a => Boolean a -> a
 dropBoolean (BoolNot x) = not (dropBoolean x)
 dropBoolean (BoolOr xs) = or (map dropBoolean xs)
 dropBoolean (BoolAnd xs) = and (map dropBoolean xs)
@@ -155,38 +155,38 @@ evaluateM f (BoolAnd xs) = mapM (evaluateM f) xs >>= return . and
 evaluateM f (BoolOr xs) = mapM (evaluateM f) xs >>= return . or
 
 
--- | A parsec routine to parse a 'Boolean a' given a parser for 'a'. 
--- The format is the same as produced by 'showBoolean': 
--- 
--- > a ; b  - a or b 
--- > a b    - a and b 
+-- | A parsec routine to parse a 'Boolean a' given a parser for 'a'.
+-- The format is the same as produced by 'showBoolean':
+--
+-- > a ; b  - a or b
+-- > a b    - a and b
 -- > !a     - not a
--- > ( a )  - a 
--- 
--- The parser passed as an argument should eat all whitespace after it matches and 
+-- > ( a )  - a
+--
+-- The parser passed as an argument should eat all whitespace after it matches and
 -- ensure its syntax does not conflict with the Boolean syntax.
 
-parseBoolean' :: 
+parseBoolean' ::
        Parser s -- ^ parser for whitespace
     -> Parser t -- ^ parser for true
     -> Parser f -- ^ parser for false
     -> Parser a  -- ^ parser for a
     -> Parser (Boolean a) -- ^ parser for Boolean a
 parseBoolean' spaces t f pa = disj where
-    disj = fmap boolOr (sepBy1 conj (char ';' >> spaces)) <?> "disjunction" 
+    disj = fmap boolOr (sepBy1 conj (char ';' >> spaces)) <?> "disjunction"
     conj = fmap boolAnd (many1 item) <?> "conjunction"
     item = do
-        n <- option id (char '!' >> spaces >> return BoolNot) 
-        v <- (parened <|> (t >> return true) <|> (f >> return false) <|> fmap BoolJust pa) 
+        n <- option id (char '!' >> spaces >> return BoolNot)
+        v <- (parened <|> (t >> return true) <|> (f >> return false) <|> fmap BoolJust pa)
         spaces
-        return $ n v 
+        return $ n v
     parened = between (char '(' >> spaces) (char ')' >> spaces) disj <?> "parenthesis"
     boolOr [x] = x
     boolOr xs = BoolOr xs
     boolAnd [x] = x
     boolAnd xs = BoolAnd xs
-    
--- | specialized version of parser which understands 'true', 'false' and the 
+
+-- | specialized version of parser which understands 'true', 'false' and the
 -- normal whitespace characters.
 
 parseBoolean = parseBoolean' spaces (try t >> spaces) (try f >> spaces) where

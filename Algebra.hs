@@ -1,16 +1,16 @@
-{-# OPTIONS -fglasgow-exts #-} 
+{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
 -- arch-tag: 8aa47e06-b867-41c7-8127-4d0172706024
 
 -- | This is the main module of the Boolean hierachy and provides a class which
 -- abstracts common operations on boolean algebras.  note, we redefine some
 -- prelude functions, but the new definitons mean the same thing for Bool so it
 -- will not hurt existing code.
--- 
--- to use properly: 
--- 
--- > import Boolean.Algebra 
+--
+-- to use properly:
+--
+-- > import Boolean.Algebra
 -- > import Prelude hiding((&&),(||),not,and,or,any,all)
--- 
+--
 
 
 module Boolean.Algebra(
@@ -27,11 +27,11 @@ infixr 2 ||
 infixr 2 `xor`
 
 --------------
--- The class  
+-- The class
 --------------
 
 -- | This class is mainly for syntax re-use, there are many types which are very similar
--- to boolean algebras, but do not have suitable distinguished values to choose for true 
+-- to boolean algebras, but do not have suitable distinguished values to choose for true
 -- and false.
 --
 -- '&&' and '||' should be strict only in their first argument, and return one
@@ -42,19 +42,19 @@ class SemiBooleanAlgebra a where
     (||) :: a -> a -> a
     --a && b = not (not a || not b)
     --a || b = not (not a && not b)
-    
+
 
 
 
 -- | This is the main class, providing all the operations one would expect on
--- a boolean algebra. 
+-- a boolean algebra.
 class SemiBooleanAlgebra a => BooleanAlgebra a where
-    true :: a 
+    true :: a
     false :: a
-    not :: a -> a 
+    not :: a -> a
     -- the following are in case there is a more efficient implementation
     -- than the default
-    xor :: a -> a -> a  
+    xor :: a -> a -> a
     and :: [a] -> a
     or :: [a] -> a
     any :: (x -> a) -> [x] -> a
@@ -62,8 +62,8 @@ class SemiBooleanAlgebra a => BooleanAlgebra a where
 
     any f xs = or (map f xs)
     all f xs = and (map f xs)
-    and xs  = foldr (&&) true xs 
-    or xs  = foldr (||) false xs 
+    and xs  = foldr (&&) true xs
+    or xs  = foldr (||) false xs
     xor a b = (a && not b) || (b && not a)
     true = not false
     false = not true
@@ -145,7 +145,7 @@ instance BooleanAlgebra a => BooleanAlgebra (x -> a) where
     true = \_ -> true
     false = \_ -> false
     not f = \x -> not (f x)
-    xor f g = \x -> f x `xor` g x 
+    xor f g = \x -> f x `xor` g x
 
 
 -- TODO need more instances for tuples
@@ -192,7 +192,7 @@ instance BooleanAlgebra Integer where
 instance (Monad m, SemiBooleanAlgebra a) => SemiBooleanAlgebra (m a)  where
     (&&) = liftM2 (&&)
     (||) = liftM2 (||)
-    
+
 instance (Monad m, SemiBooleanAlgebra (m a), BooleanAlgebra a) => BooleanAlgebra (m a)  where
     xor = liftM2 xor
     not = liftM not
