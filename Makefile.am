@@ -156,13 +156,15 @@ publish-docs: docs/ginsu-manual.html
 	cp docs/ginsu-manual.html $(PUBLISH_DIR)
 	cp docs/wiki.css $(PUBLISH_DIR)
 
+ARCH = x86_64
+
 publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html 
 	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*-Linux-i686.tar.gz
 	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*.rpm
 	rm -f -- "$(PUBLISH_DIR)/drop/ginsu-$(VERSION).tar.gz"
 	cp "$(BINDISTDIR).tar.gz" "$(PUBLISH_DIR)/drop"
 	cp "ginsu-$(VERSION).tar.gz" "$(PUBLISH_DIR)/drop"
-	cp "$(HOME)/redhat/RPMS/i386/ginsu-$(VERSION)-1.i386.rpm" "$(PUBLISH_DIR)/drop"
+	cp "$(HOME)/redhat/RPMS/$(ARCH)/ginsu-$(VERSION)-1.$(ARCH).rpm" "$(PUBLISH_DIR)/drop"
 	cp "$(HOME)/redhat/SRPMS/ginsu-$(VERSION)-1.src.rpm" "$(PUBLISH_DIR)/drop"
 	cp Changelog $(PUBLISH_DIR)
 	cp docs/Changelog.old $(PUBLISH_DIR)
