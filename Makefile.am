@@ -62,6 +62,7 @@ SUFFIXES = .hs .lhs .o .hi .hsc .c .h
 
 dirtag:
 	mkdir Boolean || true
+	mkdir Doc || true
 	ln -sf Boolean/Boolean.o .
 	ln -sf Boolean/Algebra.o .
 	ln -sf Doc/DocLike.o .
@@ -93,10 +94,12 @@ $(ginsu_OBJECTS): $(CHEADERS)
 %.hs: %.hsc
 	$(HSC2HS) -C "$(CFLAGS)" -C -I. -C -I@srcdir@ -o $@ $<
 
+.SECONDARY: _darcs/inventory
+Changelog: _darcs/inventory
+	darcs changes > $@
 
-
-CLEANFILES = Boolean/*.hi Boolean/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
-DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o dirtag
+CLEANFILES = Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
+DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o dirtag DocLike.o Chars.o
 MAINTAINERCLEANFILES = ExampleConf.hs depend.make KeyHelpTable.hs
 
 
@@ -107,7 +110,7 @@ CWString_hsc.o: CWString_hsc.h
 
 
 depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
-	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS)  @srcdir@/*.hs      @srcdir@/Boolean/*.hs
+	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS)  @srcdir@/*.hs      @srcdir@/Boolean/*.hs @srcdir@/Doc/*.hs
 #	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS) @builddir@/*.hs  @srcdir@/*.hs    @builddir@/Boolean/*.hs  @srcdir@/Boolean/*.hs
 
 
