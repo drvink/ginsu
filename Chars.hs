@@ -5,13 +5,13 @@ module Doc.Chars where
 import Char(chr)
 import Doc.DocLike
 
-lCorner, llCorner, urCorner, lrCorner, rTee, lTee, bTee, tTee, hLine,
+ulCorner, llCorner, urCorner, lrCorner, rTee, lTee, bTee, tTee, hLine,
  vLine, plus, s1, s9, diamond, ckBoard, degree, plMinus, bullet, lArrow,
  rArrow, dArrow, uArrow, board, lantern, block, s3, s7, lEqual, gEqual,
  pi, nEqual, sterling, coloncolon, alpha, beta, lambda, forall, exists,
- box, bot, bottom, top, pI, lAmbda, star, elem, notElem, and, or, sqoparen, sqcparen  :: DocLike a => a
+ box, bot, bottom, top, pI, lAmbda, star, elem, notElem, and, or, sqoparen, sqcparen  :: TextLike a => a
 
-lCorner  = char $ chr 0x250C
+ulCorner  = char $ chr 0x250C
 llCorner = char $ chr 0x2514
 urCorner = char $ chr 0x2510
 lrCorner = char $ chr 0x2518

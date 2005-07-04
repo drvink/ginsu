@@ -59,6 +59,7 @@ tshow :: (Show a,DocLike b) => a -> b
 tshow x = text (show x)
 
 
+
 lparen,rparen,langle,rangle,
     lbrace,rbrace,lbracket,rbracket,squote,
     dquote,semi,colon,comma,space,dot,backslash,equals
@@ -93,8 +94,8 @@ angles x = enclose langle rangle x
 -----------------------------------------------------------
 -- punctuate p [d1,d2,...,dn] => [d1 <> p,d2 <> p, ... ,dn]
 -----------------------------------------------------------
-punctuate p []      = []
-punctuate p [d]     = [d]
+punctuate _ []      = []
+punctuate _ [d]     = [d]
 punctuate p (d:ds)  = (d <> p) : punctuate p ds
 
 ------------------
@@ -103,6 +104,12 @@ punctuate p (d:ds)  = (d <> p) : punctuate p ds
 instance TextLike String where
     empty = ""
     text x = x
+
+instance TextLike Char where
+    empty = error "TextLike: empty char"
+    char x = x
+    text [ch] = ch
+    text _ = error "TextLike: string to char"
 
 instance DocLike String where
     a <> b = a ++ b
