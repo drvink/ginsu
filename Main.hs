@@ -5,7 +5,7 @@ import Char
 import Directory
 import List hiding(or,and,any,all)
 import Maybe
-import System
+import System.Cmd
 import System.Time
 import Time
 
@@ -47,6 +47,7 @@ import SHA1
 import Status
 import System.Locale
 import Version
+import Doc.Chars(rTee,hLine,lTee)
 
 idleThreshold = 240
 pufflog = "ginsu.4.pufflog"
@@ -589,7 +590,8 @@ mainLoop gc ic yor psr next_r rc = do
                 "edit_config_file" -> do
                     gc <- galeFile "ginsu.config"
                     e <- getEditor
-                    mySystem (e ++ " " ++ gc)
+                    --mySystem (e ++ " " ++ gc)
+                    withProgram $ rawSystem e [gc]
                     reloadConfigFiles
                     touchRenderContext rc
                     return True
@@ -700,6 +702,7 @@ mainLoop gc ic yor psr next_r rc = do
                             --    return True
                             pk x = case x of
                                         (KeyChar n) | Just (a,_) <- lookup n mw -> do
+                                            --rawSystem a []
                                             mySystem a
                                             return ()
                                         key -> keyError "unknown match" key
@@ -895,7 +898,7 @@ noBodyWords fl = [x|x@(n,_) <- fl, n /= f_messageBody, n /= f_messageKeyword]
 
 mySystem s = do
     putLog LogInfo $ "system " ++ show s
-    withProgram $ System.system s
+    withProgram $ System.Cmd.system s
 
 
 editPuff :: Puff -> IO (Maybe Puff)
@@ -910,7 +913,9 @@ editPuff puff = do
             Just mb -> mb
             Nothing -> "\n"
     withPrivateFiles $ writeRawFile fn (stringToBytes $ unlines it ++ mb)
-    mySystem (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
+    putLog LogInfo $ "system: " ++  (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
+    --mySystem (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
+    withProgram $ System.Cmd.rawSystem e (concatMap words eo ++ [fn])
     pn <- fmap (lines . bytesToString)$ readRawFile fn
     handleMost (\_ -> return ()) (removeFile fn)
     if not (length pn > 1 && pn /= it) then return Nothing else do

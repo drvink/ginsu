@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fallow-overlapping-instances #-}
 module Screen(
     Packing(..),
     Attribute(..),
@@ -41,6 +42,8 @@ import Curses
 import ErrorLog
 import Format
 import GenUtil
+import Doc.Chars
+import Doc.DocLike()
 
 
 data Canvas = Canvas {window :: !Window, origin :: !(Int,Int), widgetOrigin :: !(Int,Int), bounds :: !(Int,Int), attr :: Attribute  }
@@ -324,13 +327,13 @@ boxWidget w = w {render = rst, getBounds = gb} where
     gb = getBounds w >>= \(x,y) -> return (x + 2, y + 2)
     rst canvas@(Canvas {bounds = (xb,yb)}) = do
 	-- let tb = '+' : (replicate (xb - 2) '-' ++ "+")
-	let tb = ulCorner : (replicate (xb - 2) hLine ++ [urCorner])
-	    bb = llCorner : (replicate (xb - 2) hLine ++ [lrCorner])
+	let tb = ulCorner ++ (replicate (xb - 2) hLine ++ urCorner)
+	    bb = llCorner ++ (replicate (xb - 2) hLine ++ lrCorner)
 	    bc c@(Canvas {bounds = (xb,yb)}) = c {bounds = (max (xb - 1) 0, max (yb - 1) 0)}
 	renderChild w (canvasTranslate (bc canvas) (1,1))	
 	drawString canvas tb
 	drawString (canvasTranslate canvas (0,yb - 1)) bb
-	sequence_ [drawString (canvasTranslate canvas (xt,yt)) [vLine]| yt <- [1..yb - 2], xt <- [0,xb - 1]]
+	sequence_ [drawString (canvasTranslate canvas (xt,yt)) (vLine :: String) | yt <- [1..yb - 2], xt <- [0,xb - 1]]
 
 
 {-

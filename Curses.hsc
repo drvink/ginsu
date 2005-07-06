@@ -1,4 +1,4 @@
--- arch-tag: b25d31d1-0529-4b27-87e3-01618e25c135
+{-# OPTIONS_GHC -fallow-overlapping-instances #-}
 module Curses (
     --------------------------------------------------------------------
 
@@ -96,10 +96,12 @@ module Curses (
     wClrToEol,
     withProgram,
 
+{-
     ulCorner, llCorner, urCorner, lrCorner, rTee, lTee, bTee, tTee, hLine,
     vLine, plus, s1, s9, diamond, ckBoard, degree, plMinus, bullet,
     lArrow, rArrow, dArrow, uArrow, board, lantern, block,
     s3, s7, lEqual, gEqual, pi, nEqual, sterling,
+-}
 
     beep, wAttrSet, wAttrGet,
 
@@ -128,6 +130,7 @@ import System.Posix.Signals
 import CWString
 import List
 import Monad
+import Doc.Chars hiding(elem)
 import Maybe
 
 
@@ -674,6 +677,7 @@ withCursor nv action = Control.Exception.bracket (cursSet (vis_c nv)) (\v -> cas
 
 ------------------------------------------------------------------------
 
+foreign import ccall unsafe doupdate :: IO CInt 
 
 touchWin :: Window -> IO ()
 touchWin w = throwIfErr_ "touchwin" $ touchwin w
@@ -710,8 +714,8 @@ foreign import ccall unsafe wclrtoeol :: Window -> IO CInt
 foreign import ccall threadsafe getch :: IO CInt
 
 
---foreign import ccall unsafe def_prog_mode :: IO CInt
---foreign import ccall unsafe reset_prog_mode :: IO CInt
+foreign import ccall unsafe def_prog_mode :: IO CInt
+foreign import ccall unsafe reset_prog_mode :: IO CInt
 foreign import ccall unsafe flushinp :: IO CInt
 
 
@@ -981,6 +985,7 @@ withMouseEventMask _ a = a
 
 
 
+{-
 ulCorner, llCorner, urCorner, lrCorner, rTee, lTee, bTee, tTee, hLine,
     vLine, plus, s1, s9, diamond, ckBoard, degree, plMinus, bullet,
     lArrow, rArrow, dArrow, uArrow, board, lantern, block,
@@ -1019,6 +1024,7 @@ gEqual   = chr 0x2265
 pi       = chr 0x03C0
 nEqual   = chr 0x2260
 sterling = chr 0x00A3
+-}
 
 -- #if defined(__STDC_ISO_10646__)  && defined(HAVE_WADDNWSTR)
 -- #else
@@ -1028,39 +1034,39 @@ sterling = chr 0x00A3
 recognize :: Char -> IO a -> ((#type chtype) -> IO a) -> IO a
 recognize ch noConvert convert
     | ch <= '\x7F'   = noConvert -- Handle the most common case first.
-    | ch == ulCorner = convert =<< hs_curses_acs_ulcorner
-    | ch == llCorner = convert =<< hs_curses_acs_llcorner
-    | ch == urCorner = convert =<< hs_curses_acs_urcorner
-    | ch == lrCorner = convert =<< hs_curses_acs_lrcorner
-    | ch == rTee     = convert =<< hs_curses_acs_rtee
-    | ch == lTee     = convert =<< hs_curses_acs_ltee
-    | ch == bTee     = convert =<< hs_curses_acs_btee
-    | ch == tTee     = convert =<< hs_curses_acs_ttee
-    | ch == hLine    = convert =<< hs_curses_acs_hline
-    | ch == vLine    = convert =<< hs_curses_acs_vline
-    | ch == plus     = convert =<< hs_curses_acs_plus
-    | ch == s1       = convert =<< hs_curses_acs_s1
-    | ch == s9       = convert =<< hs_curses_acs_s9
-    | ch == diamond  = convert =<< hs_curses_acs_diamond
-    | ch == ckBoard  = convert =<< hs_curses_acs_ckboard
-    | ch == degree   = convert =<< hs_curses_acs_degree
-    | ch == plMinus  = convert =<< hs_curses_acs_plminus
-    | ch == bullet   = convert =<< hs_curses_acs_bullet
-    | ch == lArrow   = convert =<< hs_curses_acs_larrow
-    | ch == rArrow   = convert =<< hs_curses_acs_rarrow
-    | ch == dArrow   = convert =<< hs_curses_acs_darrow
-    | ch == uArrow   = convert =<< hs_curses_acs_uarrow
-    | ch == board    = convert =<< hs_curses_acs_board
-    | ch == lantern  = convert =<< hs_curses_acs_lantern
-    | ch == block    = convert =<< hs_curses_acs_block
+    | [ch] == ulCorner = convert =<< hs_curses_acs_ulcorner
+    | [ch] == llCorner = convert =<< hs_curses_acs_llcorner
+    | [ch] == urCorner = convert =<< hs_curses_acs_urcorner
+    | [ch] == lrCorner = convert =<< hs_curses_acs_lrcorner
+    | [ch] == rTee     = convert =<< hs_curses_acs_rtee
+    | [ch] == lTee     = convert =<< hs_curses_acs_ltee
+    | [ch] == bTee     = convert =<< hs_curses_acs_btee
+    | [ch] == tTee     = convert =<< hs_curses_acs_ttee
+    | [ch] == hLine    = convert =<< hs_curses_acs_hline
+    | [ch] == vLine    = convert =<< hs_curses_acs_vline
+    | [ch] == plus     = convert =<< hs_curses_acs_plus
+    | [ch] == s1       = convert =<< hs_curses_acs_s1
+    | [ch] == s9       = convert =<< hs_curses_acs_s9
+    | [ch] == diamond  = convert =<< hs_curses_acs_diamond
+    | [ch] == ckBoard  = convert =<< hs_curses_acs_ckboard
+    | [ch] == degree   = convert =<< hs_curses_acs_degree
+    | [ch] == plMinus  = convert =<< hs_curses_acs_plminus
+    | [ch] == bullet   = convert =<< hs_curses_acs_bullet
+    | [ch] == lArrow   = convert =<< hs_curses_acs_larrow
+    | [ch] == rArrow   = convert =<< hs_curses_acs_rarrow
+    | [ch] == dArrow   = convert =<< hs_curses_acs_darrow
+    | [ch] == uArrow   = convert =<< hs_curses_acs_uarrow
+    | [ch] == board    = convert =<< hs_curses_acs_board
+    | [ch] == lantern  = convert =<< hs_curses_acs_lantern
+    | [ch] == block    = convert =<< hs_curses_acs_block
 #  ifdef ACS_S3
-    | ch == s3       = convert =<< hs_curses_acs_s3
-    | ch == s7       = convert =<< hs_curses_acs_s7
-    | ch == lEqual   = convert =<< hs_curses_acs_lequal
-    | ch == gEqual   = convert =<< hs_curses_acs_gequal
-    | ch == pi       = convert =<< hs_curses_acs_pi
-    | ch == nEqual   = convert =<< hs_curses_acs_nequal
-    | ch == sterling = convert =<< hs_curses_acs_sterling
+    | [ch] == s3       = convert =<< hs_curses_acs_s3
+    | [ch] == s7       = convert =<< hs_curses_acs_s7
+    | [ch] == lEqual   = convert =<< hs_curses_acs_lequal
+    | [ch] == gEqual   = convert =<< hs_curses_acs_gequal
+    | [ch] == pi       = convert =<< hs_curses_acs_pi
+    | [ch] == nEqual   = convert =<< hs_curses_acs_nequal
+    | [ch] == sterling = convert =<< hs_curses_acs_sterling
 #  endif
     | otherwise      = noConvert
 
@@ -1181,5 +1187,6 @@ addGraphStr str = do
 
 addGraphStrLn :: String -> IO ()
 addGraphStrLn str = do addGraphStr str; addLn
+
 
 #endif
