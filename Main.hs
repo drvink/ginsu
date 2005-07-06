@@ -648,6 +648,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " ""
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
+                        Left "" -> return () 
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "prompt_new_filter_slash" -> do
@@ -655,6 +656,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " "/"
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
+                        Left "" -> return () 
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "prompt_new_filter_twiddle" -> do
@@ -662,6 +664,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " "~"
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
+                        Left "" -> return () 
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "show_puff_details" -> do
@@ -1029,6 +1032,7 @@ commandRead ic win yloc prompt init = withCursor CursorVisible  $ cr (length ini
         (KeyLeft) -> cr (l (cloc - 1) v) v
         (KeyRight) -> cr (l (cloc + 1) v) v
         (KeyChar '\x0B') -> cr cloc (drop (length v - cloc) v)
+        (KeyChar '\BEL') -> return (fail "")
 	(KeyChar c) -> cr (cloc + 1) (let (a,b) = splitAt (length v - cloc) v in a ++ [c] ++ b)
 
 	_ -> return (fail "unknown key")
