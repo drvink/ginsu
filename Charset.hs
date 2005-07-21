@@ -17,7 +17,7 @@ import MyLocale
 
 {-# NOINLINE stb_r #-}
 {-# NOINLINE bts_r #-}
-stb_r = unsafePerformIO $ newIORef toLatin1 
+stb_r = unsafePerformIO $ newIORef toLatin1
 bts_r = unsafePerformIO $ newIORef fromSingleByte
 
 {-# INLINE stringToBytes #-}
@@ -32,12 +32,12 @@ bytesToString s = f s where
 
 
 charMap = [
-    (["UTF8"],(toUTF,fromUTF)), 
-    (["ASCII", "ANSIX341968"],(toAscii,fromSingleByte)), 
+    (["UTF8"],(toUTF,fromUTF)),
+    (["ASCII", "ANSIX341968"],(toAscii,fromSingleByte)),
     (["LATIN1","ISO88591"],(toLatin1,fromSingleByte)) ]
 
 
-normalize s = map toUpper . filter isAlphaNum $ s 
+normalize s = map toUpper . filter isAlphaNum $ s
 
 charsetSetup :: Maybe String -> IO ()
 charsetSetup (Just s) = case [x| (al ,x) <- charMap, normalize s `elem` al ] of
@@ -46,8 +46,8 @@ charsetSetup (Just s) = case [x| (al ,x) <- charMap, normalize s `elem` al ] of
 charsetSetup Nothing = do
     --ts <- getCharset
     es <- tryMapM id [getCharset, getEnv "LC_CTYPE", getEnv "LANG", return "LATIN1"]
-    let (cn,(a,b)) = head [(head al,x)| e <- es, (al ,x) <- charMap,  any (`isSuffixOf` (normalize e)) al ] 
-    putLog LogInfo ("chose charset " ++ cn ++ " via " ++ show es)  
+    let (cn,(a,b)) = head [(head al,x)| e <- es, (al ,x) <- charMap,  any (`isSuffixOf` (normalize e)) al ]
+    putLog LogInfo ("chose charset " ++ cn ++ " via " ++ show es)
     writeIORef stb_r a >> writeIORef bts_r b
 
 
@@ -70,5 +70,5 @@ fromSingleByte = map (chr . fromIntegral)
 csHPutStr h s = do
     conv <- readIORef stb_r
     putRaw h (conv s)
-    
+
 

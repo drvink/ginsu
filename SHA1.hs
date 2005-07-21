@@ -23,8 +23,8 @@ sha1 s = abcde'
        abcde = sha1_step_3_init
        abcde' = sha1_step_4_main abcde s1_2
 
-sha1String :: String -> String 
-sha1String s = sha1ShowHash $ sha1 (map (fromIntegral . ord) s) 
+sha1String :: String -> String
+sha1String s = sha1ShowHash $ sha1 (map (fromIntegral . ord) s)
 
 {-
 sha1_size :: (Integral a) => a -> String -> String
@@ -101,7 +101,7 @@ takeDrop 0 xs = ([], xs)
 takeDrop n (x:xs) = (x:ys, zs)
  where (ys, zs) = takeDrop (n-1) xs
 
-sha1ShowHash :: Hash -> String 
+sha1ShowHash :: Hash -> String
 sha1ShowHash = sha1_step_5_display
 
 sha1_step_5_display :: ABCDE -> String
@@ -124,7 +124,7 @@ rotL a s = shiftL a s .|. shiftL a (s-32)
 
 sha1HashToBytes :: Hash -> [Word8]
 sha1HashToBytes (ABCDE a b c d e) = foldr f [] [a,b,c,d,e] where
-    f x0 s = fi y4:fi y3:fi y2:fi y1:s where 
+    f x0 s = fi y4:fi y3:fi y2:fi y1:s where
        (x1, y1) = divMod x0 256
        (x2, y2) = divMod x1 256
        (y4, y3) = divMod x2 256

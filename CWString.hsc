@@ -19,10 +19,10 @@ module CWString (
     peekCWStringLen,
 #endif
     wcharIsUnicode,
-    CWChar, 
-    CWString, 
+    CWChar,
+    CWString,
     CWStringLen,
-    -- locale versions 
+    -- locale versions
     withLCString,
     withLCStringLen,
     newLCString,
@@ -74,7 +74,7 @@ wcharIsUnicode :: Bool
 
 wcharIsUnicode = True
 
--- support functions 
+-- support functions
 wNUL :: CWChar
 wNUL = 0
 #ifndef __GLASGOW_HASKELL__
@@ -192,7 +192,7 @@ wcharIsUnicode = False
 newtype MBState = MBState { _mbstate :: (Ptr MBState)}
 
 withMBState :: (MBState -> IO a) -> IO a
-withMBState act = allocaBytes (#const sizeof(mbstate_t)) (\mb -> c_memset mb 0 (#const sizeof(mbstate_t)) >> act (MBState mb)) 
+withMBState act = allocaBytes (#const sizeof(mbstate_t)) (\mb -> c_memset mb 0 (#const sizeof(mbstate_t)) >> act (MBState mb))
 
 clearMBState :: MBState -> IO ()
 clearMBState (MBState mb) = c_memset mb 0 (#const sizeof(mbstate_t)) >> return ()
@@ -202,9 +202,9 @@ clearMBState (MBState mb) = c_memset mb 0 (#const sizeof(mbstate_t)) >> return (
 
 wcsrtombs :: CWString -> (CString, CSize) -> IO CSize
 wcsrtombs wcs (cs,len) = alloca (\p -> poke p wcs >> withMBState (\mb -> wcsrtombs' p cs len mb)) where
-    wcsrtombs'  p cs len mb = c_wcsrtombs cs p len mb >>= \x -> case x of 
+    wcsrtombs'  p cs len mb = c_wcsrtombs cs p len mb >>= \x -> case x of
         -1 -> do
-            sp <- peek p 
+            sp <- peek p
             poke sp ((fi (ord '?'))::CWChar)
             poke p wcs
             clearMBState mb
@@ -212,14 +212,14 @@ wcsrtombs wcs (cs,len) = alloca (\p -> poke p wcs >> withMBState (\mb -> wcsrtom
         _ -> return x
 
 #def inline HsInt hs_get_mb_cur_max () { return MB_CUR_MAX; }
-foreign import ccall unsafe hs_get_mb_cur_max :: IO Int 
+foreign import ccall unsafe hs_get_mb_cur_max :: IO Int
 
 mb_cur_max :: Int
-mb_cur_max = unsafePerformIO hs_get_mb_cur_max 
+mb_cur_max = unsafePerformIO hs_get_mb_cur_max
 
 
 charIsRepresentable :: Char -> IO Bool
-charIsRepresentable ch = fmap (/= -1) $ allocaBytes mb_cur_max (\cs -> c_wctomb cs (fi $ ord ch)) 
+charIsRepresentable ch = fmap (/= -1) $ allocaBytes mb_cur_max (\cs -> c_wctomb cs (fi $ ord ch))
 
 foreign import ccall unsafe "stdlib.h wctomb" c_wctomb :: CString -> CWChar -> IO CInt
 foreign import ccall unsafe "stdlib.h wcsrtombs" c_wcsrtombs :: CString -> (Ptr (Ptr CWChar)) -> CSize -> MBState -> IO CSize
@@ -227,11 +227,11 @@ foreign import ccall unsafe "string.h memset" c_memset :: Ptr a -> CInt -> CSize
 
 foreign import ccall unsafe "stdlib.h mbstowcs" c_mbstowcs :: CWString -> CString -> CSize -> IO CSize
 
-mbstowcs a b s = throwIf (== -1) (const "mbstowcs") $ c_mbstowcs a b s 
+mbstowcs a b s = throwIf (== -1) (const "mbstowcs") $ c_mbstowcs a b s
 
 
 peekLCString    :: CString -> IO String
-peekLCString cp  = do 
+peekLCString cp  = do
     sz <- mbstowcs nullPtr cp 0
     allocaArray (fi $ sz + 1) (\wcp -> mbstowcs wcp cp (sz + 1) >> peekCWString wcp)
 
@@ -243,12 +243,12 @@ peekLCStringLen (cp, len)  =  allocaBytes (len + 1) $ \ncp -> do
     copyBytes ncp cp len
     pokeElemOff ncp len 0
     peekLCString ncp
-    
+
 
 newLCString :: String -> IO CString
 newLCString s = withCWString s $ \wcs -> do mallocArray0 alen >>= \cs -> wcsrtombs wcs (cs, fi alen) >> return cs where
     alen = mb_cur_max * length s
-                               
+
 
 newLCStringLen     :: String -> IO CStringLen
 newLCStringLen str  = newLCString str >>= \cs -> return (pairLength1 str cs)
@@ -334,8 +334,8 @@ fromUTF (all@(x:xs)) | ord x<=0x7F = x:fromUTF xs
     threeBytes (x1:x2:x3:xs) = chr (((ord x1 .&. 0x0F) `shift` 12) .|.
 				    ((ord x2 .&. 0x3F) `shift` 6) .|.
 				    (ord x3 .&. 0x3F)):fromUTF xs
-    threeBytes _ = error "fromUTF: illegal three byte sequence" 
-    
+    threeBytes _ = error "fromUTF: illegal three byte sequence"
+
     err = error "fromUTF: illegal UTF-8 character"
 
 

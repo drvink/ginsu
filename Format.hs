@@ -1,8 +1,8 @@
---  $Id: Format.hs,v 1.9 2004/02/28 04:55:17 john Exp $
+--  $Id: Format.hs,v 1.10 2005/07/21 09:36:14 john Exp $
 -- arch-tag: 072f88a5-e441-4131-8934-f3a4a3aa0c12
 
 -- Copyright (c) 2002 John Meacham (john@foo.net)
--- 
+--
 -- Permission is hereby granted, free of charge, to any person obtaining a
 -- copy of this software and associated documentation files (the
 -- "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 -- distribute, sublicense, and/or sell copies of the Software, and to
 -- permit persons to whom the Software is furnished to do so, subject to
 -- the following conditions:
--- 
+--
 -- The above copyright notice and this permission notice shall be included
 -- in all copies or substantial portions of the Software.
--- 
+--
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 -- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 -- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -24,8 +24,8 @@
 
 
 -- | General text formatting routines, similar to C printf-style formatting.
--- 
--- > General pattern format 
+--
+-- > General pattern format
 -- > '%' '%'                                             output literal '%'
 -- > '%' flags width '.' precision '\'' string '\''      always print string as is.
 -- > '%' flags width '.' precision formatChar            passed to class instance.
@@ -39,8 +39,8 @@
 -- > '+' value should always have a sign
 -- > '\'' numerical values should be grouped
 --
--- > formatChar is a character affecting formatting 
--- > '/' always format as if by the following translation 
+-- > formatChar is a character affecting formatting
+-- > '/' always format as if by the following translation
 -- >     fmt "%fx.yv" [fa x] -> fmt "%fx.ys" [fa (show x)]
 -- > 'l' format as list
 -- > 's' print list compactly, similar to %(%c)l
@@ -58,9 +58,9 @@ module Format(
     -- ** Formatting routines
     fmt, fmtS, fmtSs, errorf,
     -- ** Arguments
-    fa, fS, fi, fs, ff,  
+    fa, fS, fi, fs, ff,
     -- * Internals, useful for creating instances of Format
-    Pattern(..), 
+    Pattern(..),
     formatIntegral, formatString, formatShow,
     testFormat
     ) where
@@ -69,17 +69,17 @@ import Char(isDigit,ord)
 import List(intersperse)
 
 -- | the type of patterns
-data Pattern = Pattern { 
+data Pattern = Pattern {
     patternSub :: [String], -- ^ subpatterns
-    patternFlags :: [Char],  
-    patternWidth :: Maybe Int, 
-    patternPrecision :: Maybe Int, 
+    patternFlags :: [Char],
+    patternWidth :: Maybe Int,
+    patternPrecision :: Maybe Int,
     patternChar :: Char
-    } 
+    }
 
 pattern :: Pattern
-pattern = Pattern { patternSub = [], patternFlags = [], 
-    patternWidth = Nothing, patternPrecision = Nothing, 
+pattern = Pattern { patternSub = [], patternFlags = [],
+    patternWidth = Nothing, patternPrecision = Nothing,
     patternChar = '/' }
 
 
@@ -94,7 +94,7 @@ class Show a => Format a where
 
 -- | format anything
 fa :: (Format a) => a -> F
-fa x p | patternChar p == '/' = formatShow x p 
+fa x p | patternChar p == '/' = formatShow x p
 fa x p = format x p
 -- | format showable
 fS :: (Show a) => a -> F
@@ -116,7 +116,7 @@ ff = fa
 
 fmt :: String -> [F] -> String
 fmt ('%':'%':xs) fs = '%':fmt xs fs
-fmt ('%':xs) (f:fs) =  case xs5 of 
+fmt ('%':xs) (f:fs) =  case xs5 of
 	('\'':cs) -> let (a,b) = gs "" cs in formatString a bp ++ fmt b fs
 	(c:cs) -> f (bp {patternChar = c}) ++ fmt cs fs
 	[] -> []
@@ -124,7 +124,7 @@ fmt ('%':xs) (f:fs) =  case xs5 of
     bp = pattern {patternSub = ss, patternFlags = flags, patternWidth = w, patternPrecision =  p}
     (flags,xs2) = span (`elem` "# 0-+'") xs
     (w,xs3) = grabNum xs2
-    (p,xs4) = case xs3 of 
+    (p,xs4) = case xs3 of
 	('.':xs) -> grabNum xs
 	xs -> (Nothing, xs)
     (ss,xs5) = case xs4 of
@@ -155,13 +155,13 @@ putBase :: Int -> Integer -> String
 putBase base x = if null v then "0" else v where
     v = reverse (foo x)
     hex = "0123456789abcdef"
-    foo 0 = "" 
-    foo x = let (u,v) = x `divMod` (toInteger base) in 
-	(hex !! fromIntegral v) : foo u 
+    foo 0 = ""
+    foo x = let (u,v) = x `divMod` (toInteger base) in
+	(hex !! fromIntegral v) : foo u
 
 
 childFmt :: Pattern -> [F] -> String
-childFmt (Pattern {patternSub = [s]})  = fmt s 
+childFmt (Pattern {patternSub = [s]})  = fmt s
 childFmt _ = fmt "%/"
 
 instance Format Float
@@ -214,7 +214,7 @@ formatIntegral v p = formatShow v p
 
 integralFmt p v base = pre ++ val where
     pos = if ' ' `elem` patternFlags p then " " else if '+' `elem` patternFlags p then "+" else ""
-    pre = if v < 0 then "-" else pos 
+    pre = if v < 0 then "-" else pos
     val = putBase base (abs $ toInteger v)
 
 formatString ::  String -> Pattern -> String
@@ -263,7 +263,7 @@ fmtsAp x = tfmt (unwords fmts) (replicate (length fmts) (fa x)) where
 
 testFormat = do
     putStr $ unlines (map fmtsAp nums)
-    --putStr $ unlines $ map (\x -> fmt "*%s*" [fa x]) [(f,fmt f [fs x]) | f <- ["%8s","%-8s","%s"], x <- twords] 
-    putStr $ unlines $ [tfmt f [fa x] | f <- ["%8s","%-8s","%s", "%#s", "%2.2s", "%l", "%#l", "%#(chr 0x%x)l", "%(-)l"], x <- twords] 
+    --putStr $ unlines $ map (\x -> fmt "*%s*" [fa x]) [(f,fmt f [fs x]) | f <- ["%8s","%-8s","%s"], x <- twords]
+    putStr $ unlines $ [tfmt f [fa x] | f <- ["%8s","%-8s","%s", "%#s", "%2.2s", "%l", "%#l", "%#(chr 0x%x)l", "%(-)l"], x <- twords]
 
 

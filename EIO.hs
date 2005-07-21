@@ -18,7 +18,7 @@ import System.IO
 bufSize = 4096
 
 readRawFile :: String -> IO [Word8]
-readRawFile fn = E.bracket (openBinaryFile fn ReadMode) hClose hGetRawContents 
+readRawFile fn = E.bracket (openBinaryFile fn ReadMode) hClose hGetRawContents
 
 writeRawFile :: String -> [Word8] -> IO ()
 writeRawFile fn xs = E.bracket (openBinaryFile fn WriteMode) hClose $ \h -> hPutRawContents h xs
@@ -33,7 +33,7 @@ hGetRawContents h = do
 	    if sz == 0 then return [] else do
 		r <- getall a
 		return (take sz av ++ r)
-    
+
 hPutRawContents :: Handle -> [Word8] -> IO ()
 hPutRawContents h xs = do
     a <- newArray_ (0,bufSize)
@@ -52,12 +52,12 @@ putRaw h v = hPutStr h (map (chr . fromIntegral) v)
 
 readRaw :: Handle -> Int -> IO [Word8]
 readRaw h 0 = return []
-readRaw h n = do 
+readRaw h n = do
     a <- newArray_ (0,(n - 1))
     sz <- hGetArray h a n
     av <- (getElems a)
     return $! (take sz av)
--- v <- replicateM n (hGetChar h) 
+-- v <- replicateM n (hGetChar h)
 --    return $ map (fromIntegral . ord) v
 
 
@@ -65,10 +65,10 @@ atomicWrite :: String -> (Handle -> IO a) -> IO a
 atomicWrite fn action = do
     n <- getUniqueName
     let tn = fn ++ "." ++ n
-    v <- E.bracket (openBinaryFile tn WriteMode) hClose action 
+    v <- E.bracket (openBinaryFile tn WriteMode) hClose action
     rename tn fn
     return v
-    
+
 
 atomicWriteFile :: String -> String -> IO ()
 atomicWriteFile name s = do
@@ -82,20 +82,20 @@ getUniqueName :: IO String
 getUniqueName = do
     id <- getProcessID
     u <- newUnique
-    n <- liftM nodeName getSystemID 
+    n <- liftM nodeName getSystemID
     t <- epochTime
     return $ n ++ "." ++ show id ++ "." ++ show t ++ "." ++ show (hashUnique u)
-    
+
 
 memoIO :: IO a -> IO a
 memoIO ioa = do
     v <- readIORef var
-    case v of 
+    case v of
 	Just x -> return x
 	Nothing -> do
 	    x <- ioa
-	    writeIORef var (Just x) 
-	    return x 
+	    writeIORef var (Just x)
+	    return x
      where
         {-# NOTINLINE var #-}
 	var = unsafePerformIO $ newIORef Nothing

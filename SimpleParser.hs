@@ -2,7 +2,7 @@
 -- arch-tag: b8b68a0d-1f68-48d3-af44-1704404ef004
 
 -- Copyright (c) 2002 John Meacham (john@foo.net)
--- 
+--
 -- Permission is hereby granted, free of charge, to any person obtaining a
 -- copy of this software and associated documentation files (the
 -- "Software"), to deal in the Software without restriction, including
@@ -10,10 +10,10 @@
 -- distribute, sublicense, and/or sell copies of the Software, and to
 -- permit persons to whom the Software is furnished to do so, subject to
 -- the following conditions:
--- 
+--
 -- The above copyright notice and this permission notice shall be included
 -- in all copies or substantial portions of the Software.
--- 
+--
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 -- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 -- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -52,7 +52,7 @@ instance Functor (GenParser c) where
 
 instance MonadPlus (GenParser c) where
     mzero = MkP (\_ -> Nothing)
-    mplus = (<|>) 
+    mplus = (<|>)
 
 
 app (MkP fn) s = fn s
@@ -77,7 +77,7 @@ parseSome count = MkP f where
     f _ = Nothing
 
 {-# SPECIALIZE parseExact :: String -> GenParser Char () #-}
-parseExact :: Eq c => [c] -> GenParser c () 
+parseExact :: Eq c => [c] -> GenParser c ()
 parseExact x = MkP f where
     f xs | x `isPrefixOf` xs = Just ((),drop (length x) xs)
     f _ = Nothing
@@ -99,13 +99,13 @@ space = satisfy isSpace
 spaces = skipMany space
 
 
-sat p = MkP f where 
-    f (x:xs) | p x = Just (x,xs)  
+sat p = MkP f where
+    f (x:xs) | p x = Just (x,xs)
     f _ = Nothing
 
 satisfy = sat
 
-p <|> q = MkP $ \s -> maybe (app q s) Just (app p s) 
+p <|> q = MkP $ \s -> maybe (app q s) Just (app p s)
 
 many :: GenParser c a -> GenParser c [a]
 many p = (p >>= \x -> many p >>= \xs -> return (x:xs)) <|> return []
@@ -116,7 +116,7 @@ many1 p = p >>= \x -> many p >>= \xs -> return (x:xs)
 whitespace = skipMany (sat isSpace)
 
 token p = p >>= \x -> whitespace >> return x
-    
+
 skipMany p = (p >> skipMany p) <|> return ()
 
 number :: Parser Int
@@ -158,5 +158,5 @@ main = do
     c <- getContents
     let v =  parser parse_file c
     print v
-    
+
 -}

@@ -2,7 +2,7 @@
 -- arch-tag: e415587a-fa81-4c0f-be6e-f69ec5162ea7
 
 module CacheIO(
-    -- cacheIO 
+    -- cacheIO
     CacheIO,
     cacheIO,
     cacheIOeq,
@@ -41,9 +41,9 @@ newCacheIO :: CacheIO a -> IO (IO a)
 newCacheIO (CacheIO c) =  newMVar  (undefined, return False) >>= \mv -> return $ modifyMVar mv $ \z@(x,dep) -> do
     up <- dep
     if up then return (z,x) else c >>= \(x,deps) -> return ((x, (foldl (liftM2 (&&)) (return True) deps)),x)
-    
 
-cacheIO :: IO a -> CacheIO a     
+
+cacheIO :: IO a -> CacheIO a
 cacheIO io = CacheIO $ do
     v <- io
     sn <- makeStableName $! v
@@ -54,7 +54,7 @@ cacheIO io = CacheIO $ do
     return (v,[cc])
 
 
-cacheIOeq :: Eq a => IO a -> CacheIO a 
+cacheIOeq :: Eq a => IO a -> CacheIO a
 cacheIOeq io = CacheIO $ do
     v <- io
     let cc = do
@@ -109,11 +109,11 @@ waitJVarBy eq jv@(JVar mv) a = do
             w <- newEmptyMVar
             return ((b,w:ws),Left w)
         else return (v,Right b)
-    case rv of 
+    case rv of
         (Left w) -> takeMVar w >>= \() -> waitJVarBy eq jv a
         (Right v) -> return v
 
-    
+
 waitJVar :: JVar a -> a -> IO a
 waitJVar jv@(JVar mv) a = do
     rv <- modifyMVar mv $ \v@(b,ws) -> do
@@ -123,7 +123,7 @@ waitJVar jv@(JVar mv) a = do
             w <- newEmptyMVar
             return ((b,w:ws),Left w)
          else return (v,Right b)
-    case rv of 
+    case rv of
         (Left w) -> takeMVar w >>= \() -> waitJVar  jv a
         (Right v) -> return v
 
@@ -168,7 +168,7 @@ class Readable c => Writable c where
     swapVal v x = modifyVal v $ \y -> return (x,y)
     modifyVal_ v action = modifyVal v $ \y -> action y >>= \x -> return (x,())
     mapVal v f = modifyVal_ v (return . f)
-    
+
 
 newtype StrictVar v a = StrictVar (v a)
 
@@ -185,6 +185,6 @@ instance Readable IORef where
 instance Writable IORef where
     modifyVal ior f = liftIO $ do
         v <- readIORef ior
-        (nv,r) <- f v 
+        (nv,r) <- f v
         writeIORef ior nv
         return r

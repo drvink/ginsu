@@ -8,7 +8,7 @@ module MyLocale(
     getTimeFmt,
     getYesRegex,
     getNoRegex
-    -- nl_langinfo 
+    -- nl_langinfo
     ) where
 
 import Foreign
@@ -24,10 +24,10 @@ foreign import ccall unsafe "locale.h setlocale" setlocale :: CInt -> Addr## -> 
 foreign import ccall unsafe "langinfo.h nl_langinfo" nl_langinfo :: (#type nl_item) -> IO (Ptr CChar)
 
 setupLocale :: IO ()
-setupLocale = setlocale (#const LC_ALL) ""## >> return () 
+setupLocale = setlocale (#const LC_ALL) ""## >> return ()
 
 getCharset :: IO String
-getCharset =  nl_langinfo (#const CODESET) >>= peekCString   
+getCharset =  nl_langinfo (#const CODESET) >>= peekCString
 
 getDateFmt :: IO String
 getDateFmt = nl_langinfo (#const D_FMT) >>= peekCString
@@ -44,7 +44,7 @@ getYesRegex = nl_langinfo (#const YESEXPR) >>= peekCString
 getNoRegex :: IO String
 getNoRegex = nl_langinfo (#const NOEXPR) >>= peekCString
 
-{- 
+{-
 LC_COLLATE
     Affects the behavior of regular expressions and the collation functions.
 LC_CTYPE
@@ -54,7 +54,7 @@ LC_MESSAGES
      Affects what strings are expected by commands and utilities as affirmative
      or negative responses.  It also affects what strings are given by commands
      and utilities as affirmative or negative responses, and the content of
-     messages. 
+     messages.
 LC_MONETARY
     Affects the behavior of functions that handle monetary values.
 LC_NUMERIC
@@ -65,13 +65,13 @@ LC_TIME
 data Locale = LC_CTYPE | LC_NUMERIC | LC_TIME | LC_COLLATE | LC_MONETARY | LC_MESSAGES | LC_ALL | LC_PAPER | LC_NAME | LC_ADDRESS | LC_TELEPHONE | LC_MEASUREMENT | LC_IDENTIFICATION
     deriving(Show, Enum, Read, Ord, Eq)
 
-decodeLocale :: Locale -> CInt 
+decodeLocale :: Locale -> CInt
 decodeLocale LC_CTYPE = (#const LC_CTYPE)
 decodeLocale LC_NUMERIC = (#const LC_NUMERIC)
 decodeLocale LC_COLLATE = (#const LC_COLLATE)
 decodeLocale LC_MONETARY = (#const LC_MONETARY)
 decodeLocale LC_TIME = (#const LC_TIME)
-#ifdef LC_MESSAGES 
+#ifdef LC_MESSAGES
 decodeLocale LC_MESSAGES = (#const LC_MESSAGES)
 #endif
 #ifdef LC_PAPER
@@ -95,7 +95,7 @@ decodeLocale LC_IDENTIFICATION = (#const LC_IDENTIFICATION)
 decodeLocale _ = -1
 
 dString :: IO (Ptr CChar) -> IO (Maybe String)
-dString action = do 
+dString action = do
     v <- action
     if v == nullPtr then return Nothing else fmap Just (peekCString v)
 
@@ -111,7 +111,7 @@ setLocale l s = case decodeLocale l of
     nl -> dString $ withCString s (setlocale nl)
 
 getLocale :: Locale -> IO (Maybe String)
-getLocale l = case decodeLocale l of 
+getLocale l = case decodeLocale l of
     -1 -> return Nothing
-    nl -> dString $ setlocale nl nullPtr 
+    nl -> dString $ setlocale nl nullPtr
 -}

@@ -14,8 +14,8 @@ module ConfigFile(
     configShow,
     defaultConfig,
     parseConfigFile
-    
-    
+
+
     ) where
 -- arch-tag: b78d53d4-380c-43d5-b885-5c433d38a8e0
 
@@ -50,7 +50,7 @@ configGet k = do
         v <- c k
         mapM fixUp v where
             fixUp (w,(k,v)) = do
-                v' <- conv v 
+                v' <- conv v
                 return (w,(k,v'))
             conv v = case (span (/= '$') v) of
                 (xs,"") -> return xs
@@ -78,16 +78,16 @@ config_files_var = unsafePerformIO (newJVar [])
 
 basicLookup n cl k = return [ (n,(k,v)) | (k',v) <- cl, k == k']
 
-configDefault :: [(String,String)] -> Config 
+configDefault :: [(String,String)] -> Config
 configDefault cl k = basicLookup "default" cl k
 
 configFile :: String -> Config
 configFile fn k = do
     cf <- readVal config_files_var
-    case lookup fn cf of 
+    case lookup fn cf of
 	Just cl -> basicLookup fn cl k
-	Nothing -> do 
-	    cl <- catchMost (fmap parseConfigFile $ readFile fn) (\_ -> return []) 
+	Nothing -> do
+	    cl <- catchMost (fmap parseConfigFile $ readFile fn) (\_ -> return [])
 	    mapVal config_files_var ((fn,cl):)
 	    basicLookup fn cl k
 
@@ -97,12 +97,12 @@ configEnv k = do
     return $ fmap (\v -> ("enviornment", (k,v))) ev
 
 mapConfig :: (String -> String) -> Config -> Config
-mapConfig f c s = c (f s) 
-    
+mapConfig f c s = c (f s)
+
 instance Monoid Config where
     mempty _ =  return []
     mappend c1 c2 s = do
-	x <- c1 s 
+	x <- c1 s
 	y <- c2 s
 	return (x ++ y)
 
@@ -110,19 +110,19 @@ configShow :: [String] -> Config -> IO String
 configShow ss c = do
     v <- mapM c ss
     return $ unlines $ map p $ zip ss v where
-	p (k,((w,(k',v))):_) = k ++ " " ++ v ++ "\n#  in " ++ w ++ 
+	p (k,((w,(k',v))):_) = k ++ " " ++ v ++ "\n#  in " ++ w ++
 	    if k' /= k then " as " ++ k' else ""
 	p (k,[]) = "#" ++ k ++ " Not Found."
-    
+
 
 -- types of config sources:
 -- enviornment
 -- enviornment after transformation of query
--- file 
+-- file
 -- default
 
 
-    
+
 
 
 isPropName c = isAlphaNum c || c `elem` "-_"
@@ -161,15 +161,15 @@ getConfiguration s = do
 
 configLookupBool k = do
     x <- configLookup k
-    case x of 
+    case x of
 	Just s | cond -> return True where
 	    cond = (map toLower s) `elem` ["true", "yes", "on", "y", "t"]
 	_ -> return False
-    
+
 
 configLookup k = do
     vs <- configGet k
-    case vs of 
+    case vs of
         ((_,(_,v)):_) -> return $ Just v
         [] -> return Nothing
 
@@ -181,6 +181,6 @@ configLookupList k = do
 configLookupElse k e = do
     v <- configLookup k
     case v of
-        Just v -> return v 
+        Just v -> return v
         Nothing -> return e
 

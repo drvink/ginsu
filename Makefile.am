@@ -2,8 +2,8 @@
 AUTOMAKE_OPTIONS=no-dependencies foreign subdir-objects
 
 GHCPACKAGES= -package unix  -package network -package parsec -package mtl
-GHCFEATURES= @OPT_ARGS@ @PROFILE_ARGS@ -fglasgow-exts # -fallow-overlapping-instances -fallow-undecidable-instances 
-GHCWARN= -W -fwarn-deprecations -fwarn-incomplete-patterns -fwarn-unused-binds -fwarn-unused-imports 
+GHCFEATURES= @OPT_ARGS@ @PROFILE_ARGS@ -fglasgow-exts # -fallow-overlapping-instances -fallow-undecidable-instances
+GHCWARN= -W -fwarn-deprecations -fwarn-incomplete-patterns -fwarn-unused-binds -fwarn-unused-imports
 GHCOPTS=  $(GHCDEBUGOPTS) $(GHCINC) $(GHCWARN) $(GHCFLAGS) $(GHCPACKAGES) $(GHCFEATURES) @CURSES_INCLUDEDIR@  -\#include hs_include.h -I. -I@srcdir@ -i. -i@srcdir@
 CFLAGS=  @CURSES_INCLUDEDIR@ -I. -I@srcdir@
 CC=$(HC)
@@ -19,19 +19,19 @@ EXTRA_DIST = reconf docs/Changelog.old Curses.hsc depend.make ginsu.config.sampl
              ac-macros/curses.m4 \
              ac-macros/mp_with_curses.m4 \
              gen_keyhelp.prl \
-             actions.def 
+             actions.def
 
 
 EXTRA_PROGRAMS = ginsu_static
 
 man_MANS = docs/ginsu.1
 
-bin_PROGRAMS = ginsu 
+bin_PROGRAMS = ginsu
 bin_SCRIPTS =  ginsu-mdk
 
 # BUILT_SOURCES = RSA.hs RSA_hsc.h RSA_hsc.c Curses.hs Curses_hsc.c Curses_hsc.h Locale.hs CWString_hsc.h CWString_hsc.c
 
-BUILT_SOURCES = 
+BUILT_SOURCES =
 
 
 
@@ -41,18 +41,18 @@ ginsu_SOURCES = ConfigFile.hs Gale.hs GenUtil.hs \
     SHA1.hs  KeyName.hs Help.hs  hs_include.h  CacheIO.hs FastMutInt.hs \
     Binary.hs PackedString.hs  Options.hs GinsuConfig.hs Regex.hs KeyHelpTable.hs \
     Doc/DocLike.hs KeyCache.hs GaleProto.hs UArrayParser.hs  Atom.hs \
-    Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs 
+    Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs
 
 
-HSNODISTSOURCES= Curses.hs MyLocale.hs CWString.hs RSA.hs 
+HSNODISTSOURCES= Curses.hs MyLocale.hs CWString.hs RSA.hs
 nodist_ginsu_SOURCES = $(HSNODISTSOURCES) Curses_hsc.c RSA_hsc.c RSA_hsc.h Curses_hsc.h CWString_hsc.c CWString_hsc.h
 
-ginsu_static_SOURCES = $(ginsu_SOURCES) 
+ginsu_static_SOURCES = $(ginsu_SOURCES)
 nodist_ginsu_static_SOURCES =   $(nodist_ginsu_SOURCES)
 
 ginsu_static_LINK = $(ginsu_LINK) -static -optl-static -ldl -lgpm
 
-ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@ 
+ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@
 
 
 SUFFIXES = .hs .lhs .o .hi .hsc .c .h
@@ -64,11 +64,11 @@ SUFFIXES = .hs .lhs .o .hi .hsc .c .h
 CHEADERS= RSA_hsc.h Curses_hsc.h CWString_hsc.h
 
 .hs.o: $(CHEADERS)
-	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $< 
-.lhs.o: $(CHEADERS) 
-	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $< 
+	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $<
+.lhs.o: $(CHEADERS)
+	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $<
 
-%.hi: %.o 
+%.hi: %.o
 	@:
 %_hsc.c: %.hs
 	@:
@@ -92,7 +92,7 @@ MAINTAINERCLEANFILES = ExampleConf.hs depend.make KeyHelpTable.hs
 
 Curses_hsc.o : Curses_hsc.h my_curses.h
 RSA_hsc.o : RSA_hsc.h my_rsa.h
-CWString_hsc.o: CWString_hsc.h 
+CWString_hsc.o: CWString_hsc.h
 
 
 depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
@@ -144,7 +144,7 @@ publish-docs: docs/ginsu-manual.html
 
 ARCH = x86_64
 
-publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html 
+publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html
 	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*-Linux-i686.tar.gz
 	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*.rpm
 	rm -f -- "$(PUBLISH_DIR)/drop/ginsu-$(VERSION).tar.gz"

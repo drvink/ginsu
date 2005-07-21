@@ -677,7 +677,7 @@ withCursor nv action = Control.Exception.bracket (cursSet (vis_c nv)) (\v -> cas
 
 ------------------------------------------------------------------------
 
-foreign import ccall unsafe doupdate :: IO CInt 
+foreign import ccall unsafe doupdate :: IO CInt
 
 touchWin :: Window -> IO ()
 touchWin w = throwIfErr_ "touchwin" $ touchwin w

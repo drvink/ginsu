@@ -10,7 +10,7 @@ ACLOCAL="${ACLOCAL} -I ./ac-macros"
 
 
 AC_PROGRAM_REQUIRE(hc,ghc,     [  --with-hc=<haskell compiler>    Specify location of ghc.])
-AC_ARG_WITH(hcflags, 
+AC_ARG_WITH(hcflags,
             [  --with-hcflags=HCFLAGS  specify flags for Haskell compiler],
 	    [HCFLAGS=$withval])
 
@@ -40,7 +40,7 @@ AC_CHECK_LIB($cf_ncurses, initscr,
         if test x$mutt_cv_curses = x/usr -a -d /usr/include/ncurses; then
                 CPPFLAGS="$CPPFLAGS -I/usr/include/ncurses"
         fi
-        
+
         if test "$cf_ncurses" = ncursesw; then
                 AC_CHECK_HEADERS(ncursesw/ncurses.h,[cf_cv_ncurses_header="ncursesw/ncurses.h"])
         else
@@ -92,8 +92,8 @@ AC_CHECK_FUNCS([waddnwstr mbsnrtowcs wcsnrtombs use_default_colors resizeterm])
 
 
 
-AC_OUTPUT( 
-	Makefile 
+AC_OUTPUT(
+	Makefile
 	Version.hs
 	ginsu.spec
 )

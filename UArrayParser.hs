@@ -63,14 +63,14 @@ ensureBytes n =
 			else (# pos, () #))
 
 dropBytes :: Int -> UArrayParser ()
-dropBytes n = 
+dropBytes n =
     UArrayParser (\arr pos ->
 		    if pos+n-1 > snd (bounds arr)
 			then (# -1, undefined #)
 			else (# pos + n , () #))
 
 unsafeByte :: UArrayParser Word8
-unsafeByte = 
+unsafeByte =
     UArrayParser (\arr pos -> (# pos+1, arr ! pos #))
 
 unsafeGenericByte :: Integral n => UArrayParser n
@@ -84,7 +84,7 @@ byte = ensureBytes 1 >> unsafeByte
 bytes n = do
     ensureBytes n
     UArrayParser (\arr pos ->
-        let buf = listArray (0, n-1) [ arr!i | i <- [pos..pos+n-1] ] in 
+        let buf = listArray (0, n-1) [ arr!i | i <- [pos..pos+n-1] ] in
         buf `seq` (# pos+n, buf #))
 
 word16 = do
@@ -125,7 +125,7 @@ word64 = do
         b3 `shiftL` 24 .|.
         b2 `shiftL` 16 .|.
         b1 `shiftL`  8 .|.
-        b0 
+        b0
 
 asciiz =
     UArrayParser (\arr pos ->
@@ -175,18 +175,18 @@ int64 = fmap fromIntegral word64
 
 subArray :: (Integral i, IArray a e, Ix i, IArray a e) => a i e -> i -> i -> i -> a i e
 subArray array from to from' =
-    listArray 
+    listArray
 	(from', from' + fromIntegral (rangeSize (from, to)) - 1)
 	[ array ! i | i <- range (from, to) ]
 
-findInArray e arr pos maxPos 
+findInArray e arr pos maxPos
     | pos > maxPos	= Nothing
     | (arr ! pos) == e  = Just pos
     | otherwise		= findInArray e arr (pos+1) maxPos
 
 
 restrictUArray :: i -> i -> UArray i e -> UArray i e
-restrictUArray ns ne (UArray _ _ ba) = UArray ns ne ba 
+restrictUArray ns ne (UArray _ _ ba) = UArray ns ne ba
 
 
 

@@ -648,7 +648,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " ""
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
-                        Left "" -> return () 
+                        Left "" -> return ()
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "prompt_new_filter_slash" -> do
@@ -656,7 +656,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " "/"
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
-                        Left "" -> return () 
+                        Left "" -> return ()
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "prompt_new_filter_twiddle" -> do
@@ -664,7 +664,7 @@ mainLoop gc ic yor psr next_r rc = do
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " "~"
                     case v >>= parseFilter >>= \x -> return (modifyFilter (x:)) of
                         Right a -> a
-                        Left "" -> return () 
+                        Left "" -> return ()
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
                 "show_puff_details" -> do
