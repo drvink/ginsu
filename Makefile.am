@@ -65,6 +65,7 @@ CHEADERS= RSA_hsc.h Curses_hsc.h CWString_hsc.h
 
 .hs.o: $(CHEADERS)
 	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $<
+	test $(@F) != $@ && cp -f $(@F) $@  || true
 .lhs.o: $(CHEADERS)
 	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $<
 
