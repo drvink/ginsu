@@ -231,8 +231,8 @@ useDefaultColors = return ()
 
 
 
-defaultBackground = black
-defaultForeground = white
+defaultBackground = Color (#const COLOR_BLACK)
+defaultForeground = Color (#const COLOR_WHITE)
 
 defineKey k s = return ()
 
