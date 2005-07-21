@@ -31,7 +31,7 @@ bin_SCRIPTS =  ginsu-mdk
 
 # BUILT_SOURCES = RSA.hs RSA_hsc.h RSA_hsc.c Curses.hs Curses_hsc.c Curses_hsc.h Locale.hs CWString_hsc.h CWString_hsc.c
 
-BUILT_SOURCES = dirtag
+BUILT_SOURCES = 
 
 
 
@@ -54,22 +54,8 @@ ginsu_static_LINK = $(ginsu_LINK) -static -optl-static -ldl -lgpm
 
 ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@ 
 
-#dist-hook:
-#	ln -sf Boolean/Boolean.o 
-#	ln -sf Boolean/Algebra.o 
 
 SUFFIXES = .hs .lhs .o .hi .hsc .c .h
-
-dirtag:
-	mkdir Boolean || true
-	mkdir Doc || true
-	ln -sf Boolean/Boolean.o .
-	ln -sf Boolean/Algebra.o .
-	ln -sf Doc/DocLike.o .
-	ln -sf Doc/Chars.o .
-	touch dirtag
-
-
 
 
 .c.o:
@@ -78,9 +64,9 @@ dirtag:
 CHEADERS= RSA_hsc.h Curses_hsc.h CWString_hsc.h
 
 .hs.o: $(CHEADERS)
-	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $@ -c $< 
+	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $< 
 .lhs.o: $(CHEADERS) 
-	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $@ -c $< 
+	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $< 
 
 %.hi: %.o 
 	@:
@@ -99,7 +85,7 @@ Changelog: _darcs/inventory
 	darcs changes > $@
 
 CLEANFILES = Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
-DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o dirtag DocLike.o Chars.o
+DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o DocLike.o Chars.o
 MAINTAINERCLEANFILES = ExampleConf.hs depend.make KeyHelpTable.hs
 
 
