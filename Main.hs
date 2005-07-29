@@ -183,7 +183,7 @@ pufflogLoop ps_r n = do
 writePufflog ps = do
     plog <- galeFile pufflog
     plsize <- fmap (read . fromJust) $ configLookup "PUFFLOG_SIZE"
-    withPrivateFiles $ writePuffs plog (take plsize ps)
+    withPrivateFiles $ writePuffs plog (if (plsize > 0) then (take plsize ps) else ps)
 
 
 
