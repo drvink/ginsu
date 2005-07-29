@@ -463,7 +463,7 @@ mainLoop gc ic yor psr next_r rc = do
 	    p <- puffTemplate
 	    ep <- editPuff (p {cats = cs, fragments = fragments p ++ [ (f_messageKeyword,FragmentText k) | k <- kwds]})
 	    case ep of
-		Nothing -> setMessage "Puff aborted."
+		Nothing -> setMessage "Puff cancelled."
 		Just p -> do
 		    pcw <- puffConfirm  gc done p
 		    setRenderWidget rc pcw
@@ -974,7 +974,7 @@ puffConfirm gc done puff = do
     csv <- combineVal psv psvs
     let pw = newSVarWidget csv (\(p,(f,_)) -> dynamicWidget (verifyDestinations gc (cats p) >>= \text -> return $ widgetText $ text ++ "--\n" ++ (chunkText (xs - 4) (f p))))
     let w = (widgetCenter $  widgetText "SEND PUFF?")
-        h = (widgetCenter $ widgetText (paragraph xs $ "y:send q:abort e:edit r:returnReceipt h:allHeaders A:anonymize" ))
+        h = (widgetCenter $ widgetText (paragraph xs $ "y:send q:cancel e:edit r:returnReceipt h:allHeaders A:anonymize" ))
         pk (KeyChar 'q')  = done >> return True
         pk (KeyChar 'n')  = done >> return True
         pk (KeyChar 'r') = do
