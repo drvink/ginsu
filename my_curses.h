@@ -14,6 +14,8 @@
 
 #if HAVE_NCURSESW_NCURSES_H 
 #include <ncursesw/ncurses.h>
+#elif HAVE_NCURSES_NCURSES_H
+#include <ncurses/ncurses.h>
 #elif HAVE_NCURSES_H
 #include <ncurses.h>
 #else
