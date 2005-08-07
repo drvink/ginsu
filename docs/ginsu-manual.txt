@@ -115,6 +115,7 @@ see also:  http://gale.org/users/vars
 ; ON_STARTUP : on startup, run this macro.
 ; PRESERVED_KEYWORDS : when replying to a puff, keep these keywords intact.
 ; PUFFLOG_SIZE : number of puffs to store in the pufflog.
+; SCROLLBACK_SIZE : maximum number of puffs to keep in memory (or 0 for no limit).
 ; TRIM_BLANKLINES : before sending a puff, get rid of leading and trailing blank lines.
 ; VISUAL : set the editor. This overrides the environment.
 ; USE_DEFAULT_COLORS : use the default colors of your terminal if possible.

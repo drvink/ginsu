@@ -63,7 +63,7 @@ exampleConf = unlines [
     "PUFFLOG_SIZE 150",
     "",
     "# maximum number of puffs to keep in memory",
-    "SCROLLBACK_SIZE 1000",
+    "#SCROLLBACK_SIZE 1000",
     "",
     "# charset, one of utf8, latin1, or ascii. if not set, will try to determine it from $LANG",
     "# this only affects what format it assumes you are editing puffs in. locale settings are ",
