@@ -29,6 +29,8 @@ filter_current_thread
 swap_filters
 filter_current_author
 
+@Puff Body Filtering
+toggle_rot13    toggle Rot13 filter
 
 @Mark/Workspace Manipulation
 set_mark     save current position at a given mark.

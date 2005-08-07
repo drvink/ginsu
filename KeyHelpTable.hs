@@ -27,6 +27,8 @@ keyHelpTable gk = [
 	,Right (gk "filter_current_thread", "filter current thread")
 	,Right (gk "swap_filters", "swap filters")
 	,Right (gk "filter_current_author", "filter current author")
+	,Left "Puff Body Filtering"
+	,Right (gk "toggle_rot13", "toggle Rot13 filter")
 	,Left "Mark/Workspace Manipulation"
 	,Right (gk "set_mark", "save current position at a given mark.")
 	,Right (gk "recall_mark", "goto position saved at mark")
