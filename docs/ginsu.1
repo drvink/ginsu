@@ -85,7 +85,7 @@ If you have problems, ginsu --checkconfig will print out ginsu's current configu
             <C-L>    redraw screen
 
 Filters:
-    Filters are implemented as boolean expressions. The building blocks
+    Filters are implemented as Boolean expressions. The building blocks
     are primitives which usually begin with ~ and are combined with
     semicolon for disjunction, space for conjunction, exclamation point
     for negation and parenthesis for grouping. The current filter stack
@@ -109,12 +109,12 @@ Filter Examples:
     (~c:pub.tv.buffy !~c:pub.meow) - puffs to buffy which are not about cats
 
 
-.SH ENVIORNMENT
-configuration variables are first looked for in the enviornment. in general for
-configuration variable FOO, the following places will be checked in order
- GINSU_FOO in the enviornment
+.SH ENVIRONMENT
+configuration variables are first looked for in the environment. In general, for
+configuration variable FOO, the following places will be checked in order:
+ GINSU_FOO in the environment
  FOO in the config file
- FOO in the enviornment
+ FOO in the environment
  
 .SH FILES
 .TP
