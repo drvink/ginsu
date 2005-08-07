@@ -341,6 +341,7 @@ mainLoop gc ic yor psr next_r rc = do
 
     presence_r <- newMVar []
 
+    rot13_r <- newMVar False
 
     presence <- configLookupElse "GALE_PRESENCE" "in.perhaps"
     myPresence <- newJVar presence
@@ -548,9 +549,10 @@ mainLoop gc ic yor psr next_r rc = do
 	    selected <- readVal selected_r
 	    ps <- getFilteredPuffs
 	    yo <- readVal yor
+	    isRot13 <- readVal rot13_r
 	    let rp _ [] =  return ()
 		rp y (((i,p),n):rest) = do
-		    when ((0,ys) `overlaps` (y - yo, y - yo + n)) $ renderPuff p xs stdScr (y - yo) (xs,ys) (i == selected)
+		    when ((0,ys) `overlaps` (y - yo, y - yo + n)) $ renderPuff p xs stdScr (y - yo) (xs,ys) (i == selected) (if isRot13 then rot13 else id)
 		    rp (y + n) rest
 	    attempt (rp 0 (reverse ps))
 	select_perhaps a = do
@@ -675,6 +677,7 @@ mainLoop gc ic yor psr next_r rc = do
                         Left "" -> return ()
                         Left err -> setMessage $ "Invalid filter:" <+> err
                     continue
+                "toggle_rot13" -> mapVal rot13_r not >> continue
                 "show_puff_details" -> do
                     p <- readVal selPuff
                     case p of
@@ -816,11 +819,12 @@ renderPuff :: Puff
     -> Int
     -> (Int,Int)
     -> Bool
+    -> (String -> String)
     -> IO ()
 
-renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected = doit where
+renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textFilter = doit where
     sender = maybe "" unpackPS $ getFragmentString p f_messageSender
-    body' = maybe [] (lines . paragraphBreak mw . expandTabs ) $ fmap unpackPS (getFragmentString frags  f_messageBody)
+    body' = maybe [] (lines . paragraphBreak mw . expandTabs . textFilter) $ fmap unpackPS (getFragmentString frags  f_messageBody)
     Just time = getFragmentTime frags f_idTime `mplus` getFragmentTime frags (fromString "_ginsu.timestamp")
     kwds = getFragmentStrings p f_messageKeyword
     n = length body'
@@ -982,7 +986,7 @@ puffConfirm gc done puff = do
     csv <- combineVal psv psvs
     let pw = newSVarWidget csv (\(p,(f,_)) -> dynamicWidget (verifyDestinations gc (cats p) >>= \text -> return $ widgetText $ text ++ "--\n" ++ (chunkText (xs - 4) (f p))))
     let w = (widgetCenter $  widgetText "SEND PUFF?")
-        h = (widgetCenter $ widgetText (paragraph xs $ "y:send q:cancel e:edit r:returnReceipt h:allHeaders A:anonymize" ))
+        h = (widgetCenter $ widgetText (paragraph xs $ "y:send q:cancel e:edit r:returnReceipt h:allHeaders A:anonymize <C-o>:rot13" ))
         pk (KeyChar 'q')  = done >> return True
         pk (KeyChar 'n')  = done >> return True
         pk (KeyChar 'r') = do
@@ -1012,6 +1016,12 @@ puffConfirm gc done puff = do
             np <- editPuff puff
             case np of
                 Just np -> writeVal psv np
+                Nothing -> return ()
+            return True
+        pk (KeyChar '\x0F') = do
+            p <- readVal psv
+            case fmap unpackPS (getFragmentString p f_messageBody) of
+                Just mb -> writeVal psv (p {fragments = [(f_messageBody, FragmentText(packString $ rot13 mb))] `mergeFrags` (fragments p `minusFrag` f_messageBody)})
                 Nothing -> return ()
             return True
         pk key = do

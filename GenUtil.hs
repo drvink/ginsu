@@ -69,6 +69,8 @@ module GenUtil(
     paragraphBreak,
     expandTabs,
     chunkText,
+    -- *** Scrambling
+    rot13,
     -- ** Random
     concatInter,
     powerSet,
@@ -104,7 +106,7 @@ module GenUtil(
     UniqueProducer(..)
     ) where
 
-import Char(isAlphaNum, isSpace, toLower,  ord)
+import Char(isAlphaNum, isSpace, toLower, ord, chr)
 import List(group,sort)
 import List(intersperse, sortBy, groupBy, transpose)
 import Monad
@@ -352,6 +354,15 @@ chunk mw s = case splitAt mw s of (a,b) -> a : chunk mw b
 
 chunkText :: Int -> String -> String
 chunkText mw s = concatMap (unlines . chunk mw) $ lines s
+
+rot13Char :: Char -> Char
+rot13Char c
+    | c >= 'a' && c <= 'm' || c >= 'A' && c <= 'M' = chr $ ord c + 13
+    | c >= 'n' && c <= 'z' || c >= 'N' && c <= 'Z' = chr $ ord c - 13
+    | otherwise                                    = c
+
+rot13 :: String -> String
+rot13 = map rot13Char
 
 {-
 paragraphBreak :: Int -> String -> String

@@ -137,6 +137,8 @@ exampleConf = unlines [
     "bind t filter_current_thread",
     "bind T filter_current_thread",
     "",
+    "bind <C-o> toggle_rot13",
+    "",
     "# marks",
     "bind m set_mark",
     "bind <SingleQuote> recall_mark",
