@@ -456,6 +456,14 @@ mainLoop gc ic yor psr next_r rc = do
 		    n <- readVal next_r
 		    mapVal next_r (+1)
 		    mapVal psr (\ps -> ((n,p):ps))
+                    sbsize <- fmap (read . fromJust) $ configLookup "SCROLLBACK_SIZE"
+		    case sbsize of
+		        0 -> return ()
+                        _ -> do
+                            let keep = min n sbsize
+                            mapVal psr (\ps -> zip [keep, (keep - 1) .. 1] (snds $ take keep ps))
+                            mapVal selected_r (\s -> s - (n - keep))
+                            mapVal next_r (\s -> s - (n - keep))
 		    select_perhaps select_next
 		    touchRenderContext rc
 	composePuff :: IO () -> [Category] -> [PackedString] -> IO ()
