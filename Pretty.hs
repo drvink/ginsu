@@ -6,19 +6,19 @@
 --
 -- Pretty print module based on Philip Wadlers "prettier printer"
 --      "A prettier printer"
---      Draft paper, April 1997, revised March 1998. 
+--      Draft paper, April 1997, revised March 1998.
 --      http://cm.bell-labs.com/cm/cs/who/wadler/papers/prettier/prettier.ps
 --
 -- Haskell98 compatible
 -----------------------------------------------------------
 
 -- | Modification od Daan Leijens pretty printer. main changes are use of
--- Doc.DocLike framework and the addition of out-of-band data for html tags 
+-- Doc.DocLike framework and the addition of out-of-band data for html tags
 -- or ansi escape codes
 
 module Doc.Pretty
         ( Doc
-        
+
         , putDoc, hPutDoc
         , putDocM, putDocMLn
         --, (<>)
@@ -26,20 +26,20 @@ module Doc.Pretty
         , (</>), (<//>)
         --, (<$>)
         , (<$$>)
-        
+
         , sep, fillSep, hsep, vsep
         , cat, fillCat, hcat, DocLike.vcat
-        
+
         , align, hang, indent
         , fill, fillBreak
         , errorDoc, failDoc
-        
+
        -- , string, bool, int, integer, float, double, rational
-        
+
         , softline, softbreak
-        , line, linebreak, nest, group        
-        , column, nesting, width        
-        
+        , line, linebreak, nest, group
+        , column, nesting, width
+
         , SimpleDoc(..)
         , renderPretty, renderCompact
         , displayS, displayIO, displayM
@@ -64,28 +64,28 @@ encloseSep left right sep ds
     = case ds of
         []  -> left <> right
         [d] -> left <> d <> right
-        _   -> align (cat (zipWith (<>) (left : repeat sep) ds) <> right) 
+        _   -> align (cat (zipWith (<>) (left : repeat sep) ds) <> right)
 
 
 
 errorDoc :: Doc -> a
-errorDoc = error . ('\n':) . show 
+errorDoc = error . ('\n':) . show
 
 failDoc :: Monad m => Doc -> m a
 failDoc = fail . ('\n':) . show
-                   
+
 -----------------------------------------------------------
 -- high-level combinators
 -----------------------------------------------------------
 sep             = group . vsep
 fillSep         = fold (</>)
 --hsep            = fold (<+>)
-vsep            = fold (Doc.Pretty.<$>) 
+vsep            = fold (Doc.Pretty.<$>)
 
 cat             = group . Doc.Pretty.vcat
 fillCat         = fold (<//>)
 --hcat            = fold (<>)
-vcat            = fold (<$$>) 
+vcat            = fold (<$$>)
 
 fold f []       = empty
 fold f ds       = foldr1 f ds
@@ -102,7 +102,7 @@ instance TextLike Doc where
 
 instance DocLike Doc where
     x <> y = x `beside` y
-    x <+> y = x <> space <> y   
+    x <+> y = x <> space <> y
     encloseSep = Doc.Pretty.encloseSep
     vcat = Doc.Pretty.vcat
     --hcat = Doc.Pretty.hcat
@@ -111,7 +111,7 @@ instance DocLike Doc where
 --x <> y          = x `beside` y
 --x <+> y         = x <> space <> y
 x </> y         = x <> softline <> y
-x <//> y        = x <> softbreak <> y   
+x <//> y        = x <> softbreak <> y
 x <$> y         = x <> line <> y
 x <$$> y        = x <> linebreak <> y
 
@@ -130,11 +130,11 @@ string ('\n':s) = line <> string s
 string s        = case (span (/='\n') s) of
                     (xs,ys) -> text xs <> string ys
 
-                  
+
 bool :: Bool -> Doc
 bool b          = text (show b)
 
-int :: Int -> Doc                  
+int :: Int -> Doc
 int i           = text (show i)
 
 integer :: Integer -> Doc
@@ -148,23 +148,23 @@ double d        = text (show d)
 
 rational :: Rational -> Doc
 rational r      = text (show r)
-                  
-                                                     
+
+
 
 
 -----------------------------------------------------------
--- semi primitive: fill and fillBreak 
+-- semi primitive: fill and fillBreak
 -----------------------------------------------------------
 fillBreak f x   = width x (\w ->
-                  if (w > f) then nest f linebreak 
+                  if (w > f) then nest f linebreak
                              else text (spaces (f - w)))
-    
+
 fill f d        = width d (\w ->
                   if (w >= f) then empty
                               else text (spaces (f - w)))
-        
-width d f       = column (\k1 -> d <> column (\k2 -> f (k2 - k1)))        
-        
+
+width d f       = column (\k1 -> d <> column (\k2 -> f (k2 - k1)))
+
 
 -----------------------------------------------------------
 -- semi primitive: Alignment and indentation
@@ -184,18 +184,18 @@ align d         = column (\k ->
 data Doc        = Empty
                 | Char Char             -- invariant: char is not '\n'
                 | Text !Int String      -- invariant: text doesn't contain '\n'
-                | Line !Bool            -- True <=> when undone by group, do not insert a space 
+                | Line !Bool            -- True <=> when undone by group, do not insert a space
                 | Cat Doc Doc
                 | Nest !Int Doc
                 | Union Doc Doc         -- invariant: first lines of first doc longer than the first lines of the second doc
                 | Column  (Int -> Doc)
                 | Nesting (Int -> Doc)
-                
+
 data SimpleDoc  = SEmpty
                 | SChar Char SimpleDoc
                 | SText !Int String SimpleDoc
                 | SLine !Int SimpleDoc
-{-                
+{-
 class IsDoc z where
     empty :: z
     char :: Char -> z
@@ -209,7 +209,7 @@ class IsDoc z where
     column :: (Int -> z) -> z
     nesting :: (Int -> z) -> z
     group :: ()
-  -}              
+  -}
 empty           = Empty
 
 mychar '\n'       = line
@@ -236,7 +236,7 @@ linebreak       = Line True
 beside x y      = Cat x y
 nest i x        = Nest i x
 column f        = Column f
-nesting f       = Nesting f     
+nesting f       = Nesting f
 group :: Doc -> Doc
 group x         = Union (flatten x) x
 
@@ -248,8 +248,8 @@ flatten (Union x y)     = flatten x
 flatten (Column f)      = Column (flatten . f)
 flatten (Nesting f)     = Nesting (flatten . f)
 flatten other           = other                     --Empty,Char,Text
-  
-  
+
+
 
 -----------------------------------------------------------
 -- Renderers
@@ -264,43 +264,43 @@ data Docs   = Nil
             | Cons !Int Doc Docs
 
 renderPretty :: Float -> Int -> Doc -> SimpleDoc
-renderPretty rfrac w x      
-    = best 0 0 (Cons 0 x Nil)                
+renderPretty rfrac w x
+    = best 0 0 (Cons 0 x Nil)
     where
       -- r :: the ribbon width in characters
       r  = max 0 (min w (round (fromIntegral w * rfrac)))
-      
+
       -- best :: n = indentation of current line
-      --         k = current column  
+      --         k = current column
       --        (ie. (k >= n) && (k - n == count of inserted characters)
       best n k Nil      = SEmpty
-      best n k (Cons i d ds)  
+      best n k (Cons i d ds)
         = case d of
-            Empty       -> best n k ds                
+            Empty       -> best n k ds
             Char c      -> let k' = k+1 in seq k' (SChar c (best n k' ds))
             Text l s    -> let k' = k+l in seq k' (SText l s (best n k' ds))
-            Line _      -> SLine i (best i i ds)                 
-            Cat x y     -> best n k (Cons i x (Cons i y ds))                
+            Line _      -> SLine i (best i i ds)
+            Cat x y     -> best n k (Cons i x (Cons i y ds))
             Nest j x    -> let i' = i+j in seq i' (best n k (Cons i' x ds))
-            Union x y   -> nicest n k (best n k (Cons i x ds))                
-                                      (best n k (Cons i y ds))                
+            Union x y   -> nicest n k (best n k (Cons i x ds))
+                                      (best n k (Cons i y ds))
 
             Column f    -> best n k (Cons i (f k) ds)
-            Nesting f   -> best n k (Cons i (f i) ds)                            
+            Nesting f   -> best n k (Cons i (f i) ds)
 
-      --nicest :: r = ribbon width, w = page width, 
+      --nicest :: r = ribbon width, w = page width,
       --          n = indentation of current line, k = current column
       --          x and y, the (simple) documents to chose from.
-      --          precondition: first lines of x are longer than the first lines of y.                                      
+      --          precondition: first lines of x are longer than the first lines of y.
       nicest n k x y    | fits width x  = x
                         | otherwise     = y
                         where
                           width = min (w - k) (r - k + n)
-  
-                                                                                      
+
+
 fits w x        | w < 0         = False
 fits w SEmpty                   = True
-fits w (SChar c x)              = fits (w - 1) x                  
+fits w (SChar c x)              = fits (w - 1) x
 fits w (SText l s x)            = fits (w - l) x
 fits w (SLine i x)              = True
 
@@ -310,7 +310,7 @@ fits w (SLine i x)              = True
 --  fast and fewer characters output, good for machines
 -----------------------------------------------------------
 renderCompact :: Doc -> SimpleDoc
-renderCompact x   
+renderCompact x
     = scan 0 [x]
     where
       scan k []     = SEmpty
@@ -318,7 +318,7 @@ renderCompact x
                         Empty       -> scan k ds
                         Char c      -> let k' = k+1 in seq k' (SChar c (scan k' ds))
                         Text l s    -> let k' = k+l in seq k' (SText l s (scan k' ds))
-                        Line _      -> SLine 0 (scan 0 ds)    
+                        Line _      -> SLine 0 (scan 0 ds)
                         Cat x y     -> scan k (x:y:ds)
                         Nest j x    -> scan k (x:ds)
                         Union x y   -> scan k (y:ds)
@@ -341,14 +341,14 @@ displayIO handle simpleDoc
     = display simpleDoc
     where
       display SEmpty        = return ()
-      display (SChar c x)   = do{ hPutChar handle c; display x}  
+      display (SChar c x)   = do{ hPutChar handle c; display x}
       display (SText l s x) = do{ hPutStr handle s; display x}
       display (SLine i x)   = do{ hPutStr handle ('\n':indentation i); display x}
 
 displayM :: Monad m => (String -> m ()) -> SimpleDoc -> m ()
 displayM putStr simpleDoc = display simpleDoc where
       display SEmpty        = return ()
-      display (SChar c x)   = do{ putStr [c]; display x}  
+      display (SChar c x)   = do{ putStr [c]; display x}
       display (SText l s x) = do{ putStr s; display x}
       display (SLine i x)   = do{ putStr ('\n':indentation i); display x}
 
@@ -375,7 +375,7 @@ hPutDoc handle doc      = displayIO handle (renderPretty 0.4 80 doc)
 -----------------------------------------------------------
 -- insert spaces
 -- "indentation" used to insert tabs but tabs seem to cause
--- more trouble than they solve :-) 
+-- more trouble than they solve :-)
 -----------------------------------------------------------
 spaces n        | n <= 0    = ""
                 | otherwise = replicate n ' '

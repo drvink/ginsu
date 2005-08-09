@@ -58,13 +58,13 @@ box      = char $ chr 0x25a1  -- □
 bot      = char $ chr 0x22a5  -- ⊥
 bottom   = char $ chr 0x22a5  -- ⊥
 top      = char $ chr 0x22a4  -- T
-pI       = char $ chr 0x03a0     
+pI       = char $ chr 0x03a0
 lAmbda   = char $ chr 0x039b  -- Λ  (capital λ)
-and      = char $ chr 0x2227  -- ∧ 
+and      = char $ chr 0x2227  -- ∧
 or       = char $ chr 0x2228  -- ∨
-star     = char $ chr 0x22c6   
+star     = char $ chr 0x22c6
 elem     = char $ chr 0x2208  -- ∈
-notElem  = char $ chr 0x2209 
+notElem  = char $ chr 0x2209
 
 sqoparen = char $ chr 0x3014  -- 〔
 sqcparen = char $ chr 0x3015  --  〕

@@ -1,5 +1,5 @@
 
--- | A Pretty printing class using multiparameter type classes for 
+-- | A Pretty printing class using multiparameter type classes for
 -- maximal generality with some useful instances.
 
 module Doc.PPrint where
@@ -7,7 +7,7 @@ module Doc.PPrint where
 import Doc.DocLike
 
 
-class DocLike d => PPrint d a  where 
+class DocLike d => PPrint d a  where
     pprint ::  a -> d
 
     parPprint ::  a -> d
@@ -18,8 +18,8 @@ class DocLike d => PPrint d a  where
 
     pptuple   ::  [a] -> d
     pptuple   xs = parens (hcat (punctuate comma (map pprint xs)))
-    
-    
+
+
 instance PPrint d a => PPrint d [a] where
     pprint  = pplist
 
