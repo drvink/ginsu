@@ -22,8 +22,6 @@ module Screen(
     widgetCenter,
     widgetSimpleFrame,
     widgetVerticalBox,
-    widgetVerticalBox,
-    widgetHorizontalBox,
     widgetHorizontalBox,
     widgetText,
     widgetAttr,
@@ -52,8 +50,8 @@ data Widget = Widget {
     render :: Canvas -> IO (),
     getBounds :: IO (Int,Int),
     --changedSignal :: Signal (),
-    processKey :: Key -> IO Bool,
-    processEvent :: Canvas -> Event -> IO Bool
+    processKey :: Key -> IO Bool
+    -- processEvent :: Canvas -> Event -> IO Bool
     }
 
 --data Alternate = Alternate !(MVar (Widget,IO ())) !(Signal ())
@@ -252,11 +250,6 @@ renderCentered w canvas = do
 	    nc = (canvasTranslate canvas (f xs' xs,f ys' ys))
 	renderChild w nc {bounds=(min xs $ fst $ bounds nc ,min ys $ snd $ bounds nc)}
 
-renderBounded :: Widget -> Canvas -> Maybe Int -> Maybe Int -> IO ()
-renderBounded w canvas mx my = renderChild w (canvas {bounds = (nx,ny)}) where
-    (cx,cy) = bounds canvas
-    nx = maybe cx (min cx) mx
-    ny = maybe cy (min cy) my
 
 renderChild :: Widget -> Canvas -> IO ()
 renderChild _ (Canvas {bounds = (xb,yb)}) | xb == 0 || yb == 0 = return ()
@@ -272,8 +265,8 @@ emptyWidget = Widget {
     render = const (return ()),
     getBounds = return (0,0),
     --changedSignal = nonSignal,
-    processKey = \_ -> return False,
-    processEvent = \_ _ -> return False
+    processKey = \_ -> return False
+    -- processEvent = \_ _ -> return False
     }
 emptySizedWidget x y =  emptyWidget {getBounds = return (x,y)}
 
@@ -348,17 +341,6 @@ staticText s = emptyWidget {render = rst, getBounds = return bounds } where
     rst canvas = drawString canvas s
 
 
-filledSizedWidget :: Int -> Int -> Char -> Widget
-filledSizedWidget 0 y _ = (emptySizedWidget 0 y)
-filledSizedWidget x 0 _ = (emptySizedWidget x 0)
-filledSizedWidget x y c = (emptySizedWidget x y) {render = rnd} where
-    rnd canvas = eannM (fmt "filledSizedWidget %i %i %/" [fi x, fi y, fa c]) $ ds canvas (min yb y)
-     where
-	ds _ 0 = return ()
-	ds canvas yb = do
-	    drawString canvas (replicate (min xb x) c)
-	    ds (canvasTranslate canvas (0,1)) (yb - 1)
-	(xb,yb) = bounds canvas
 	
 
 
@@ -409,7 +391,7 @@ horizontalBox starts ends = (childrenWidget aw) {render = rd, getBounds = gb } w
 		    renderChild w (boundCanvas (Just (wbx + e)) Nothing canvas)
 			else renderCentered w (boundCanvas (Just (wbx + e)) Nothing canvas)
 		return (es,canvasTranslate canvas (wbx + e,0))
-	    f (es,canvas) (ps,w) = do
+	    f (es,canvas) (_,w) = do
 		(wbx,_) <- getBounds w
 		--renderCentered w (boundCanvas (Just wbx) Nothing canvas)
 		renderChild w (boundCanvas (Just wbx) Nothing canvas)
@@ -457,11 +439,6 @@ splitSpace m n = f (m `mod` n) $ replicate n (m `div` n) where
     f n' [] = errorf "splitSpace %i %i (f %i []): this can't happen." [fi m, fi n, fi n']
 
 
-newFakeWidget :: ((Int,Int) -> (Int,Int) -> IO ()) -> IO Widget
-newFakeWidget f = do
-    --sig <- newSignal
-    let rnd canvas = f (origin canvas) (bounds canvas)
-    return $ emptyWidget { {-changedSignal = sig,-} render = rnd}
 	
 newSVarWidget :: (Readable c ) => c a -> (a -> Widget) -> Widget
 newSVarWidget sv f = emptyWidget {render = rw, getBounds = gb} where
@@ -473,13 +450,13 @@ newSVarWidget sv f = emptyWidget {render = rw, getBounds = gb} where
 	getBounds (f v)
 
 dynamicWidget :: IO Widget -> Widget
-dynamicWidget w = emptyWidget {render = rw, getBounds = gb, processKey = pk, processEvent = pe} where
+dynamicWidget w = emptyWidget {render = rw, getBounds = gb, processKey = pk {- , processEvent = pe -} } where
     rw canvas = do
 	v <- w
 	render v canvas
     gb = w >>= getBounds
     pk k = w >>= \x -> processKey x k
-    pe a b = w >>= \x -> processEvent x a b
+--    pe a b = w >>= \x -> processEvent x a b
 
 
 
@@ -526,13 +503,14 @@ attrWidget :: Attr -> Widget -> Widget
 attrWidget a w = w {render = nr} where
     nr canvas = Screen.withAttr canvas a (renderChild w  canvas)
 
-data Event = KeyEvent Key | MouseEvent MouseEvent
+{-
+-- data Event = KeyEvent Key | MouseEvent MouseEvent
 
-data Justification = Justified | LeftJustified | RightJustified
+--data Justification = Justified | LeftJustified | RightJustified
 
 
 data InlineBox = InlineBoxText String | InlineBoxAttr [Attr] [InlineBox] | InlineBoxChoice InlineBox InlineBox |
-    InlineBoxLB | InlineBoxRight [InlineBox] | InlineBoxAction (Event -> IO Bool) [InlineBox]
+    InlineBoxLB | InlineBoxRight [InlineBox] -- | InlineBoxAction (Event -> IO Bool) [InlineBox]
 
 
 
@@ -542,4 +520,4 @@ inlineBoxWidget xs = emptyWidget {render = rnd, getBounds = gb } where
     rnd canvas = undefined
     gb = return (0,0)
 
-
+-}

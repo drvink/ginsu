@@ -80,19 +80,15 @@ module PackedString (
 import Prelude
 
 
-import Data.Array.Unboxed
 import Data.Array.IO
-import Data.Typeable
 import Data.Char
 
-import Int
 import Bits
 import GHC.Exts
 import Data.Array.Base
 import Word
 import Data.Monoid
 import Data.Generics
-import Data.Generics.Basics
 
 instance Monoid PackedString where
     mempty = nilPS
@@ -110,7 +106,7 @@ newtype PackedString = PS (UArray Int Word8)
 instance Data PackedString where
     --toConstr _   = error "toConstr"
     --fromConstr _   = error "fromConstr"
-    gfoldl f g x  = g x
+    gfoldl _ g x  = g x
     --dataTypeOf _ = mkDataType []
 
 
@@ -229,7 +225,7 @@ hashPS' (PS (UArray 0 (I# e) ba)) = fromIntegral $ unpackFoldlUtf8# f 5381 ba (e
 -}
 
 hashPS :: PackedString -> Word
-hashPS (PS (UArray 0 (I# e) ba)) =  W# (f (unsafeCoerce# 5381#) 0#) where
+hashPS (PS (UArray _ (I# e) ba)) =  W# (f (unsafeCoerce# 5381#) 0#) where
     f m c
         | c ==# (e +# 1#) = m
         | otherwise = f (((m `uncheckedShiftL#` 5#) `plusWord#` m ) `xor#`  (((indexWord8Array# ba c)))) (c +# 1#)

@@ -5,7 +5,6 @@ import Control.Exception as E
 import Data.Array.IO
 import Data.Unique
 import Directory(removeFile)
-import IO
 import System.IO.Unsafe
 import Data.IORef
 import Monad(liftM)
@@ -51,7 +50,7 @@ putRaw :: Handle -> [Word8] -> IO ()
 putRaw h v = hPutStr h (map (chr . fromIntegral) v)
 
 readRaw :: Handle -> Int -> IO [Word8]
-readRaw h 0 = return []
+readRaw _ 0 = return []
 readRaw h n = do
     a <- newArray_ (0,(n - 1))
     sz <- hGetArray h a n

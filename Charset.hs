@@ -7,7 +7,6 @@ import Word(Word8)
 import System.IO.Unsafe
 import List
 import EIO
-import Monad
 import ErrorLog
 import Control.Monad.Error
 import Data.IORef

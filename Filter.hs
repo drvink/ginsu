@@ -184,13 +184,16 @@ isSigned _ = False
 isEncrypted Encrypted {} = True
 isEncrypted _ = False
 
+{-
 data FilterEnv = FilterEnv {
     feMarkLookup :: Char -> Filter,
     feAliasLookup :: Atom -> Filter,
     feIsPrivate :: Category -> Bool,
     feIsPublic :: Category -> Bool
     }
+-}
 
+data FilterEnv
 
 filterAp :: Filter -> Puff -> Bool
 filterAp f p = evaluate (filterAp' undefined p) f

@@ -1,4 +1,4 @@
---  $Id: ErrorLog.hs,v 1.8 2005/07/21 09:37:53 john Exp $
+--  $Id: ErrorLog.hs,v 1.9 2005/08/09 23:07:00 john Exp $
 -- arch-tag: 3849d358-d4bb-4bfc-b95f-a99a510cf553
 
 -- Copyright (c) 2002 John Meacham (john@foo.net)
@@ -55,7 +55,6 @@ import Control.Exception as E
 import IO hiding(bracket, try, catch)
 import System.IO.Unsafe
 import Monad
-import Control.Concurrent.MVar
 import Control.Concurrent
 import Time(getClockTime)
 import List(delete)

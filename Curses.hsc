@@ -534,7 +534,7 @@ addLn = wAddStr stdScr "\n"
 sanifyOutput :: String -> String
 sanifyOutput = map f . filter (/= '\r') where
     f c | isPrint c  = c
-    f c = '~'
+        | otherwise = '~'
 
 #if defined(__STDC_ISO_10646__)  && defined(HAVE_WADDNWSTR)
 
@@ -1088,13 +1088,13 @@ foreign import ccall unsafe hs_curses_acs_ckboard  :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_degree   :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_plminus  :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_bullet   :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_larrow   :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_rarrow   :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_darrow   :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_uarrow   :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_board    :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_lantern  :: IO (#type chtype)
-foreign import ccall unsafe hs_curses_acs_block    :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_larrow   :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_rarrow   :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_darrow   :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_uarrow   :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_board    :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_lantern  :: IO (#type chtype)
+--foreign import ccall unsafe hs_curses_acs_block    :: IO (#type chtype)
 #  ifdef ACS_S3
 foreign import ccall unsafe hs_curses_acs_s3       :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_s7       :: IO (#type chtype)

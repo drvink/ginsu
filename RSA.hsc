@@ -52,7 +52,7 @@ returnData sz f = do
 
 
 foreign import ccall unsafe "my_rsa.h RSA_new" rsaNew :: IO RSA
-foreign import ccall unsafe "my_rsa.h RSA_free" rsaFree :: RSA -> IO ()
+-- foreign import ccall unsafe "my_rsa.h RSA_free" rsaFree :: RSA -> IO ()
 
 foreign import ccall unsafe "my_rsa.h RSA_check_key" rsa_check_key :: RSA -> IO CInt
 
@@ -61,6 +61,7 @@ rsaCheckKey rsa = throwZero_ "RSA_check_key" $ rsa_check_key rsa
 
 data RSAElems a = RSAElemsPrivate { rsaN :: a, rsaE :: a, rsaD :: a, rsaIQMP :: a, rsaP :: a, rsaQ :: a, rsaDMP1 :: a, rsaDMQ1 :: a } |  RSAElemsPublic { rsaN :: a, rsaE :: a }
 
+{-
 rsaSetN :: RSA -> Ptr BIGNUM -> IO ()
 rsaSetN = (#poke RSA, n)
 
@@ -85,6 +86,7 @@ rsaSetDMQ1 = (#poke RSA, dmq1)
 rsaSetIQMP :: RSA -> Ptr BIGNUM -> IO ()
 rsaSetIQMP = (#poke RSA, iqmp)
 
+-}
 
 
 
@@ -229,8 +231,8 @@ encryptAll  keys xs = doit' where
 -- BigNum routines
 --------------------
 
-bn_bin2bn :: [Word8] -> IO (Ptr BIGNUM)
-bn_bin2bn xs = throwIfNull "BN_bin2bn" $ withData xs (\a b -> bnBin2Bn a b nullPtr)
+--bn_bin2bn :: [Word8] -> IO (Ptr BIGNUM)
+--bn_bin2bn xs = throwIfNull "BN_bin2bn" $ withData xs (\a b -> bnBin2Bn a b nullPtr)
 
 foreign import ccall unsafe "BN_bin2bn" bnBin2Bn :: Ptr CUChar -> CInt -> Ptr BIGNUM -> IO (Ptr BIGNUM)
 

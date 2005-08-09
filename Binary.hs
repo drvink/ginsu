@@ -1,4 +1,3 @@
-{-# O PTIONS -cpp #-}
 --
 -- (c) The University of Glasgow 2002
 --
@@ -9,6 +8,8 @@
 -- Under the terms of the license for that software, we must tell you
 -- where you can obtain the original version of the Binary library, namely
 --     http://www.cs.york.ac.uk/fp/nhc98/
+--
+-- many modifications by John Meacham
 
 -- arch-tag: 1418e09a-9a18-4dca-a0fc-9262c9d97beb
 
@@ -19,7 +20,6 @@ module Binary
 
    openBinIO, openBinIO_,
    openBinMem,
---   closeBin,
 
    seekBin,
    tellBin,
@@ -53,11 +53,8 @@ module Binary
 import FastMutInt
 
 import Atom
-import Control.Exception	( throwDyn )
 import Control.Monad		( when )
-import Data.Array
 import Data.Array.Base
-import Data.Array.IArray
 import Data.Array.IO
 import Data.Bits
 import Data.Char		( ord, chr )
@@ -67,7 +64,7 @@ import Data.Word
 import GHC.Exts
 import GHC.IOBase	 	( IO(..) )
 import GHC.Real			( Ratio(..) )
-import GHC.Word			( Word8(..) )
+import GHC.Word                 ( Word8(..) )
 import PackedString
 import System.IO as IO
 import System.IO.Error		( mkIOError, eofErrorType )
@@ -115,7 +112,7 @@ type BinArray = IOUArray Int Word8
 
 data BinHandle
   = BinMem {		-- binary data stored in an unboxed array
-     off_r :: !FastMutInt,		-- the current offset
+     ix_r :: !FastMutInt,		-- the current offset
      sz_r  :: !FastMutInt,		-- size of the array (cached)
      arr_r :: !(IORef BinArray) 	-- the array (bounds: (0,size-1))
     }
@@ -197,14 +194,14 @@ seekBin :: BinHandle -> Bin a -> IO ()
 seekBin (BinIO  ix_r h) (BinPtr p) = do
   writeFastMutInt ix_r p
   hSeek h AbsoluteSeek (fromIntegral p)
-seekBin h@(BinMem  ix_r sz_r a) (BinPtr p) = do
+seekBin h@(BinMem  { ix_r = ix_r, sz_r = sz_r }) (BinPtr p) = do
   sz <- readFastMutInt sz_r
   if (p >= sz)
 	then do expandBin h p; writeFastMutInt ix_r p
 	else writeFastMutInt ix_r p
 
 isEOFBin :: BinHandle -> IO Bool
-isEOFBin (BinMem  ix_r sz_r a) = do
+isEOFBin (BinMem  { ix_r = ix_r, sz_r = sz_r}) = do
   ix <- readFastMutInt ix_r
   sz <- readFastMutInt sz_r
   return (ix >= sz)
@@ -384,7 +381,7 @@ instance Binary Int64 where
 -- Instances for standard types
 
 instance Binary () where
-    put_ bh () = return ()
+    put_ _ () = return ()
     get  _     = return ()
 --    getF bh p  = case getBitsF bh 0 p of (_,b) -> ((),b)
 
@@ -554,7 +551,7 @@ instance (Ix a, Binary a) => Binary (UArray a Word8) where
 instance Binary Integer where
     put_ bh (S# i#) = do putByte bh 0; put_ bh (I# i#)
     put_ bh (J# s# a#) = do
- 	p <- putByte bh 1;
+ 	putByte bh 1;
 	put_ bh (I# s#)
 	let sz# = sizeofByteArray# a#  -- in *bytes*
 	put_ bh (I# sz#)  -- in *bytes*

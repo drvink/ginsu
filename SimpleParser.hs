@@ -24,7 +24,6 @@
 
 module SimpleParser where
 
-import Monad(liftM)
 import Char
 import Monad
 import List
