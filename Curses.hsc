@@ -1052,13 +1052,13 @@ recognize ch noConvert convert
     | [ch] == degree   = convert =<< hs_curses_acs_degree
     | [ch] == plMinus  = convert =<< hs_curses_acs_plminus
     | [ch] == bullet   = convert =<< hs_curses_acs_bullet
-    | [ch] == lArrow   = convert =<< hs_curses_acs_larrow
-    | [ch] == rArrow   = convert =<< hs_curses_acs_rarrow
-    | [ch] == dArrow   = convert =<< hs_curses_acs_darrow
-    | [ch] == uArrow   = convert =<< hs_curses_acs_uarrow
-    | [ch] == board    = convert =<< hs_curses_acs_board
-    | [ch] == lantern  = convert =<< hs_curses_acs_lantern
-    | [ch] == block    = convert =<< hs_curses_acs_block
+--    | [ch] == lArrow   = convert =<< hs_curses_acs_larrow
+--    | [ch] == rArrow   = convert =<< hs_curses_acs_rarrow
+--    | [ch] == dArrow   = convert =<< hs_curses_acs_darrow
+--    | [ch] == uArrow   = convert =<< hs_curses_acs_uarrow
+--    | [ch] == board    = convert =<< hs_curses_acs_board
+--    | [ch] == lantern  = convert =<< hs_curses_acs_lantern
+--    | [ch] == block    = convert =<< hs_curses_acs_block    -- not usually available
 #  ifdef ACS_S3
     | [ch] == s3       = convert =<< hs_curses_acs_s3
     | [ch] == s7       = convert =<< hs_curses_acs_s7
