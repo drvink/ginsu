@@ -1,7 +1,7 @@
 module Boolean.TrueSet(
     TrueSet,
     fromList,
-    member, 
+    member,
     empty,
     full,
     single,

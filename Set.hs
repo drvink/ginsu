@@ -2,16 +2,16 @@
 -- | This creates the boolean algebra of sets from any base boolean algebra.
 -- note that the sets created are 'true' sets in the mathematical sense, not
 -- the usual programatic aproximation.
--- 
+--
 -- A generalized set can be thought of as a map from keys to boolean values.
 -- perhaps the 'map with default' should be seperated out?
 
 module Boolean.Set where
 
 -- needs 'Map' from DData
-import Data.Map as Map hiding(member) 
+import Data.Map as Map hiding(member)
 
-data Set k v = Set v (Map k v) 
+data Set k v = Set v (Map k v)
 
 instance Functor (Set k) where
     fmap f (Set v map) = Set (f v) (Map.map f map)
@@ -19,7 +19,7 @@ instance Functor (Set k) where
 
 
 instance SemiBooleanAlgebra v => SemiBooleanAlgebra (Set k v) where
-    (&&) = combine (&&) 
+    (&&) = combine (&&)
     (||) = combine (||)
 
 instance BooleanAlgebra v => BooleanAlgebra (Set k v) where
@@ -29,12 +29,12 @@ instance BooleanAlgebra v => BooleanAlgebra (Set k v) where
     xor = combine xor
 
 
--- TODO 
+-- TODO
 -- this is very inefficient, but we need a generalized unionWith to do it properly
 
 combine :: (v -> v -> v) -> Set k v -> Set k v -> Set k v
 combine f a@(Set da mapa) b@(Set db mapb) = Set (f da db) (Map.fromList $ map g $  keys mapa ++ keys mapb) where
-    g k = (k,f (member k a) (member k b)) 
+    g k = (k,f (member k a) (member k b))
 
 empty = false
 single x (Set d map) = Set d (Map.insert x true map)

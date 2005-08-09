@@ -21,12 +21,12 @@ instance (Ord a, Num a) => BooleanAlgebra (Fuzz a) where
     not (Fuzz x) = Fuzz (1 - x)
     and xs = minimum (true:xs)
     or xs = maximum (false:xs)
-    
 
-avg (Fuzz a) (Fuzz b) = (a + b) / 2 
+
+avg (Fuzz a) (Fuzz b) = (a + b) / 2
 average [] = error "average of empty list"   -- should this degenerate into something
 average xs = f xs 0 0 where
-    f [] n m = Fuzz (n / m) 
+    f [] n m = Fuzz (n / m)
     f (Fuzz x:xs) n m = a `seq` b `seq` f xs a b   where
         a = n + x
         b = m + 1
