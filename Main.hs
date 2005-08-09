@@ -17,6 +17,7 @@ import Data.IORef
 import Data.Unique
 import qualified Data.HashTable as Hash
 import qualified System.Posix as Posix
+import qualified System.Posix.IO as PosixIO
 
 import Atom
 import Boolean.Algebra
@@ -601,7 +602,7 @@ mainLoop gc ic yor psr next_r rc = do
                     gc <- galeFile "ginsu.config"
                     e <- getEditor
                     --mySystem (e ++ " " ++ gc)
-                    withProgram $ rawSystem e [gc]
+                    myRawSystem e [gc]
                     reloadConfigFiles
                     touchRenderContext rc
                     return True
@@ -914,7 +915,11 @@ noBodyWords fl = [x|x@(n,_) <- fl, n /= f_messageBody, n /= f_messageKeyword]
 mySystem s = do
     putLog LogInfo $ "system " ++ show s
     withProgram $ System.Cmd.system s
+    PosixIO.setFdOption 0 PosixIO.NonBlockingRead False
 
+myRawSystem e s = do
+    withProgram $ System.Cmd.rawSystem e s
+    PosixIO.setFdOption 0 PosixIO.NonBlockingRead False
 
 editPuff :: Puff -> IO (Maybe Puff)
 editPuff puff = do
@@ -930,7 +935,7 @@ editPuff puff = do
     withPrivateFiles $ writeRawFile fn (stringToBytes $ unlines it ++ mb)
     putLog LogInfo $ "system: " ++  (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
     --mySystem (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
-    withProgram $ System.Cmd.rawSystem e (concatMap words eo ++ [fn])
+    myRawSystem e (concatMap words eo ++ [fn])
     pn <- fmap (lines . bytesToString)$ readRawFile fn
     handleMost (\_ -> return ()) (removeFile fn)
     if not (length pn > 1 && pn /= it) then return Nothing else do
