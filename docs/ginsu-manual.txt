@@ -9,9 +9,9 @@ above all stable, as well as having a quick learning curve.
 
 === Keys ===
 
-These are the default keybindings. You may use the action name to rebind a key. See below for details. 
+These are the default keybindings. You may use the action name to rebind a key. See below for details.
 
-<include `../gen_keyhelp.prl -c ../ginsu.config.sample ../actions.def`>
+<include `perl ../gen_keyhelp.prl -c ../ginsu.config.sample ../actions.def`>
 
 === Options ===
 
@@ -24,7 +24,7 @@ ginsu [OPTIONS]...  [categories]...
 === Filters ===
 
 Filters are used throughout ginsu. A filter is an expression which selects
-puffs which match it. 
+puffs which match it.
 
 Filters are built up from primitives via conjunctions, disjunctions and
 grouping, allowing complex filters to be created.
@@ -67,7 +67,7 @@ Examples of Filters:
 </pre>
 
 
-=== The Filter Stack === 
+=== The Filter Stack ===
 
 There is always a current filter stack, which is a set of filters that
 determines which puffs are currently visible. there are a variety of
@@ -96,8 +96,8 @@ preferred over the bare versions.
 ; GALE_ID : Your gale id. default is $LOGNAME@$GALE_DOMAIN
 ; GALE_NAME : Your real name used in puffs sent.
 ; GALE_PRESENCE : default presence string to send out.
-; GALE_PROXY : This can be used to override which gale server to connect to. 
-; GALE_SUBSCRIBE : List of categories to subscribe to. The default is some common public categories and your private address. 
+; GALE_PROXY : This can be used to override which gale server to connect to.
+; GALE_SUBSCRIBE : List of categories to subscribe to. The default is some common public categories and your private address.
 
 see also:  http://gale.org/users/vars
 
@@ -106,7 +106,7 @@ see also:  http://gale.org/users/vars
 ; BEEP : beep on incoming puffs which match this filter.
 ; BROWSER : set the web browser. This overrides the environment. This is only used by the default 'apphook' declarations. see below.
 ; CHARSET : character set to assume files are in. This will become obsolete at some point.
-; DISABLE_SIGWINCH : do not install sigwinch handler. ignore if you don't know what this means.  
+; DISABLE_SIGWINCH : do not install sigwinch handler. ignore if you don't know what this means.
 ; EDITOR_NEWPUFF_OPTION : options passed to editor when beginning a new puff.
 ; EDITOR_OPTION : options passed to editor when replying to a puff.
 ; MARK_[1-9] : these should be set to filters which are activated by the corresponding number key.
@@ -127,10 +127,10 @@ see also:  http://gale.org/users/vars
 
 keys may be rebound with the 'bind' keyword in the configuration file. the syntax is
 <pre>
-bind <key> <command> 
+bind <key> <command>
 </pre>
 
-here are some examples: 
+here are some examples:
 <pre>
 bind <C-r> reconnect_to_servers
 bind c prompt_new_filter
@@ -143,24 +143,24 @@ bind v goto_match
 When puff bodies match regular expressions, the user may choose to run
 arbitrary commands based on them. This can be used to follow web links in
 puffs for instance. The 'apphook' mechanism is fully configurable via using
-'apphook' lines in your <tt>ginsu.config</tt> file. 
+'apphook' lines in your <tt>ginsu.config</tt> file.
 
 The general form is:
 <pre>
-apphook <name> 
-        <regular expression> 
-        <command to run> 
+apphook <name>
+        <regular expression>
+        <command to run>
         [string user sees in menu ("$0" by default)]
 </pre>
 in the command and menu string, <tt>$0</tt> is replaced by the whole regex match and
 <tt>$1, $2, .. $9</tt> are replaced by the substrings captured by parenthesis
-in the regular expression. 
+in the regular expression.
 
 
 
 <pre>
-apphook WikiWord 
-        '([[:space:]]|^)(([[:upper:]][[:lower:]]+){2,})([[:space:]]|$)' 
+apphook WikiWord
+        '([[:space:]]|^)(([[:upper:]][[:lower:]]+){2,})([[:space:]]|$)'
         '$BROWSER ''http://wiki.ofb.net/?$2'''
         '$2'
 
@@ -190,10 +190,10 @@ $GALE_DIR is ~/.gale/ by default.
 ; <tt>$GALE_DIR/ginsu.config</tt> : main configuration file.
 ; <tt>$GALE_DIR/ginsu.<i>n</i>.pufflog</tt> : pufflog version <i>n</i>
 ; <tt>$GALE_DIR/ginsu.errorlog</tt> : main configuration file.
-; <tt>$GALE_DIR/auth/private/*</tt> : This is where ginsu looks for private keys for decoding incoming encrypted puffs. 
+; <tt>$GALE_DIR/auth/private/*</tt> : This is where ginsu looks for private keys for decoding incoming encrypted puffs.
 ; <tt>$GALE_DIR/auth/cache/*</tt> : This is where ginsu looks for and stores public keys.
 
-== Other ginsu resources == 
+== Other ginsu resources ==
 
 * http://repetae.net/john/computer/ginsu/ - the project homepage
 * http://wiki.ofb.net/?GinsuFaq - the ginsu FAQ and wiki
@@ -201,7 +201,7 @@ $GALE_DIR is ~/.gale/ by default.
 * http://bugs.ofb.net/cgi-bin/bugzilla/enter_bug.cgi?product=Ginsu - report bugs here.
 * http://repetae.net/john/ - author's homepage.
 
-There is also a public arch repository for ginsu at http://repetae.net/john/arch/2004/ 
+There is also a public arch repository for ginsu at http://repetae.net/john/arch/2004/
 
 <html>
 <!-- arch-tag: caede51f-65ee-45e1-a9d9-745766841cf6 -->
