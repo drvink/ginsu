@@ -7,7 +7,7 @@ Summary: Ginsu Chat Client
 Name: ginsu
 Version: %{version}
 Release: %{release}
-Copyright: MIT
+License: LICENSE
 Group: Applications/Communications
 BuildRoot: /var/tmp/ginsu-%{version}-%{release}-buildroot
 Source: http://repetae.net/john/computer/ginsu/drop/ginsu-%{version}.tar.gz
