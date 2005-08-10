@@ -18,6 +18,7 @@ import Data.Unique
 import qualified Data.HashTable as Hash
 import qualified System.Posix as Posix
 import qualified System.Posix.IO as PosixIO
+import System.IO
 
 import Atom
 import Boolean.Algebra
@@ -912,14 +913,18 @@ withPrivateFiles action = do
 
 noBodyWords fl = [x|x@(n,_) <- fl, n /= f_messageBody, n /= f_messageKeyword]
 
-mySystem s = do
-    putLog LogInfo $ "system " ++ show s
-    withProgram $ System.Cmd.system s
+withNBRWorkaround f = do
+    System.IO.stdin `seq` return ()
+    PosixIO.setFdOption 0 PosixIO.NonBlockingRead False
+    f
     PosixIO.setFdOption 0 PosixIO.NonBlockingRead False
 
+mySystem s = do
+    putLog LogInfo $ "system " ++ show s
+    withNBRWorkaround $ withProgram $ System.Cmd.system s
+
 myRawSystem e s = do
-    withProgram $ System.Cmd.rawSystem e s
-    PosixIO.setFdOption 0 PosixIO.NonBlockingRead False
+    withNBRWorkaround $ withProgram $ System.Cmd.rawSystem e s
 
 editPuff :: Puff -> IO (Maybe Puff)
 editPuff puff = do
