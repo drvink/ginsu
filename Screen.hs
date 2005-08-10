@@ -7,7 +7,6 @@ module Screen(
     doRender,
     Key(..),
     RenderContext,
-    touchRenderContext,
     newRenderContext,
     setRenderContext,
     tryDrawRenderContext,
@@ -17,15 +16,14 @@ module Screen(
     keyCatcherWidget,
     newSVarWidget,
     dynamicWidget,
-    widgetEmpty,
-    widgetEmptySized,
-    widgetCenter,
-    widgetSimpleFrame,
-    widgetVerticalBox,
-    widgetHorizontalBox,
-    widgetText,
     widgetAttr,
+    widgetCenter,
+    widgetEmpty,
+    widgetHorizontalBox,
     widgetScroll,
+    widgetSimpleFrame,
+    widgetText,
+    widgetVerticalBox,
     stackedWidgets
 
     ) where
@@ -44,17 +42,14 @@ import Doc.Chars
 import Doc.DocLike()
 
 
-data Canvas = Canvas {window :: !Window, origin :: !(Int,Int), widgetOrigin :: !(Int,Int), bounds :: !(Int,Int), attr :: Attribute  }
+data Canvas = Canvas {window :: !Window, origin :: !(Int,Int), widgetOrigin :: !(Int,Int), bounds :: !(Int,Int)  }
 
 data Widget = Widget {
     render :: Canvas -> IO (),
     getBounds :: IO (Int,Int),
-    --changedSignal :: Signal (),
     processKey :: Key -> IO Bool
-    -- processEvent :: Canvas -> Event -> IO Bool
     }
 
---data Alternate = Alternate !(MVar (Widget,IO ())) !(Signal ())
 
 data Packing = NoExpand | Expand | ExpandFill
     deriving(Show,Eq,Enum)
@@ -64,29 +59,8 @@ data Attribute = AttrBold | AttrBlink | AttrDim | AttrReverse | AttrUnderline | 
 instance Show Canvas where
     show c = fmtSs "<canvas:origin=%s,bounds=%s>" [show (origin c), show (bounds c)]
 
-{-
-instance Changeable Widget where
-    signalChanged = changedSignal
--}
-
---class BasicWidget w where
---    widgetEmpty :: w
---    widgetEmptySized :: Float -> Float -> w
---    widgetCenter :: w -> w
---    widgetSimpleFrame :: w -> w
---    widgetVerticalBox :: Bool -> [(Packing, w)] -> w
---    widgetHorizontalBox :: Bool -> [(Packing, w)] -> w
---    widgetText :: String -> w
---    widgetAttr :: [Attribute] -> w -> w
---    widgetScroll :: w -> IO w
---    -- project :: IO w -> w
-
-
--- widgetHBoxLR ls rs = widgetHorizontalBox False (map ((,) NoExpand) ls) (map ((,) NoExpand) rs)
-
---instance BasicWidget Widget where
 widgetEmpty = emptyWidget
-widgetEmptySized x y = emptySizedWidget (floor (x + 0.5)) (floor (y + 0.5))
+--widgetEmptySized x y = emptySizedWidget (floor (x + 0.5)) (floor (y + 0.5))
 widgetCenter w = centerWidget w
 widgetSimpleFrame w = boxWidget w
 widgetVerticalBox True ws = homVerticalBox ws
@@ -102,20 +76,6 @@ widgetAttr al w = attrWidget (foldl (flip ($)) attr0 (map ma al)) w where
     ma AttrUnderline a = a `setUnderline` True
     ma _ a = a
 widgetScroll = newScrollWidget
-
-
-{-
-instance BasicWidget () where
-    widgetEmpty = ()
-    widgetEmptySized x y = ()
-    widgetCenter w = ()
-    widgetSimpleFrame w = ()
-    widgetVerticalBox _ ws = ()
-    widgetHorizontalBox _ ws = ()
-    widgetText s = ()
-    widgetAttr _ _ = ()
-    widgetScroll _ = return ()
--}
 
 
 isExpand NoExpand = False
@@ -142,23 +102,19 @@ parseAttr s = Attribute as fg bg where
 -}
 
 data RenderContext = RenderContext {
-    needsRedraw :: MVar Bool,
     needsResize :: MVar Bool,
     drawingStuff :: MVar (IO (), Key -> IO Bool, IO ())
     }
 
 newRenderContext = do
-    x <- newMVar False
     y <- newMVar False
     z <- newMVar (return (), \_ -> return False, return ())
-    return RenderContext {needsRedraw = x, needsResize = y, drawingStuff = z }
+    return RenderContext {needsResize = y, drawingStuff = z }
 
-touchRenderContext rc = swapMVar (needsRedraw rc) True >> return ()
 
 resizeRenderContext rc action = swapMVar (needsResize rc) True >>= \x -> unless x action >> return ()
 
 tryDrawRenderContext rc = do
-    --x <- swapMVar (needsRedraw rc) False
     y <- swapMVar (needsResize rc) False
     withMVar (drawingStuff rc) $ \(z,_,_) -> when (True) $ do
 	erase
@@ -169,14 +125,13 @@ tryDrawRenderContext rc = do
 setRenderContext rc dr = do
     modifyMVar_ (drawingStuff rc)  $ \(_,_,final) -> do
     final
-    touchRenderContext rc
+    --touchRenderContext rc
     return (dr,\_ -> return False, return ())
 
 setRenderWidget rc w = do
     modifyMVar_ (drawingStuff rc)  $ \(_,_,final) -> do
     final
-    --nf <- connect (changedSignal w) (\_ -> touchRenderContext rc)
-    touchRenderContext rc
+    --touchRenderContext rc
     return (wdr, processKey w, return (){-, nf-}) where
 	wdr = do
 	    c <- newCanvas
@@ -196,7 +151,7 @@ doRender w = do
 
 newCanvas = do
     (ys,xs) <- scrSize
-    return $  (Canvas {window = stdScr, origin = (0,0), widgetOrigin = (0,0), bounds = (xs,ys), attr = undefined})
+    return $  (Canvas {window = stdScr, origin = (0,0), widgetOrigin = (0,0), bounds = (xs,ys)})
 
 
 
@@ -264,14 +219,11 @@ renderChild w c = render w c
 emptyWidget = Widget {
     render = const (return ()),
     getBounds = return (0,0),
-    --changedSignal = nonSignal,
     processKey = \_ -> return False
-    -- processEvent = \_ _ -> return False
     }
-emptySizedWidget x y =  emptyWidget {getBounds = return (x,y)}
 
 
-childrenWidget ws = emptyWidget {{-changedSignal = signalCondenser (map changedSignal ws),-} processKey = pk} where
+childrenWidget ws = emptyWidget {processKey = pk} where
     pk k = tk ws k
     tk [] _ = return False
     tk (w:ws) k = do
@@ -296,8 +248,6 @@ centerWidget w = w {render = rst} where
 newScrollWidget :: Widget -> IO Widget
 newScrollWidget w = do
     yr <- newMVar 0
-    --sig <- newSignal
-    --connect (changedSignal w) (signal sig)
     let rst canvas = do
 	    y <- readMVar yr
 	    renderChild w (canvasWTranslate canvas (0,y))
@@ -310,8 +260,8 @@ newScrollWidget w = do
 	pk KeyNPage = modifyMVar_ yr (\x -> return $ x + 25) >> keyDone
 	pk KeyPPage = modifyMVar_ yr (\x -> return $ x - 25) >> keyDone
 	pk k = processKey w k
-	keyDone = modifyMVar_ yr (\x -> return  (max 0 x)) {->> signal sig ()-} >> return True
-    return w {processKey = pk, render = rst{-, changedSignal = sig-}}
+	keyDone = modifyMVar_ yr (\x -> return  (max 0 x)) >> return True
+    return w {processKey = pk, render = rst}
 
 
 -- | draw box around child widget
@@ -462,7 +412,7 @@ dynamicWidget w = emptyWidget {render = rw, getBounds = gb, processKey = pk {- ,
 
 stackedWidgets :: [Widget] -> Widget
 stackedWidgets [] = widgetEmpty
-stackedWidgets ws@(w:_) = widgetEmpty { render = rnd, processKey = \k -> processKey w k, {-changedSignal = signalCondenser (map changedSignal ws),-} getBounds = gb  } where
+stackedWidgets ws@(w:_) = widgetEmpty { render = rnd, processKey = \k -> processKey w k, getBounds = gb  } where
     rnd canvas = mapM_ (flip render canvas) (reverse ws)
     gb = do
 	bs <- mapM getBounds ws

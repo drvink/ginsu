@@ -467,7 +467,7 @@ mainLoop gc ic yor psr next_r rc = do
                             mapVal selected_r (\s -> s - (n - keep))
                             mapVal next_r (\s -> s - (n - keep))
 		    select_perhaps select_next
-		    touchRenderContext rc
+		    --touchRenderContext rc
 	composePuff :: IO () -> [Category] -> [PackedString] -> IO ()
 	composePuff done cs kwds = do
 	    p <- puffTemplate
@@ -604,7 +604,7 @@ mainLoop gc ic yor psr next_r rc = do
                     --mySystem (e ++ " " ++ gc)
                     myRawSystem e [gc]
                     reloadConfigFiles
-                    touchRenderContext rc
+                    --touchRenderContext rc
                     return True
                 "first_puff" -> writeVal selected_r 0 >> select_perhaps select_next >> writeVal yor 0 >> continue
                 "last_puff" -> do
