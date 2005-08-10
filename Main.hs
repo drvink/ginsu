@@ -160,27 +160,28 @@ main = do
         doRender (widgetCenter $  widgetText "Reading pufflog...") >> readPuffs plog
     ps <- newMVar ((reverse $ zip [1..] (reverse ops)))
     next_r <- newIORef (length ops + 1)
-    unless (envNoWritePufflog flags || envNoPufflog flags) $ (forkIO $ pufflogLoop ps 0) >> return ()
+    pcount_r <- newIORef 0
+    unless (envNoWritePufflog flags || envNoPufflog flags) $ (forkIO $ pufflogLoop ps pcount_r 0) >> return ()
 
     (Just s) <- configLookup "ON_STARTUP"
     insertKeys ic s
 
     doRender (widgetCenter $  widgetText "Entering mainloop...")
-    mainLoop gc ic yo ps next_r  redraw_r
+    mainLoop gc ic yo ps next_r pcount_r redraw_r
     killThread pl
     killThread gl
     ps <- liftM (map snd) $ readVal ps
     unless (envNoPufflog flags || envNoWritePufflog flags) $ doRender (widgetCenter $ widgetText "Writing pufflog...") >>  writePufflog ps
 
-pufflogLoop ps_r n = do
+pufflogLoop ps_r pcount_r n = do
     threadDelay 30000000
-    mv <- fmap (fmap fst . listToMaybe) $ readVal ps_r
-    case mv of
-	Just n' | n' /= n -> do
+    n' <- readVal pcount_r
+    if n' /= n
+        then do
 	    ps <- liftM (map snd) $ readVal ps_r
 	    writePufflog ps
-	    pufflogLoop ps_r n'
-	_ -> pufflogLoop ps_r n
+	    pufflogLoop ps_r pcount_r n'
+        else pufflogLoop ps_r pcount_r n
 
 writePufflog ps = do
     plog <- galeFile pufflog
@@ -329,7 +330,7 @@ markBox rc fw s action = askBox rc fw  s pk where
         return True
     pk key = messageBox rc fw ("Invalid mark: " ++ keysToString [key])
 
-mainLoop gc ic yor psr next_r rc = do
+mainLoop gc ic yor psr next_r pcount_r rc = do
 
     gs <- newGinsuState
 
@@ -458,6 +459,7 @@ mainLoop gc ic yor psr next_r rc = do
 		    when (filterAp f p) Curses.beep
 		    n <- readVal next_r
 		    mapVal next_r (+1)
+		    mapVal pcount_r (+1)
 		    mapVal psr (\ps -> ((n,p):ps))
                     sbsize <- fmap (read . fromJust) $ configLookup "SCROLLBACK_SIZE"
 		    case sbsize of
