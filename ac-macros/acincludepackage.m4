@@ -25,7 +25,7 @@ dnl                             [ --with-wish   location of wish program])
 dnl
 dnl This would set the variable WISH to the location of the first program
 dnl found or to the program as specified with the --with-wish switch.
-AC_DEFUN(AC_PACKAGE_REQUIRE,
+AC_DEFUN([AC_PACKAGE_REQUIRE],
 [AC_PACKAGE_REQUIRE1([$1],[$2],[$3],
     dnl Program found; evaluate <actions_of_found>
     [translit($1,-a-z,_A-Z)=`dirname \`dirname $translit($1,a-z-,A-Z_)\``])
@@ -52,7 +52,7 @@ dnl                             [ --with-wish   location of wish program])
 dnl
 dnl This would set the variable WISH to the location of the first program
 dnl found or to the program as specified with the --with-wish switch.
-AC_DEFUN(AC_PROGRAM_REQUIRE,
+AC_DEFUN([AC_PROGRAM_REQUIRE],
    [AC_PACKAGE_REQUIRE1([$1],[$2],[$3],)])
 
 dnl AC_PACKAGE_REQUIRE1 
@@ -62,7 +62,7 @@ dnl search for a package program and is used to obtain the installation
 dnl directory from a full path to a program. For example to obtain
 dnl /usr/local from /usr/local/bin/wish
 
-AC_DEFUN(AC_PACKAGE_REQUIRE1,
+AC_DEFUN([AC_PACKAGE_REQUIRE1],
 [
    dnl Add configuration switch
    AC_ARG_WITH($1, [$3],
