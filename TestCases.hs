@@ -3,9 +3,8 @@
 module Boolean.TestCases where
 
 import Boolean.Algebra
-import Debug.QuickCheck
+import Test.QuickCheck
 import Prelude hiding(not, (&&), (||),and,or,any,all)
---import ArbitraryInstances
 
 infix 4 ===
 
@@ -42,6 +41,7 @@ prop_demorgan' xs = (not (or xs)) === and (map not xs)
 
 prop_truefalse true false x = ((true && x) == x) && ((true || x) == true) && ((false || x) == x) &&  ((false && x) == false)
 
+{-
 main = do
     quickCheck (\(x::Bool) -> prop_notnot x)
     quickCheck (\(x::Int) -> prop_notnot x)
@@ -56,5 +56,6 @@ main = do
     quickCheck $ prop_truefalse [3::Int] []
     quickCheck $ prop_truefalse (Just True) Nothing
     quickCheck $ prop_truefalse ((Right True),[3::Int]) (Left (), [])
+-}
 
 
