@@ -60,7 +60,8 @@ getTmpFile = do
     u <- newUnique
     return ("/tmp/ginsu.puff." ++ show pid ++ "." ++ show (hashUnique u))
 
-insertKeys ic s = mapM_ (\c -> writeChan ic (Left c)) (stringToKeys s)
+data MainEvent = MainEventKey Curses.Key | MainEventPuff Puff | MainEventComposed (Maybe Puff) (IO ())
+insertKeys ic s = mapM_ (\c -> writeChan ic (MainEventKey c)) (stringToKeys s)
 
 {-# NOTINLINE main #-}
 main = do
@@ -133,7 +134,7 @@ main = do
     Posix.installHandler Posix.sigINT Posix.Ignore Nothing
     Posix.installHandler Posix.sigPIPE Posix.Ignore Nothing
     case (b,cursesSigWinch) of
-	(False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (writeChan ic (Left KeyResize)))) Nothing >> return ()
+	(False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (writeChan ic (MainEventKey KeyResize)))) Nothing >> return ()
 	_ -> return ()
 
     gs <- fmap (concat . map words) $ configLookupList "GALE_SUBSCRIBE"
@@ -191,8 +192,8 @@ writePufflog ps = do
 
 
 
-puffLoop ic gc = repeatM_ $  galeNextPuff gc >>= \p -> (writeChan ic $ Right p)
-getchLoop ic = repeatM_ (getCh >>= \x -> writeChan ic (Left x))
+puffLoop ic gc = repeatM_ $  galeNextPuff gc >>= \p -> (writeChan ic $ MainEventPuff p)
+getchLoop ic = repeatM_ (getCh >>= \x -> writeChan ic (MainEventKey x))
 
 
 apHead f (x:xs) = f x:xs
@@ -362,6 +363,8 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
     keyTable <- buildKeyTable
     matchTable <- buildMatchTable
 
+    icmain <- newChan
+
     let fsw = newSVarWidget filter_r $ \fs ->
 	    widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (reverse $ map showFilter fs))
 
@@ -474,12 +477,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 	composePuff :: IO () -> [Category] -> [PackedString] -> IO ()
 	composePuff done cs kwds = do
 	    p <- puffTemplate
-	    ep <- editPuff (p {cats = cs, fragments = fragments p ++ [ (f_messageKeyword,FragmentText k) | k <- kwds]})
-	    case ep of
-		Nothing -> setMessage "Puff cancelled."
-		Just p -> do
-		    pcw <- puffConfirm  gc done p
-		    setRenderWidget rc pcw
+	    editPuff (p {cats = cs, fragments = fragments p ++ [ (f_messageKeyword,FragmentText k) | k <- kwds]}) ic done
 	getPresenceFrags = do
 	    mp <- readVal myPresence
 	    (TOD ct _) <- getClockTime
@@ -753,7 +751,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     case p of
                         Nothing -> setMessage "No puff selected"
                         Just p -> do
-                            pcw <- puffConfirm  gc (setRenderWidget rc fw) p
+                            pcw <- puffConfirm gc (setRenderWidget rc fw) p ic
                             setRenderWidget rc pcw
                     continue
 		"redraw_screen" -> attempt (touchWin stdScr)  >> resizeRenderContext rc (return ()) >> continue
@@ -771,28 +769,37 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                         Just ml -> return $ "\nReceieved By:\n" ++ unlines (snub ml)
 	    v <- widgetScroll (widgetVerticalBox False [(NoExpand,widgetText $ chunkText (xs - 1) ((showPuff p) ++ wr)), (NoExpand, widgetText "\n\n\n"), (NoExpand, pv)])
 	    return v
-	justGetKey = fmapLeft keyCanon (readChan ic) >>= \v -> case v of
-	    (Right p) -> addPuff p >> justGetKey
-	    (Left k) -> do
+	justGetKey = readChan ic >>= \v -> case v of
+	    (MainEventPuff p) -> addPuff p >> justGetKey
+	    (MainEventKey k) -> do
 		    getClockTime >>= writeVal userActionTime
-		    return k
+		    return $ keyCanon k
+	    _ -> writeChan icmain v >> justGetKey
 	nextKey = do
 	    ce <- isEmptyChan ic
 	    when ce $ tryDrawRenderContext rc
-	    v <- fmapLeft keyCanon $ readChan ic
+	    cemain <- isEmptyChan icmain
+	    v <- if cemain then readChan ic else readChan icmain
 	    case v of
-		(Right p) -> do
+		(MainEventPuff p) -> do
                     v <- is_at_end
 		    addPuff p
                     when v scroll_end
 		    s <- configLookupElse "ON_INCOMING_PUFF" ""
 		    mapM_ (processKey mwidget) (stringToKeys s)
 		    nextKey
-		(Left KeyResize) ->  nextKey
-		(Left k) -> do
+		(MainEventKey KeyResize) ->  nextKey
+		(MainEventKey k) -> do
 		    getClockTime >>= writeVal userActionTime
-		    b <- keyRenderContext rc k
+		    b <- keyRenderContext rc $ keyCanon k
 		    if b then nextKey else return ()
+		(MainEventComposed ep done) -> do
+		    case ep of
+			Nothing -> setMessage "Puff cancelled."
+			Just p -> do
+			    pcw <- puffConfirm gc done p ic
+			    setRenderWidget rc pcw
+		    nextKey
     np <- configLookupBool "NO_PRESENCE_NOTIFY"
 
     done <- if np then return (return ()) else do
@@ -928,8 +935,8 @@ mySystem s = do
 myRawSystem e s = do
     withNBRWorkaround $ withProgram $ System.Cmd.rawSystem e s
 
-editPuff :: Puff -> IO (Maybe Puff)
-editPuff puff = do
+editPuff :: Puff -> Chan MainEvent -> IO () -> IO ()
+editPuff puff ic done = do
     e <- getEditor
     fn <- getTmpFile
     eob <- configLookupList "EDITOR_OPTION"
@@ -941,11 +948,22 @@ editPuff puff = do
             Nothing -> "\n"
     withPrivateFiles $ writeRawFile fn (stringToBytes $ unlines it ++ mb)
     putLog LogInfo $ "system: " ++  (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
-    --mySystem (e ++ " " ++ unwords eo ++ " " ++ shellQuote [fn])
-    myRawSystem e (concatMap words eo ++ [fn])
+    bgedit <- configLookupBool "BACKGROUND_EDIT"
+    bgcmd <- if bgedit then configLookupList "BACKGROUND_COMMAND" else return []
+    let (cmd:args) = (concatMap words bgcmd) ++ [e] ++ (concatMap words eo) ++ [fn]
+    let after = editPuffDone fn ic done it puff
+    if bgedit then do
+            Posix.installHandler Posix.sigCHLD (Posix.CatchOnce after) Nothing >> return ()
+            Posix.forkProcess (Posix.executeFile cmd True args Nothing) >> return ()
+        else do
+            myRawSystem cmd args
+            after
+
+editPuffDone :: String -> Chan MainEvent -> IO () -> [String] -> Puff -> IO ()
+editPuffDone fn ic done it puff = do
     pn <- fmap (lines . bytesToString)$ readRawFile fn
     handleMost (\_ -> return ()) (removeFile fn)
-    if not (length pn > 1 && pn /= it) then return Nothing else do
+    ep <- if not (length pn > 1 && pn /= it) then return Nothing else do
         let (cs',kwds') = readDestination (drop 4 (head pn))
         ncats <- expandAliases (cs')
         tw <- configLookupBool "TRIM_BLANKLINES"
@@ -953,6 +971,7 @@ editPuff puff = do
             trimBlankLines (unlines $ (drop 2 pn))
         return $ if body == "" then Nothing else
                 Just puff { cats = ncats, fragments = noBodyWords (fragments puff) ++ [(f_messageBody,FragmentText (packString body))] ++ [ (f_messageKeyword,FragmentText (packString k)) | k <- kwds']}
+    writeChan ic $ MainEventComposed ep done
 
 showDestination cs kwds = (map catShowNew cs ++ map ('/':) kwds)
 readDestination :: String -> ([Category],[String])
@@ -978,8 +997,8 @@ prettyPuff puff = unlines xs ++  body where
     xs = to ++ from ++ rr ++ ["-------"]
 
 
-puffConfirm ::  GaleContext -> IO () -> Puff -> IO Widget
-puffConfirm gc done puff = do
+puffConfirm ::  GaleContext -> IO () -> Puff -> Chan MainEvent -> IO Widget
+puffConfirm gc done puff ic = do
     (_,xs) <- scrSize
     gid <- getGaleId
     ncats <- expandAliases (cats puff)
@@ -1025,10 +1044,8 @@ puffConfirm gc done puff = do
             return True
         pk (KeyChar 'e') = do
             puff <- readVal psv
-            np <- editPuff puff
-            case np of
-                Just np -> writeVal psv np
-                Nothing -> return ()
+            done
+            editPuff puff ic done
             return True
         pk (KeyChar '\x0F') = do
             p <- readVal psv

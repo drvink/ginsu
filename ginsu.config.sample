@@ -33,6 +33,14 @@ PUFF_DATE_FORMAT %a %H:%M:%S
 # editor to use for puff composition (else $VISUAL then $EDITOR used)
 #EDITOR vim
 
+# when editing a puff, run the editor in the background, so you can still
+# interact with ginsu while editing
+#BACKGROUND_EDIT true
+
+# if BACKGROUND_EDIT is enabled, prefix commands with this (something like
+# "xterm -e"; if your editor is graphical, don't specify it)
+#BACKGROUND_COMMAND urxvt -e
+
 # GALE_PROXY
 #  gale server to use in preference to all others, you should not need to set
 #  this unless you are behind a firewall or your own GALE_DOMAIN servers are not
