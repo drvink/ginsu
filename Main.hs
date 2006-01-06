@@ -53,7 +53,7 @@ import Doc.Chars(rTee,hLine,lTee)
 
 idleThreshold = 240
 pufflog = "ginsu.4.pufflog"
-helpText = "Need Help? Press F1 or ?"
+helpText = "Need help? Press F1 or ?"
 
 getTmpFile = do
     pid <- Posix.getProcessID
@@ -81,10 +81,10 @@ main = do
     case (envVerbose flags) of
 	1 -> do
 	    setLogLevel LogInfo
-	    putLog LogNotice $ "Verbosity Level: Info"
+	    putLog LogNotice $ "Verbosity level: Info"
 	n | n > 1 -> do
 	    setLogLevel LogDebug
-	    putLog LogNotice $ "Verbosity Level: Debug"
+	    putLog LogNotice $ "Verbosity level: Debug"
 	_ -> return ()
 
     cs <- configLookup "CHARSET"
@@ -167,7 +167,7 @@ main = do
     (Just s) <- configLookup "ON_STARTUP"
     insertKeys ic s
 
-    doRender (widgetCenter $  widgetText "Entering mainloop...")
+    doRender (widgetCenter $  widgetText "Entering main loop...")
     mainLoop gc ic yo ps next_r pcount_r redraw_r
     killThread pl
     killThread gl
@@ -624,23 +624,23 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     f (x:y:r) = y:x:r
                     f x = x
                 "filter_current_thread" -> filter_thread >> continue
-                "recall_combine_mark" -> markBox rc fw "combine which filter mark?" fn where
+                "recall_combine_mark" -> markBox rc fw "Combine which filter mark?" fn where
                     fn n = do
                         (f,_) <- mark_get_value (gsMarks gs) n
                         modifyFilter $ maybe id (++) f
-                "recall_filter_mark" -> markBox rc fw "recall which filter mark?" fn where
+                "recall_filter_mark" -> markBox rc fw "Recall which filter mark?" fn where
                     fn n = do
                         (f,_) <- mark_get_value (gsMarks gs) n
                         modifyFilter $ maybe id const f
-                "set_filter_mark" -> markBox rc fw "set which mark?" fn where
+                "set_filter_mark" -> markBox rc fw "Set which mark?" fn where
                     fn n = do
                         fs <- readVal filter_r
                         mark_set_filter (gsMarks gs) n fs
-                "set_mark" ->  markBox rc fw "set which mark?" fn where
+                "set_mark" ->  markBox rc fw "Set which mark?" fn where
                     fn n = do
                         s <- readVal selected_r
                         mark_set_pos (gsMarks gs) n s
-                "recall_mark" ->  markBox rc fw "recall which mark?" fn where
+                "recall_mark" ->  markBox rc fw "Recall which mark?" fn where
                     fn n = do
                         (_,s) <- mark_get_value (gsMarks gs) n
                         maybe (return ()) (writeVal selected_r) s
@@ -654,7 +654,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             Just a -> do
                                 modifyFilter (BoolJust (FilterAuthor a):)
                                 continue
-                            Nothing -> setMessage "no signed puff to get author from" >> continue
+                            Nothing -> setMessage "No signed puff to get author from" >> continue
                 "prompt_new_filter" -> do
                     (ys,_) <- scrSize
                     v <- commandRead justGetKey stdScr (ys - 1) "Filter: " ""
@@ -693,8 +693,8 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     (ys,_) <- scrSize
                     v <- commandRead justGetKey stdScr (ys - 1) "Presence: " p
                     case v of
-                        Just v -> writeVal myPresence v >> setMessage ("Presence Updated: " ++ v)
-                        Nothing -> setMessage "Presence unchanged."
+                        Just v -> writeVal myPresence v >> setMessage ("Presence updated: " ++ v)
+                        Nothing -> setMessage "Presence unchanged"
                     continue
                 "reply_to_author" -> do
                     p <- readVal selPuff
@@ -721,7 +721,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                                             --rawSystem a []
                                             mySystem a
                                             return ()
-                                        key -> keyError "unknown match" key
+                                        key -> keyError "Unknown match" key
                                     >> do
                                     setRenderWidget rc fw
                                     return True
@@ -766,7 +766,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     Nothing -> return ""
                     Just mid ->  Hash.lookup puffRRHash mid >>= \ml -> case ml of
                         Nothing -> return ""
-                        Just ml -> return $ "\nReceieved By:\n" ++ unlines (snub ml)
+                        Just ml -> return $ "\nReceieved by:\n" ++ unlines (snub ml)
 	    v <- widgetScroll (widgetVerticalBox False [(NoExpand,widgetText $ chunkText (xs - 1) ((showPuff p) ++ wr)), (NoExpand, widgetText "\n\n\n"), (NoExpand, pv)])
 	    return v
 	justGetKey = readChan ic >>= \v -> case v of
@@ -795,7 +795,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 		    if b then nextKey else return ()
 		(MainEventComposed ep done) -> do
 		    case ep of
-			Nothing -> setMessage "Puff cancelled."
+			Nothing -> setMessage "Puff cancelled"
 			Just p -> do
 			    pcw <- puffConfirm gc done p ic
 			    setRenderWidget rc pcw
@@ -993,7 +993,7 @@ prettyPuff puff = unlines xs ++  body where
     body = case [ unpackPS t | (n,FragmentText t) <- fragments puff, n == f_messageBody] of
         (t:_) -> t
         [] -> ""
-    rr = if hasFragment puff (f_questionReceipt) then ["Return Receipt: Yes"] else []
+    rr = if hasFragment puff (f_questionReceipt) then ["Return receipt: Yes"] else []
     xs = to ++ from ++ rr ++ ["-------"]
 
 
@@ -1016,7 +1016,7 @@ puffConfirm gc done puff ic = do
     psvs <- newMVar (prettyPuff, showPuff)
     csv <- combineVal psv psvs
     let pw = newSVarWidget csv (\(p,(f,_)) -> dynamicWidget (verifyDestinations gc (cats p) >>= \text -> return $ widgetText $ text ++ "--\n" ++ (chunkText (xs - 4) (f p))))
-    let w = (widgetCenter $  widgetText "SEND PUFF?")
+    let w = (widgetCenter $  widgetText "Send puff?")
         h = (widgetCenter $ widgetText (paragraph xs $ "y:send q:cancel e:edit r:returnReceipt h:allHeaders A:anonymize <C-o>:rot13" ))
         pk (KeyChar 'q')  = done >> return True
         pk (KeyChar 'n')  = done >> return True

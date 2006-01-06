@@ -535,10 +535,10 @@ verifyDestinations' gc cs = mapM dc cs where
     dc' c = do
         ks <- findDest gc c
         case ks of
-            DestPublic -> return "Public Category (puff will not be encrypted)"
-            DestEncrypted _ -> return "Private Category"
+            DestPublic -> return "Public category (puff will not be encrypted)"
+            DestEncrypted _ -> return "Private category"
             -- DestUnknown _ | Just x <- nextTry (fst c) -> dc' (x,snd c)
-            DestUnknown _ -> return "*UNKNOWN*  (puff will not be encrypted)"
+            DestUnknown _ -> return "Unknown destination (puff will not be encrypted)"
 --    nextTry "*" = fail "no more"
 --    nextTry ss = return $ reverse (nt (reverse ss)) where
 --        nt ('*':'.':ss)  = nt ss
