@@ -591,7 +591,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             (KeyChar 'y') -> return False
                             (KeyChar 'Y') -> return False
                             _ -> setRenderWidget rc fw >> return True
-                        in setRenderWidget rc (stackedWidgets [keyCatcherWidget pk (dialog "really quit y/n?"), fw]) >> return True
+                        in setRenderWidget rc (stackedWidgets [keyCatcherWidget pk (dialog "Really quit (y/n)?"), fw]) >> return True
                 "fast_quit" -> return False
                 "next_line" -> scrollPuffs 1 >> continue
                 "previous_line" -> scrollPuffs (-1) >> continue
