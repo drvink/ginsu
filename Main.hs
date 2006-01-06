@@ -347,6 +347,8 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 
     rot13_r <- newMVar False
 
+    editing_r <- newMVar False
+
     presence <- configLookupElse "GALE_PRESENCE" "in.perhaps"
     myPresence <- newJVar presence
 
@@ -584,6 +586,9 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                 (KeyChar n) | n `elem` "123456789" -> setWorkspace n >> continue
                 key -> keyError "Invalid key" key >> continue
             Just x -> x
+        withEditing f = do
+            lv <- readVal editing_r
+            if lv then continue else writeVal editing_r True >> f
         perform_action x = case x of
                 "reconnect_to_servers" -> reloadConfigFiles >> getGaleProxy >>= \gp -> galeSetProxys gc gp >>  reconnectGaleContext gc >> continue
                 "ask_quit" ->
@@ -687,7 +692,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                         Just p -> do
                             pdw <- puffDetailsWidget p
                             setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) pdw) >> continue
-                "new_puff" -> composePuff (setRenderWidget rc fw)[] [] >> continue
+                "new_puff" -> withEditing $ composePuff (setRenderWidget rc fw)[] [] >> continue
                 "modify_presence_string" -> do
                     p <- readVal myPresence
                     (ys,_) <- scrSize
@@ -696,7 +701,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                         Just v -> writeVal myPresence v >> setMessage ("Presence updated: " ++ v)
                         Nothing -> setMessage "Presence unchanged"
                     continue
-                "reply_to_author" -> do
+                "reply_to_author" -> withEditing $ do
                     p <- readVal selPuff
                     case p of
                         Nothing -> return ()
@@ -728,7 +733,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                               in v
                         _ -> continue
 
-                "follow_up" -> do
+                "follow_up" -> withEditing $ do
                     p <- readVal selPuff
                     case p of
                         Nothing -> setMessage "No puff selected"
@@ -737,7 +742,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             let kws = filter (`elem` (map packString pkw)) (getFragmentStrings p f_messageKeyword)
                             composePuff (setRenderWidget rc fw) (cats p) kws
                     continue
-                "group_reply" -> do
+                "group_reply" -> withEditing $ do
                     p <- readVal selPuff
                     case p of
                         Nothing -> setMessage "No puff selected"
@@ -746,7 +751,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             let kws = filter (`elem` (map packString pkw)) (getFragmentStrings p f_messageKeyword)
                             composePuff (setRenderWidget rc fw) (nub $ catParseNew (getAuthor p):cats p) kws
                     continue
-                "resend_puff" -> do
+                "resend_puff" -> withEditing $ do
                     p <- readVal selPuff
                     case p of
                         Nothing -> setMessage "No puff selected"
@@ -799,6 +804,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 			Just p -> do
 			    pcw <- puffConfirm gc done p ic
 			    setRenderWidget rc pcw
+		    writeVal editing_r False
 		    nextKey
     np <- configLookupBool "NO_PRESENCE_NOTIFY"
 
