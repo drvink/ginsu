@@ -143,6 +143,8 @@ instance (DocLike a, Monad m,TextLike (m a)) => DocLike (m a) where
         a <- a
         b <- b
         return (a <+> b)
+    vcat xs = sequence xs >>= return . vcat
+    hsep xs = sequence xs >>= return . hsep
 
 ---------------------
 -- HughesPJ instances
