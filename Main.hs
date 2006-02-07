@@ -958,9 +958,9 @@ editPuff puff ic done = do
     bgcmd <- if bgedit then configLookupList "BACKGROUND_COMMAND" else return []
     let (cmd:args) = (concatMap words bgcmd) ++ [e] ++ (concatMap words eo) ++ [fn]
     let after = editPuffDone fn ic done it puff
-    let handle = do st <- Posix.getAnyProcessStatus False False
-                    case st of Just _ -> handle
-                               Nothing -> after
+    let handle = do st <- try $ Posix.getAnyProcessStatus False False
+                    case st of Right (Just _) -> handle
+                               _ -> after
     if bgedit then do
             Posix.installHandler Posix.sigCHLD (Posix.CatchOnce handle) Nothing >> return ()
             Posix.forkProcess (Posix.executeFile cmd True args Nothing) >> return ()
