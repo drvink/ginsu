@@ -5,6 +5,7 @@
 module Doc.PPrint where
 
 import Doc.DocLike
+import qualified Data.Map as Map
 
 
 class DocLike d => PPrint d a  where
@@ -51,3 +52,5 @@ instance (PPrint d a, PPrint d b, PPrint d c) => PPrint d (a,b,c) where
                                 pprint z])
 
 
+instance (PPrint d a, PPrint d b) => PPrint d (Map.Map a b) where
+    pprint m = vcat [ pprint x <+> text "=>" <+> pprint y | (x,y) <- Map.toList m]
