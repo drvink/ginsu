@@ -46,6 +46,10 @@ instance DocLike d => PPrint d () where
 instance (PPrint d a, PPrint d b) => PPrint d (a,b) where
   pprint (x,y) = parens (hsep [pprint x <> comma, pprint y])
 
+instance (PPrint d a, PPrint d b) => PPrint d (Either a b) where
+  pprint (Left x) = text "Left" <+> pprint x
+  pprint (Right x) = text "Right" <+> pprint x
+
 instance (PPrint d a, PPrint d b, PPrint d c) => PPrint d (a,b,c) where
   pprint (x,y,z) = parens (hsep [pprint x <> comma,
                                 pprint y <> comma,
