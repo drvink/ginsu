@@ -1,5 +1,5 @@
 
---  $Id: GenUtil.hs,v 1.43 2005/08/09 23:03:20 john Exp $
+--  $Id: GenUtil.hs,v 1.50 2006/04/04 02:15:00 john Exp $
 -- arch-tag: 835e46b7-8ffd-40a0-aaf9-326b7e347760
 
 
@@ -38,12 +38,13 @@ module GenUtil(
     putErr,putErrLn,putErrDie,
     -- ** Simple deconstruction
     fromLeft,fromRight,fsts,snds,splitEither,rights,lefts,
+    isLeft,isRight,
     -- ** System routines
     exitSuccess, System.exitFailure, epoch, lookupEnv,endOfTime,
     -- ** Random routines
     repMaybe,
     liftT2, liftT3, liftT4,
-    snub, snubFst, sortFst, groupFst, foldl',
+    snub, snubFst, snubUnder, smerge, sortFst, groupFst, foldl',
     fmapLeft,fmapRight,isDisjoint,isConjoint,
     groupUnder,
     sortUnder,
@@ -52,8 +53,11 @@ module GenUtil(
     sortGroupUnder,
     sortGroupUnderF,
     sortGroupUnderFG,
+    sameLength,
+    naturals,
 
     -- ** Monad routines
+    perhapsM,
     repeatM, repeatM_, replicateM, replicateM_, maybeToMonad,
     toMonadM, ioM, ioMp, foldlM, foldlM_, foldl1M, foldl1M_,
     -- ** Text Routines
@@ -100,6 +104,14 @@ module GenUtil(
     getOptContents,
     doTime,
     getPrefix,
+    rspan,
+    rdropWhile,
+    rtakeWhile,
+    rbdropWhile,
+    concatMapM,
+    on,
+    mapMsnd,
+    mapMfst,
 
 
     -- * Classes
@@ -107,8 +119,7 @@ module GenUtil(
     ) where
 
 import Char(isAlphaNum, isSpace, toLower, ord, chr)
-import List(group,sort)
-import List(intersperse, sortBy, groupBy, transpose)
+import List
 import Monad
 import qualified IO
 import qualified System
@@ -119,6 +130,14 @@ import CPUTime
 {-# SPECIALIZE snub :: [String] -> [String] #-}
 {-# SPECIALIZE snub :: [Int] -> [Int] #-}
 
+{-# RULES "snub/snub" forall x . snub (snub x) = snub x #-}
+{-# RULES "snub/nub" forall x . snub (nub x) = snub x #-}
+{-# RULES "nub/snub" forall x . nub (snub x) = snub x #-}
+{-# RULES "snub/sort" forall x . snub (sort x) = snub x #-}
+{-# RULES "sort/snub" forall x . sort (snub x) = snub x #-}
+{-# RULES "snub/[]" snub [] = [] #-}
+{-# RULES "snub/[x]" forall x . snub [x] = [x] #-}
+
 -- | sorted nub of list, much more efficient than nub, but doesnt preserve ordering.
 snub :: Ord a => [a] -> [a]
 snub = map head . group . sort
@@ -126,6 +145,10 @@ snub = map head . group . sort
 -- | sorted nub of list of tuples, based solely on the first element of each tuple.
 snubFst :: Ord a => [(a,b)] -> [(a,b)]
 snubFst = map head . groupBy (\(x,_) (y,_) -> x == y) . sortBy (\(x,_) (y,_) -> compare x y)
+
+-- | sorted nub of list based on function of values
+snubUnder :: Ord b => (a -> b) -> [a] -> [a]
+snubUnder f = map head . groupUnder f . sortUnder f
 
 -- | sort list of tuples, based on first element of each tuple.
 sortFst :: Ord a => [(a,b)] -> [(a,b)]
@@ -135,12 +158,71 @@ sortFst = sortBy (\(x,_) (y,_) -> compare x y)
 groupFst :: Eq a => [(a,b)] -> [[(a,b)]]
 groupFst = groupBy (\(x,_) (y,_) -> x == y)
 
+concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM f xs = do
+    res <- mapM f xs
+    return $ concat res
+
+on :: (a -> a -> b) -> (c -> a) -> c -> c -> b
+(*) `on` f = \x y -> f x * f y
+
+mapMsnd :: Monad m => (b -> m c) -> [(a,b)] -> m [(a,c)]
+mapMsnd f xs = do
+    let g (a,b) = do
+            c <- f b
+            return (a,c)
+    mapM g xs
+
+mapMfst :: Monad m => (b -> m c) -> [(b,a)] -> m [(c,a)]
+mapMfst f xs = do
+    let g (a,b) = do
+            c <- f a
+            return (c,b)
+    mapM g xs
+
+rspan :: (a -> Bool) -> [a] -> ([a], [a])
+rspan fn xs = f xs [] where
+    f [] rs = ([],reverse rs)
+    f (x:xs) rs
+        | fn x = f xs (x:rs)
+        | otherwise = (reverse rs ++ za,zb) where
+            (za,zb) = f xs []
+
+rbreak :: (a -> Bool) -> [a] -> ([a], [a])
+rbreak fn xs = rspan (not . fn) xs
+
+rdropWhile :: (a -> Bool) -> [a] -> [a]
+rdropWhile fn xs = f xs [] where
+    f [] _ = []
+    f (x:xs) rs
+        | fn x = f xs (x:rs)
+        | otherwise = reverse rs ++ (f xs [])
+
+rtakeWhile :: (a -> Bool) -> [a] -> [a]
+rtakeWhile fn xs = f xs [] where
+    f [] rs = reverse rs
+    f (x:xs) rs
+        | fn x = f xs (x:rs)
+        | otherwise = f xs []
+
+rbdropWhile :: (a -> Bool) -> [a] -> [a]
+rbdropWhile fn xs = rdropWhile fn (dropWhile fn xs)
+
 -- | group a list based on a function of the values.
 groupUnder :: Eq b => (a -> b) -> [a] -> [[a]]
 groupUnder f = groupBy (\x y -> f x == f y)
 -- | sort a list based on a function of the values.
 sortUnder :: Ord b => (a -> b) -> [a] -> [a]
 sortUnder f = sortBy (\x y -> f x `compare` f y)
+
+-- | merge sorted lists in linear time
+smerge :: Ord a => [a] -> [a] -> [a]
+smerge (x:xs) (y:ys)
+    | x == y = x:smerge xs ys
+    | x < y = x:smerge xs (y:ys)
+    | otherwise = y:smerge (x:xs) ys
+smerge [] ys = ys
+smerge xs [] = xs
 
 sortGroupUnder :: Ord a => (b -> a) -> [b] -> [[b]]
 sortGroupUnder f = groupUnder f . sortUnder f
@@ -152,6 +234,7 @@ sortGroupUnderFG f g xs = [ (f x, map g xs) |  xs@(x:_) <- sortGroupUnder f xs]
 
 minimumUnder :: Ord b => (a -> b) -> [a] -> a
 minimumUnder _ [] = error "minimumUnder: empty list"
+minimumUnder _ [x] = x
 minimumUnder f (x:xs) = g (f x) x xs where
     g _ x [] = x
     g fb b (x:xs)
@@ -161,6 +244,7 @@ minimumUnder f (x:xs) = g (f x) x xs where
 
 maximumUnder :: Ord b => (a -> b) -> [a] -> a
 maximumUnder _ [] = error "maximumUnder: empty list"
+maximumUnder _ [x] = x
 maximumUnder f (x:xs) = g (f x) x xs where
     g _ x [] = x
     g fb b (x:xs)
@@ -260,6 +344,9 @@ repeatM x = sequence $ repeat x
 repeatM_ :: Monad m => m a -> m ()
 repeatM_ x = sequence_ $ repeat x
 
+{-# RULES "replicateM/0" replicateM 0 = const (return []) #-}
+{-# RULES "replicateM_/0" replicateM_ 0 = const (return ()) #-}
+
 {-# INLINE replicateM #-}
 {-# SPECIALIZE replicateM :: Int -> IO a -> IO [a] #-}
 replicateM :: Monad m => Int -> m a -> m [a]
@@ -301,6 +388,20 @@ splitEither  (r:rs) = case splitEither rs of
         Left x -> (x:xs,ys)
         Right y -> (xs,y:ys)
 splitEither          [] = ([],[])
+
+isLeft Left {} = True
+isLeft _ = False
+
+isRight Right {} = True
+isRight _ = False
+
+perhapsM :: Monad m => Bool -> a -> m a
+perhapsM True a = return a
+perhapsM False _ = fail "perhapsM"
+
+sameLength (_:xs) (_:ys) = sameLength xs ys
+sameLength [] [] = True
+sameLength _ _ = False
 
 fromEither :: Either a a -> a
 fromEither (Left x) = x
@@ -349,8 +450,11 @@ paragraph maxn xs = drop 1 (f maxn (words xs)) where
     f _ [] = "\n"
 
 chunk :: Int -> [a] -> [[a]]
-chunk mw s | length s < mw = [s]
-chunk mw s = case splitAt mw s of (a,b) -> a : chunk mw b
+chunk 0 _  = repeat []
+chunk _ [] = []
+chunk mw s = case splitAt mw s of
+    (a,[]) -> [a]
+    (a,b) -> a : chunk mw b
 
 chunkText :: Int -> String -> String
 chunkText mw s = concatMap (unlines . chunk mw) $ lines s
@@ -480,8 +584,7 @@ indentLines n s = unlines $ map (replicate n ' ' ++)$ lines s
 
 -- | trim blank lines at beginning and end of string
 trimBlankLines :: String -> String
-trimBlankLines cs = unlines $ reverse (tb $ reverse (tb (lines cs))) where
-    tb = dropWhile (all isSpace)
+trimBlankLines cs = unlines $ rbdropWhile (all isSpace) (lines cs)
 
 buildTableRL :: [(String,String)] -> [String]
 buildTableRL ps = map f ps where
@@ -502,7 +605,11 @@ foldl' f a (x:xs) = (foldl' f $! f a x) xs
 
 -- | count elements of list that have a given property
 count :: (a -> Bool) -> [a] -> Int
-count f = length . filter f
+count f xs = g 0 xs where
+    g n [] = n
+    g n (x:xs)
+        | f x = let x = n + 1 in x `seq` g x xs
+        | otherwise = g n xs
 
 -- | randomly permute a list, using the standard random number generator.
 randomPermuteIO :: [a] -> IO [a]
@@ -668,5 +775,10 @@ getPrefix a b = f a b where
     f (p:ps) (s:ss)
         | p == s = f ps ss
         | otherwise = fail $ "getPrefix: " ++ a ++ " " ++ b
+
+
+{-# INLINE naturals #-}
+naturals :: [Int]
+naturals = [0..]
 
 
