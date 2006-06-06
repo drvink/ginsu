@@ -8,7 +8,7 @@ GHCOPTS=  $(GHCDEBUGOPTS) $(GHCINC) $(GHCWARN) $(GHCFLAGS) $(GHCPACKAGES) $(GHCF
 CFLAGS=  @CURSES_INCLUDEDIR@ -I. -I@srcdir@
 CC=$(HC)
 
-EXTRA_DIST = reconf docs/Changelog.old Curses.hsc depend.make ginsu.config.sample \
+EXTRA_DIST = docs/Changelog.old Curses.hsc depend.make ginsu.config.sample \
              Changelog RSA.hsc  docs/ginsu.1 ginsu.spec.in LICENSE MyLocale.hsc CWString.hsc \
              Version.hs.in docs/ginsu-manual.txt docs/ginsu-manual.html \
              docs/wiki.css ginsu-mdk \
@@ -34,6 +34,7 @@ bin_SCRIPTS =  ginsu-mdk
 BUILT_SOURCES =
 
 
+ACLOCAL_AMFLAGS = -I ac-macros
 
 ginsu_SOURCES = ConfigFile.hs Gale.hs GenUtil.hs \
     Main.hs  Version.hs ExampleConf.hs Filter.hs SimpleParser.hs  ErrorLog.hs  UTF8.hs \
@@ -102,7 +103,7 @@ depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
 
 
 
-include depend.make
+-include depend.make
 
 BINDISTDIR=$(PACKAGE)-$(VERSION)-`uname -s`-`uname -m`
 
