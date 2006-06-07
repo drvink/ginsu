@@ -8,6 +8,7 @@ import Maybe
 import System.Cmd
 import System.Time
 import Time
+import Random
 
 import Control.Concurrent
 import Control.Exception
@@ -175,7 +176,8 @@ main = do
     unless (envNoPufflog flags || envNoWritePufflog flags) $ doRender (widgetCenter $ widgetText "Writing pufflog...") >>  writePufflog ps
 
 pufflogLoop ps_r pcount_r n = do
-    threadDelay 30000000
+    rnd <- randomIO
+    threadDelay (30000000 + (rnd `mod` 10000000))
     n' <- readVal pcount_r
     if n' /= n
         then do
@@ -241,7 +243,7 @@ presenceViewUser :: String -> PresenceData -> Widget
 presenceViewUser user pl = widgetText pt where
     pt = user ++ ":\n" ++ indentLines 2  (unlines $ buildTableLL ([b|(a,b) <- pl, a == user]))
 
-	
+
 
 dialog "" = widgetEmpty
 dialog s = widgetCenter $ widgetAttr [AttrBold] $ widgetSimpleFrame wb where
@@ -426,7 +428,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 		Just (Puff {cats = [c]}) -> modifyFilter (BoolJust (FilterCategory c):)
 		Just (Puff {cats = cs}) -> modifyFilter (or (map (BoolJust . FilterCategory) cs):)
 		_ -> return ()
-	
+
 	addPuff p = do
             let author = getAuthor p
             (name,domain) <- fmap catParseNew getGaleId
