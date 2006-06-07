@@ -63,10 +63,24 @@ type Category = (String,String)
 
 type FragmentList = [(Atom,Fragment)]
 
-data Puff = Puff {cats :: ![Category], signature :: ![Signature], fragments :: !FragmentList}
-data Fragment = FragmentText !PackedString | FragmentData !(UArray Int Word8) | FragmentTime !ClockTime | FragmentInt !Int32 | FragmentNest !FragmentList
-data Signature = Unverifyable !Key | Signed !Key | Encrypted ![String]
-data Key = Key !String !FragmentList
+data Puff = Puff {
+    cats :: [Category],
+    signature :: [Signature],
+    fragments :: FragmentList
+    }
+data Fragment =
+    FragmentText !PackedString
+    | FragmentData !(UArray Int Word8)
+    | FragmentTime !ClockTime
+    | FragmentInt !Int32
+    | FragmentNest FragmentList
+
+data Signature =
+    Unverifyable Key
+    | Signed Key
+    | Encrypted [String]
+
+data Key = Key String FragmentList
 
 emptyKey n = Key n [( f_keyMember, FragmentText nilPS)]
 
