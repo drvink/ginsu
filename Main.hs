@@ -512,17 +512,17 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 	    sendPresence True
 	    loopNotIdle
 	sendPresence sendIfNotIdle = do
-	    Category (n,d) <- fmap catParseNew getGaleId
+            notifyCategory <- getMyNotifyCategory
 	    (pf,notIdle) <- getPresenceFrags
 	    when (sendIfNotIdle || not notIdle) $ do
 		p <- puffTemplate
-		galeSendPuff gc $ p {cats = [Category (("_gale.notice." ++ n),d)], fragments = fragments p ++ pf}
+		galeSendPuff gc $ p {cats = [notifyCategory], fragments = fragments p ++ pf}
 	    return notIdle
 	gonePresencePuff = do
-	    Category (n,d) <- fmap catParseNew getGaleId
+            notifyCategory <- getMyNotifyCategory
 	    p <- puffTemplate
 	    let ef = [(f_noticePresence' ,FragmentText (toPackedString f_outGone)), (f_noticePresence, FragmentText (toPackedString f_outGone))]
-	    return $ p {cats = [Category ("_gale.notice." ++ n,d)], fragments = fragments p ++ ef }
+	    return $ p {cats = [notifyCategory], fragments = fragments p ++ ef }
 	modifyFilter f = do
 	    mapVal filter_r f
 	    select_perhaps select_next >> select_perhaps select_prev
@@ -819,6 +819,9 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
     nextKey
     done
 
+getMyNotifyCategory = do
+    Category (n,d) <- fmap catParseNew getGaleId
+    return $ Category (("_gale.notice." ++ n),d)
 
 -- makeURLRegex :: IO Regex
 -- makeURLRegex = regcomp "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?" regExtended
