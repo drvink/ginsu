@@ -60,7 +60,7 @@ doCheckConfig = do
 	( "GALE_PROXY ", simpleQuote gp),
 	( "GALE_SUBSCRIBE ", unwords (snub galeSubscribe)) ]
     when (galeAliases /= []) $ putStrLn $ "GALE_ALIASES \n" ++
-	unlines ( map  (\(l,(c,d)) -> "  " ++ l ++ " -> " ++ c ++ "@" ++ d)  galeAliases)
+	unlines ( map  (\ (l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
 
     let p = (galeDir ++ "/auth/private/")
 	knames = [p ++ gid, p ++ gid ++ ".gpri"]

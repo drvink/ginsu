@@ -118,7 +118,7 @@ main = do
     putLog LogInfo $ "GALE_ID " ++ gid
     putLog LogInfo $ "GALE_PROXY " ++ simpleQuote gp
     putLog LogInfo $ "GALE_ALIASES \n" ++
-	unlines ( map  (\(l,(c,d)) -> "  " ++ l ++ " -> " ++ c ++ "@" ++ d)  galeAliases)
+	unlines ( map  (\(l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
 
 
     Control.Exception.bracket_ initCurses endWin $ do
@@ -141,7 +141,7 @@ main = do
     gs <- fmap (concat . map words) $ configLookupList "GALE_SUBSCRIBE"
     gps <- getGaleProxy
     let c =  if envJustArgs flags then acats else gs ++ acats
-        nc = map ("_gale.notice@" ++) $ snub (snds (map catParseNew c))
+        nc = map ("_gale.notice@" ++) $ snub (map categoryCell (map catParseNew c))
     --let c =  gs ++ acats
     --    nc = map ("_gale.notice@" ++) $ snub (snds (map catParseNew c))
     withGale gps $ \gc -> do
@@ -151,8 +151,8 @@ main = do
     Status.setFS "Gale.Keys.Cached" (numberKeys $ keyCache gc)
 
     galeAddCategories gc $ map catParseNew (snub $ c ++ nc)
-    (name,domain) <- fmap catParseNew getGaleId
-    galeAddCategories gc $ [("_gale.rr." ++ name ,domain)]
+    Category (name,domain) <- fmap catParseNew getGaleId
+    galeAddCategories gc $ [Category ("_gale.rr." ++ name ,domain)]
     doRender widgetEmpty
     pl <- forkIO $ puffLoop ic gc
     gl <- forkIO $ getchLoop ic
@@ -206,9 +206,9 @@ expandAliases :: [Category] -> IO [Category]
 expandAliases cats = do
     as <- getGaleAliases
     gd <- getGaleDomain
-    let ec x@(c,"") = de $ head $ [(tc ++ drop (length f) c,td) | (f,(tc,td)) <- as, f `isPrefixOf` c] ++ [x]
+    let ec x@(Category (c,"")) = de $ head $ [Category (tc ++ drop (length f) c,td) | (f,Category (tc,td)) <- as, f `isPrefixOf` c] ++ [x]
 	ec x = x
-	de (c,"") = (c,gd)
+	de (Category (c,"")) = Category (c,gd)
 	de x = x
     return $ map ec cats
 
@@ -431,7 +431,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 
 	addPuff p = do
             let author = getAuthor p
-            (name,domain) <- fmap catParseNew getGaleId
+            Category (name,domain) <- fmap catParseNew getGaleId
 	    case getFragmentString p (f_noticePresence') of
 		Nothing -> return ()
 		Just pn -> do
@@ -445,7 +445,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     Hash.delete idleHash author
                     Hash.insert idleHash author $ fromJust $ max mt (Just pn)
             case getFragmentString p (fromString "answer.receipt") of
-                Just n | [(cat,dom)] <- cats p, dom == domain, ("_gale.rr." ++ name) `isPrefixOf` cat -> do
+                Just n | [Category (cat,dom)] <- cats p, dom == domain, ("_gale.rr." ++ name) `isPrefixOf` cat -> do
                     mv <- Hash.lookup puffRRHash (drop (10 + length name) cat)
                     Hash.delete puffRRHash (drop (10 + length name) cat)
                     Hash.insert puffRRHash (drop (10 + length name) cat) (unpackPS n:concat (maybeToMonad mv))
@@ -457,7 +457,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 		Just _ -> buildReciept p >>= \p -> forkIO (galeSendPuff gc p) >> return ()
 	    case fmap unpackPS $ getFragmentString p f_messageBody of
 		Nothing -> return ()
-		Just n -> when (not $ (all isSpace n) && (all (("_gale" `isPrefixOf`) . fst) (cats p))) $ do
+		Just n -> when (not $ (all isSpace n) && (all (("_gale" `isPrefixOf`) . categoryHead) (cats p))) $ do
                     mt <- Hash.lookup idleHash author
                     pn <- getClockTime
                     Hash.insert idleHash author $ fromJust $ max mt (Just pn)
@@ -512,17 +512,17 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 	    sendPresence True
 	    loopNotIdle
 	sendPresence sendIfNotIdle = do
-	    (n,d) <- fmap catParseNew getGaleId
+	    Category (n,d) <- fmap catParseNew getGaleId
 	    (pf,notIdle) <- getPresenceFrags
 	    when (sendIfNotIdle || not notIdle) $ do
 		p <- puffTemplate
-		galeSendPuff gc $ p {cats = [( ("_gale.notice." ++ n),d)], fragments = fragments p ++ pf}
+		galeSendPuff gc $ p {cats = [Category (("_gale.notice." ++ n),d)], fragments = fragments p ++ pf}
 	    return notIdle
 	gonePresencePuff = do
-	    (n,d) <- fmap catParseNew getGaleId
+	    Category (n,d) <- fmap catParseNew getGaleId
 	    p <- puffTemplate
 	    let ef = [(f_noticePresence' ,FragmentText (toPackedString f_outGone)), (f_noticePresence, FragmentText (toPackedString f_outGone))]
-	    return $ p {cats = [("_gale.notice." ++ n,d)], fragments = fragments p ++ ef }
+	    return $ p {cats = [Category ("_gale.notice." ++ n,d)], fragments = fragments p ++ ef }
 	modifyFilter f = do
 	    mapVal filter_r f
 	    select_perhaps select_next >> select_perhaps select_prev
@@ -847,7 +847,7 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
     Just time = getFragmentTime frags f_idTime `mplus` getFragmentTime frags (fromString "_ginsu.timestamp")
     kwds = getFragmentStrings p f_messageKeyword
     n = length body'
-    addCat w (x,y) = withColor w (Pair c) $ Curses.withAttr w attrBold (waddstr w x) >> waddstr w ('@':y)  where
+    addCat w (Category (x,y)) = withColor w (Pair c) $ Curses.withAttr w attrBold (waddstr w x) >> waddstr w ('@':y)  where
         c = fromIntegral $ (hashPS (packString (x ++ "@" ++ y)) `mod` 7) + 1
     doit = do
         let ac = Pair $ (fromIntegral $ (hashPS $ packString (getAuthor p)) `mod` 7) + 1
@@ -1015,7 +1015,7 @@ puffConfirm gc done puff ic = do
     ncats <- expandAliases (cats puff)
     puff <- return $ puff {cats = ncats}
     psv <- newMVar puff
-    let (n,d) = catParseNew gid
+    let Category (n,d) = catParseNew gid
     let rr_cat = case getFragmentString puff (f_messageId) of
             Just mid -> "_gale.rr." ++ n ++ "." ++ unpackPS mid ++ "@" ++ d
             Nothing -> gid

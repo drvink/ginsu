@@ -95,7 +95,7 @@ newGaleContext ps cs = do
     let ncs = map catParseNew cs
     cats <- newMVar $ ncs
     c <- newChan
-    ps <- return (case ps of [] -> snub (concatMap (hostStrings . snd) ncs); _ -> ps)
+    ps <- return (case ps of [] -> snub (concatMap (hostStrings . categoryCell) ncs); _ -> ps)
     status <- newMVar $ Left $ "Attempting to connect to: " ++ unwords ps
     pmv <- newMVar ps
     hv <- newEmptyMVar
@@ -213,7 +213,7 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
                             Just d -> putKey (keyCache gc) d
                             Nothing -> return ()
                         case (cats p',getFragmentString p' f_answerKeyError') of
-                            ([(n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew (drop 10 n,d))
+                            ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
                             (_,_) -> return ()
                     Left err -> do
                         putLog LogError err
@@ -424,10 +424,10 @@ parseCategoryOld = parser p where
 	d <- many (noneOf "/")
 	parseExact "/user/"
 	c <- parseRest
-	return (con (bl c),d)
+	return (Category (con (bl c),d))
 
 catShowOld :: Category -> String
-catShowOld (c,d) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
+catShowOld (Category (c,d)) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
     con cs | [nv] <- [x ++ (con $ drop (length y) cs) |(y,x) <- catfixes, y `isPrefixOf` cs] = nv
     con (c:cs) = c:con cs
     con "" = ""
@@ -616,9 +616,9 @@ fetchKeys gc s = do
             r (Key _ []) = fk ss ((s,DestUnknown [s]):xs)
             r k = fk (map unpackPS (getFragmentStrings k f_keyMember) ++ ss) ((s,DestEncrypted [k]):xs)
 
-categoryIsSystem (n,_) | "_gale." `isPrefixOf` n = True
-categoryIsSystem (n,_) | "_gale" == n = True
-categoryIsSystem (_,_) = False
+categoryIsSystem (Category (n,_)) | "_gale." `isPrefixOf` n = True
+categoryIsSystem (Category (n,_)) | "_gale" == n = True
+categoryIsSystem _ = False
 
 
 requestKey _ c | categoryIsSystem c = return ()
@@ -626,7 +626,7 @@ requestKey gc c = do
     let c' = catShowNew c
     v <- getKey (keyCache gc) c'
     when (isNothing v) $ do
-        galeAddCategories gc [("_gale.key", snd c)]
+        galeAddCategories gc [Category ("_gale.key", categoryCell c)]
         d <- createPuff  gc False $ keyRequestPuff c'
         putLog LogDebug $ "sending request for: " ++ c'
         retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> putRaw h d >> hFlush h
@@ -637,7 +637,7 @@ findDest gc c = fd c >>= res where
     fd c = do
         ks <- fetchKeys gc (catShowNew c)
         case ks of
-                DestUnknown _ | (a,b) <- c, Just x <- nextTry a -> fd (x,b)
+                DestUnknown _ | Category (a,b) <- c, Just x <- nextTry a -> fd (Category (x,b))
                 k -> return k
     res x = case x of
         DestUnknown _ -> do

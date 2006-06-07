@@ -200,9 +200,9 @@ flipLocalPart s = nbp ++ ep where
     f _ _ = False
 
 keyRequestPuff :: String -> Puff
-keyRequestPuff s = emptyPuff { cats = [("_gale.query." ++ n, d)], fragments = [(f_questionKey, FragmentText $ packString s), (f_questionKey',FragmentText $ packString s')]} where
+keyRequestPuff s = emptyPuff { cats = [Category ("_gale.query." ++ n, d)], fragments = [(f_questionKey, FragmentText $ packString s), (f_questionKey',FragmentText $ packString s')]} where
     s' = flipLocalPart s
-    (n,d) = catParseNew s
+    Category (n,d) = catParseNew s
 
 la xs = listArray (0, length xs - 1) xs
 

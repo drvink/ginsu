@@ -5,7 +5,9 @@ module Puff(
     Key(..),
     FragmentList,
     HasFragmentList(..),
-    Category, readPuffs, writePuffs, emptyPuff,
+    Category(Category),
+    readPuffs, writePuffs, emptyPuff,
+    categoryHead, categoryCell,
     catParseNew, catShowNew,
     subCategory, fragmentData,
     getFragmentString, getFragmentStrings, getFragmentForceStrings, showPuff, showKey, showFragments,
@@ -59,7 +61,11 @@ import System.IO
 import Time
 import Word(Word8)
 
-type Category = (String,String)
+newtype Category = Category (String,String)
+    deriving(Binary,Eq,Ord)
+
+instance Show Category where
+    show c = catShowNew c
 
 type FragmentList = [(Atom,Fragment)]
 
@@ -123,16 +129,16 @@ f_securitySignature = fromString "security/signature"
 --------------------
 
 subCategory :: Category -> Category -> Bool
-(x1,y1) `subCategory` (x2,y2) = x2 `isPrefixOf` x1 && y2 `isSuffixOf` y1
+Category (x1,y1) `subCategory` Category (x2,y2) = x2 `isPrefixOf` x1 && y2 `isSuffixOf` y1
 
 catParseNew :: String -> Category
-catParseNew cs = (c,(drop 1) d) where
+catParseNew cs = Category (c,(drop 1) d) where
     (c,d) = span (/= '@') cs
 
 
 catShowNew :: Category -> String
-catShowNew (x,"") = x
-catShowNew (x,y) = x ++ "@" ++ y
+catShowNew (Category (x,"")) = x
+catShowNew (Category (x,y)) = x ++ "@" ++ y
 
 ---------------------
 -- working with puffs
@@ -285,6 +291,9 @@ getFile fn = Control.Exception.bracket (openBinaryFile fn ReadMode) hClose $ \bh
 --getFile fn = do
 --    z <- readBinMem fn
 --    get z
+
+categoryHead (Category (h,_)) = h
+categoryCell (Category (_,c)) = c
 
 
 {-
