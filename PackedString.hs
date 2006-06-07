@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -ffi #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.PackedString
@@ -24,6 +25,7 @@ module PackedString (
          -- * Converting to and from @PackedString@s
 	packString,  -- :: String -> PackedString
 	unpackPS,    -- :: PackedString -> String
+        showsPS,
         -- toString,
         toUTF8,
         lengthPS,
@@ -69,7 +71,7 @@ module PackedString (
 	splitPS,     -- :: Char -> PackedString -> [PackedString]
 	splitWithPS, -- :: (Char -> Bool) -> PackedString -> [PackedString]
 
-	-- * I\/O with @PackedString@s	
+	-- * I\/O with @PackedString@s
 	hPutPS,      -- :: Handle -> PackedString -> IO ()
 	hGetPS,      -- :: Handle -> Int -> IO PackedString
     -}
@@ -77,10 +79,8 @@ module PackedString (
 
     ) where
 
-import Prelude
-
-
 import Data.Array.IO
+import Data.Typeable
 import Data.Char
 
 import Bits
@@ -88,7 +88,8 @@ import GHC.Exts
 import Data.Array.Base
 import Word
 import Data.Monoid
-import Data.Generics
+import Data.Generics(Data(..))
+import Foreign.C.Types
 
 instance Monoid PackedString where
     mempty = nilPS
@@ -104,23 +105,40 @@ newtype PackedString = PS (UArray Int Word8)
     deriving(Typeable)
 
 instance Data PackedString where
-    --toConstr _   = error "toConstr"
+    toConstr _   = error "toConstr"
     --fromConstr _   = error "fromConstr"
-    gfoldl _ g x  = g x
+    --gfoldl f g x  = g x
     --dataTypeOf _ = mkDataType []
 
 
 instance Eq PackedString where
-   (PS x) == (PS y)  =  x == y
+    (==) (PS x) (PS y) =  x == y
+    (/=) (PS x) (PS y) =  x /= y
+    {-
+   (PS (UArray _ (I# e) ba)) == (PS (UArray _ (I# e') ba'))
+    | e ==# e' = c_memcmp ba ba' (e +# 1#) ==# 0#
+    | otherwise = False
+    -}
 
 instance Ord PackedString where
     compare (PS x) (PS y) = compare x y
-
+    {-
+    compare (PS (UArray _ (I# e) ba)) (PS (UArray _ (I# e') ba'))
+        | e <# e' =  f LT (c_memcmp ba ba' (e +# 1#))
+        | e ># e' =  f GT (c_memcmp ba ba' (e' +# 1#))
+        | e ==# e' = f EQ (c_memcmp ba ba' (e +# 1#))
+            where
+            f eq 0# = eq
+            f _ x | x ># 0# = GT
+            f _ _ = LT
+     -}
 
 instance Show PackedString where
     showsPrec p ps r = showsPrec p (unpackPS ps) r
 --instance Read PackedString: ToDo
 
+-- this is effectivly pure.
+--foreign import ccall unsafe "memcmp" c_memcmp :: ByteArray# -> ByteArray# -> Int# -> Int#
 
 -- -----------------------------------------------------------------------------
 -- Constructor functions
@@ -145,6 +163,10 @@ packString str = PS $ listArray (0, I# (utfCount str -# 1#)) (toUTF str)
 
 unpackPS :: PackedString -> String
 unpackPS (PS (UArray _ (I# e) ba)) = unpackFoldrUtf8# (ba) (e +# 1#) f [] where
+    f ch r = C# ch : r
+
+showsPS :: PackedString -> String -> String
+showsPS  (PS (UArray _ (I# e) ba)) xs = unpackFoldrUtf8# (ba) (e +# 1#) f xs where
     f ch r = C# ch : r
 
 
@@ -225,9 +247,9 @@ hashPS' (PS (UArray 0 (I# e) ba)) = fromIntegral $ unpackFoldlUtf8# f 5381 ba (e
 -}
 
 hashPS :: PackedString -> Word
-hashPS (PS (UArray _ (I# e) ba)) =  W# (f (unsafeCoerce# 5381#) 0#) where
+hashPS (PS (UArray 0 (I# e) ba)) =  W# (f (unsafeCoerce# 5381#) 0#) where
     f m c
-        | c ==# (e +# 1#) = m
+        | c >=# (e +# 1#) = m
         | otherwise = f (((m `uncheckedShiftL#` 5#) `plusWord#` m ) `xor#`  (((indexWord8Array# ba c)))) (c +# 1#)
 
 
