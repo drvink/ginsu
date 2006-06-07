@@ -147,7 +147,7 @@ publish-docs: docs/ginsu-manual.html
 ARCH = x86_64
 
 publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html
-	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*-Linux-i686.tar.gz
+	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*-Linux-$(ARCH).tar.gz
 	rm -f -- $(PUBLISH_DIR)/drop/ginsu-*.rpm
 	rm -f -- "$(PUBLISH_DIR)/drop/ginsu-$(VERSION).tar.gz"
 	cp "$(BINDISTDIR).tar.gz" "$(PUBLISH_DIR)/drop"
