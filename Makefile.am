@@ -8,7 +8,7 @@ GHCOPTS=  $(GHCDEBUGOPTS) $(GHCINC) $(GHCWARN) $(GHCFLAGS) $(GHCPACKAGES) $(GHCF
 CFLAGS=  @CURSES_INCLUDEDIR@ -I. -I@srcdir@
 CC=$(HC)
 
-EXTRA_DIST = docs/Changelog.old Curses.hsc depend.make ginsu.config.sample \
+EXTRA_DIST = docs/Changelog.old Curses.hsc ginsu.config.sample \
              Changelog RSA.hsc  docs/ginsu.1 ginsu.spec.in LICENSE MyLocale.hsc CWString.hsc \
              Version.hs.in docs/ginsu-manual.txt docs/ginsu-manual.html \
              docs/wiki.css ginsu-mdk \
@@ -58,6 +58,11 @@ ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@
 
 SUFFIXES = .hs .lhs .o .hi .hsc .c .h
 
+ginsu: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
+	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . --make @srcdir@/Main.hs
+
+ginsu_static: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
+	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . -static -optl-static -ldl -lgpm --make @srcdir@/Main.hs
 
 .c.o:
 	$(HC) $(CFLAGS) $(GHCOPTS) -o $@ -c $<
@@ -88,7 +93,7 @@ Changelog: _darcs/inventory
 
 CLEANFILES = Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
 DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o DocLike.o Chars.o
-MAINTAINERCLEANFILES = ExampleConf.hs depend.make KeyHelpTable.hs
+MAINTAINERCLEANFILES = ExampleConf.hs KeyHelpTable.hs
 
 
 
@@ -97,13 +102,13 @@ RSA_hsc.o : RSA_hsc.h my_rsa.h
 CWString_hsc.o: CWString_hsc.h
 
 
-depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
-	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS)  @srcdir@/*.hs      @srcdir@/Boolean/*.hs @srcdir@/Doc/*.hs
+#depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
+#	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS)  @srcdir@/*.hs      @srcdir@/Boolean/*.hs @srcdir@/Doc/*.hs
 #	 ghc -M -optdep-f -optdepdepend.make $(GHCOPTS) @builddir@/*.hs  @srcdir@/*.hs    @builddir@/Boolean/*.hs  @srcdir@/Boolean/*.hs
 
 
 
--include depend.make
+# -include depend.make
 
 BINDISTDIR=$(PACKAGE)-$(VERSION)-`uname -s`-`uname -m`
 
