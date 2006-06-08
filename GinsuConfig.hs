@@ -16,10 +16,10 @@ import Data.Monoid
 import Directory
 import ErrorLog
 import ExampleConf
-import Gale
+import Gale.Gale
+import Gale.Puff
 import GenUtil
 import Monad
-import Puff
 import System
 import System.Posix as Posix hiding (getEnv)
 import System.Posix.Files

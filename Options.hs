@@ -9,7 +9,7 @@ import ExampleConf
 import GenUtil
 import GinsuConfig
 import Help
-import KeyCache
+import Gale.KeyCache
 import KeyName
 import System
 import System.Console.GetOpt

@@ -12,7 +12,7 @@ import Boolean.Boolean
 import Char
 import PackedString
 import Prelude hiding((&&),(||),not,and,or,any,all)
-import Puff
+import Gale.Puff
 import Regex
 import Text.ParserCombinators.Parsec
 

@@ -36,12 +36,12 @@ BUILT_SOURCES =
 
 ACLOCAL_AMFLAGS = -I ac-macros
 
-ginsu_SOURCES = ConfigFile.hs Gale.hs GenUtil.hs \
+ginsu_SOURCES = ConfigFile.hs Gale/Gale.hs GenUtil.hs \
     Main.hs  Version.hs ExampleConf.hs Filter.hs SimpleParser.hs  ErrorLog.hs  UTF8.hs \
-    EIO.hs Puff.hs my_curses.h my_rsa.h Charset.hs Format.hs Screen.hs \
+    EIO.hs Gale/Puff.hs my_curses.h my_rsa.h Charset.hs Format.hs Screen.hs \
     SHA1.hs  KeyName.hs Help.hs  hs_include.h  CacheIO.hs FastMutInt.hs \
     Binary.hs PackedString.hs  Options.hs GinsuConfig.hs Regex.hs KeyHelpTable.hs \
-    Doc/DocLike.hs KeyCache.hs GaleProto.hs UArrayParser.hs  Atom.hs \
+    Doc/DocLike.hs Gale/KeyCache.hs Gale/Proto.hs UArrayParser.hs  Atom.hs \
     Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs
 
 
@@ -91,7 +91,7 @@ $(ginsu_OBJECTS): $(CHEADERS)
 Changelog: _darcs/inventory
 	darcs changes > $@
 
-CLEANFILES = Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
+CLEANFILES = Gale/*.hi Gale/*.o Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
 DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o DocLike.o Chars.o
 MAINTAINERCLEANFILES = ExampleConf.hs KeyHelpTable.hs
 

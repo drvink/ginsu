@@ -1,4 +1,4 @@
-module Puff(
+module Gale.Puff(
     Puff(..),
     Fragment(..),
     Signature(..),

@@ -33,17 +33,17 @@ import Doc.DocLike hiding(space)
 import EIO
 import ErrorLog
 import Filter
-import Gale
+import Gale.Gale
 import GenUtil
 import GinsuConfig
 import Help
-import KeyCache(numberKeys)
+import Gale.KeyCache(numberKeys)
 import KeyName
 import MyLocale
 import Options
 import PackedString
 import Prelude hiding((&&),(||),not,and,or,any,all)
-import Puff
+import Gale.Puff
 import Regex
 import Screen
 import SHA1

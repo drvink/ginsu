@@ -1,4 +1,4 @@
-module GaleProto where
+module Gale.Proto where
 
 import Atom
 import Bits
@@ -6,7 +6,7 @@ import Char
 import Data.Array.Unboxed
 import GenUtil
 import PackedString
-import Puff
+import Gale.Puff
 import SimpleParser
 import System
 import System.Time

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fallow-overlapping-instances #-}
-module Gale(
+module Gale.Gale(
     GaleContext,
     galeNextPuff,
     reconnectGaleContext,
@@ -40,10 +40,10 @@ import Data.Monoid
 import Doc.DocLike((<+>))
 import EIO
 import ErrorLog
-import GaleProto
+import Gale.Proto
+import Gale.KeyCache
+import Gale.Puff
 import GenUtil hiding(replicateM)
-import KeyCache
-import Puff
 import qualified System.Posix as Posix
 import RSA
 import SHA1

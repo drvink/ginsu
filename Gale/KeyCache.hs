@@ -1,5 +1,5 @@
 -- arch-tag: 0863bbd6-b533-440d-b88f-77871b5359be
-module KeyCache(
+module Gale.KeyCache(
     dumpKey,
     KeyCache,
     newKeyCache,
@@ -26,13 +26,13 @@ import Data.Array.Unboxed
 import Directory
 import EIO
 import ErrorLog
-import GaleProto
+import Gale.Proto
 import GenUtil
 import List
 import Maybe
 import Monad
 import PackedString
-import Puff
+import Gale.Puff
 import RSA
 import SimpleParser
 import System.Mem.Weak
