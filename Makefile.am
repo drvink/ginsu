@@ -157,8 +157,8 @@ publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html
 	rm -f -- "$(PUBLISH_DIR)/drop/ginsu-$(VERSION).tar.gz"
 	cp "$(BINDISTDIR).tar.gz" "$(PUBLISH_DIR)/drop"
 	cp "ginsu-$(VERSION).tar.gz" "$(PUBLISH_DIR)/drop"
-	cp "$(HOME)/redhat/RPMS/$(ARCH)/ginsu-$(VERSION)-1.$(ARCH).rpm" "$(PUBLISH_DIR)/drop"
-	cp "$(HOME)/redhat/SRPMS/ginsu-$(VERSION)-1.src.rpm" "$(PUBLISH_DIR)/drop"
+	cp "$(HOME)/var/rpm/RPMS/$(ARCH)/ginsu-$(VERSION)-1.$(ARCH).rpm" "$(PUBLISH_DIR)/drop"
+	cp "$(HOME)/var/rpm/SRPMS/ginsu-$(VERSION)-1.src.rpm" "$(PUBLISH_DIR)/drop"
 	cp Changelog $(PUBLISH_DIR)
 	cp docs/Changelog.old $(PUBLISH_DIR)
 	cp docs/ginsu-manual.html $(PUBLISH_DIR)
@@ -168,6 +168,6 @@ publish: depend ginsu bin-dist dist rpm docs/ginsu-manual.html
 	
 
 rpm: depend ginsu.spec dist
-	cp ginsu-$(VERSION).tar.gz $(HOME)/redhat/SOURCES/
+	cp ginsu-$(VERSION).tar.gz $(HOME)/var/rpm/SOURCES/
 	rpmbuild -ba ginsu.spec
 	
