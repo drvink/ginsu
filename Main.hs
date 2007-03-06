@@ -12,8 +12,8 @@ import Random
 
 import Control.Concurrent
 import Control.Exception
-import Data.Array.IO     hiding(bounds)
-import Data.Array.MArray hiding(bounds)
+import Data.Array.IO
+import Data.Array.MArray
 import Data.IORef
 import Data.Unique
 import qualified Data.HashTable as Hash

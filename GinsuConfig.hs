@@ -34,7 +34,7 @@ configFileG xs = mapConfig ("GINSU_" ++) (configFile xs) `mappend` configFile xs
 
 configureGinsu = do
     galeDir <- getGaleDir
-    configSetup $  mconcat
+    configSetup $ mconcat
             [mapConfig ("GINSU_" ++) configEnv,
             configFileG (galeDir  ++ "ginsu.config"),
             configEnv,
@@ -74,13 +74,14 @@ doCheckConfig = do
     --print kt
     exitSuccess
 
-configBuilder "GALE_ID" = do
-    n <- first [getEnv "LOGNAME", getEnv "USER", Posix.getLoginName]
-    d <- configLookup "GALE_DOMAIN"
-    case d of
-        Just d -> return [("<LOGIN>@$GALE_DOMAIN",("GALE_ID", n ++ "@" ++ d))]
-        Nothing -> return []
-configBuilder _ = return []
+configBuilder = toConfig cb where
+    cb "GALE_ID" = do
+        n <- first [getEnv "LOGNAME", getEnv "USER", Posix.getLoginName]
+        d <- configLookup "GALE_DOMAIN"
+        case d of
+            Just d -> return [("<LOGIN>@$GALE_DOMAIN",("GALE_ID", n ++ "@" ++ d))]
+            Nothing -> return []
+    cb _ = return []
 
 getGaleProxy :: IO [String]
 getGaleProxy = do

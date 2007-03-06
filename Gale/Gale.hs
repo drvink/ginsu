@@ -145,6 +145,7 @@ connectTo hostname port = do
       	  socketToHandle sock ReadWriteMode
 	)
 
+{-
 bracketOnError
 	:: IO a		-- ^ computation to run first (\"acquire resource\")
 	-> (a -> IO b)  -- ^ computation to run last (\"release resource\")
@@ -158,6 +159,7 @@ bracketOnError before after thing =
 	   (\e -> do { after a; throw e })
     return r
  )
+ -}
 
 
 attemptConnect s = do

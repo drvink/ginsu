@@ -153,8 +153,9 @@ putKey kc xs = do
                     first [createDirectory $ galeDir kc ++ "/auth/", return ()]
                     first [createDirectory $ galeDir kc ++ "/auth/cache/", return ()]
                     xs <- unsafeThaw xs
+                    bnds <- getBounds xs
                     atomicWrite  (galeDir kc ++ "/auth/cache/" ++ kn ++ ".gpub")  $
-                        \h -> hPutArray h xs (rangeSize (bounds xs))
+                        \h -> hPutArray h xs (rangeSize bnds)
                     v' <- mkWeakPtr v' Nothing
                     return (Map.insert kn v' kkeyCache, ())
 

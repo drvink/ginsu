@@ -9,6 +9,8 @@ import Monad
 import PackedString
 import System.IO.Unsafe
 import Text.Regex.Posix
+import Text.Regex.Posix.String
+import Text.Regex
 
 subst :: String -> [String] -> String
 subst "" _ = ""
@@ -21,7 +23,7 @@ subst (c:cs) xs = c:subst cs xs
 
 
 matches :: Regex -> String -> [[String]]
-matches rx s = case unsafePerformIO (regexec rx s) of
+matches rx s = case unsafePerformIO (regexec rx s >>= fromWrapError) of
     Nothing -> []
     Just (_,v,r,xs) -> (v:xs):matches rx r
 
@@ -43,13 +45,16 @@ buildMatchTable = do
     return zs
 
 
+fromWrapError (Left r) = fail (show r)
+fromWrapError (Right x) = return x
+
 data Rx = Rx { rxString :: String, rxRegex :: Regex }
 
 compileRx :: Monad m => String -> m Rx
-compileRx re = liftM (Rx re) $ unsafePerformIO ( handle (\e -> return (fail $ show e)) (regcomp re' flags >>= return . return )) where
-    flags = regExtended + ci + ml
-    ci = if 'i' `elem` fl then regIgnoreCase else 0
-    ml = if 'm' `elem` fl then regNewline else 0
+compileRx re = liftM (Rx re) $ unsafePerformIO ( handle (\e -> return (fail $ show e)) (compile flags execBlank re' >>= fromWrapError >>= (return . return))) where
+    flags = compExtended + ci + ml
+    ci = if 'i' `elem` fl then compIgnoreCase else 0
+    ml = if 'm' `elem` fl then compNewline else 0
     (fl,re') = ef re
     ef ('(':'?':cs) = let (a,b) = span (/= ')') cs in (a,drop 1 b)
     ef xs = ("",xs)
@@ -58,5 +63,5 @@ compileRx re = liftM (Rx re) $ unsafePerformIO ( handle (\e -> return (fail $ sh
 instance Show Rx where
     show (Rx s _) = s
 
-matchRx re body = isJust (unsafePerformIO $ regexec (rxRegex re) (unpackPS body))
+matchRx re body = isJust (unsafePerformIO (regexec (rxRegex re) (unpackPS body) >>= fromWrapError))
 

@@ -31,36 +31,41 @@ get CB { arr = arr, mvar = mvar} w = withMVar mvar go where
             w' = if m < 0 then m + len else m
         readArray arr w'
     go (Full start) = do
+        bnds <- getBounds arr
         let m = (w + start) `mod` len
             w' = if m < 0 then m + len else m
-            len = snd (bounds arr) + 1
+            len = snd bnds + 1
         readArray arr w'
 
 length :: CircularBuffer a -> IO Int
 length CB { arr = arr, mvar = mvar} = withMVar mvar go where
-    go (Full _) = return $ (snd $ bounds arr) + 1
+    go (Full _) = do
+        bnds <- getBounds arr
+        return $ (snd bnds) + 1
     go (Partial len) = return len
 
 append :: CircularBuffer a -> [a] -> IO ()
-append CB {arr = arr, mvar = mvar} xs = modifyMVar_ mvar go where
-    alen = snd (bounds arr) + 1
-    xslen = Prelude.length xs
-    go _ | xslen >= alen = do
-        sequence_ [writeArray arr i e | i <- [0..] | e <- (drop $ xslen - alen) xs  ]
-        return (Full 0)
-    go (Full start) = do
-        let nstart = (start + xslen) `mod` alen
-        sequence_ [writeArray arr (i `mod` alen) e | i <- [start..] | e <-  xs  ]
-        return (Full nstart)
-    go (Partial len) | len + xslen ==  alen = do
-        sequence_ [writeArray arr i e | i <- [len..] | e <-  xs  ]
-        return (Full 0)
-    go (Partial len) | nlen <- len + xslen, nlen < alen = do
-        sequence_ [writeArray arr i e | i <- [len..] | e <-  xs  ]
-        return (Partial nlen)
-    go (Partial len)  = do
-        sequence_ [writeArray arr (i `mod` alen) e | i <- [len..] | e <-  xs  ]
-        return (Full (xslen + len - alen))
+append CB {arr = arr, mvar = mvar} xs = do
+    bnds <- getBounds arr
+    let alen = snd bnds + 1
+        xslen = Prelude.length xs
+        go _ | xslen >= alen = do
+            sequence_ [writeArray arr i e | i <- [0..] | e <- (drop $ xslen - alen) xs  ]
+            return (Full 0)
+        go (Full start) = do
+            let nstart = (start + xslen) `mod` alen
+            sequence_ [writeArray arr (i `mod` alen) e | i <- [start..] | e <-  xs  ]
+            return (Full nstart)
+        go (Partial len) | len + xslen ==  alen = do
+            sequence_ [writeArray arr i e | i <- [len..] | e <-  xs  ]
+            return (Full 0)
+        go (Partial len) | nlen <- len + xslen, nlen < alen = do
+            sequence_ [writeArray arr i e | i <- [len..] | e <-  xs  ]
+            return (Partial nlen)
+        go (Partial len)  = do
+            sequence_ [writeArray arr (i `mod` alen) e | i <- [len..] | e <-  xs  ]
+            return (Full (xslen + len - alen))
+    modifyMVar_ mvar go
 
 
 

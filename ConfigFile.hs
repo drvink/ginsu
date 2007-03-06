@@ -12,12 +12,12 @@ module ConfigFile(
     configEnv,
     configDefault,
     configShow,
+    toConfig,
     defaultConfig,
     parseConfigFile
 
 
     ) where
--- arch-tag: b78d53d4-380c-43d5-b885-5c433d38a8e0
 
 import Char
 import System
@@ -27,8 +27,10 @@ import CacheIO
 import ErrorLog
 import Data.Monoid
 
-type Config = String -> IO [(String,(String,String))]
+newtype Config = Config (String -> IO [(String,(String,String))])
 type ConfigFile = [(String, String)]
+
+toConfig = Config
 
 -- dealing with global config settings
 
@@ -46,7 +48,7 @@ defaultConfig = readVal config_default
 
 configGet :: String -> IO [(String,(String,String))]
 configGet k = do
-        c <- defaultConfig
+        Config c <- defaultConfig
         v <- c k
         mapM fixUp v where
             fixUp (w,(k,v)) = do
@@ -79,10 +81,10 @@ config_files_var = unsafePerformIO (newJVar [])
 basicLookup n cl k = return [ (n,(k,v)) | (k',v) <- cl, k == k']
 
 configDefault :: [(String,String)] -> Config
-configDefault cl k = basicLookup "default" cl k
+configDefault cl = Config $ \k -> basicLookup "default" cl k
 
 configFile :: String -> Config
-configFile fn k = do
+configFile fn = Config $ \k -> do
     cf <- readVal config_files_var
     case lookup fn cf of
 	Just cl -> basicLookup fn cl k
@@ -92,22 +94,22 @@ configFile fn k = do
 	    basicLookup fn cl k
 
 configEnv :: Config
-configEnv k = do
+configEnv = Config $ \k -> do
     ev <- catch (fmap return $ getEnv k) (\_ -> return [])
     return $ fmap (\v -> ("enviornment", (k,v))) ev
 
 mapConfig :: (String -> String) -> Config -> Config
-mapConfig f c s = c (f s)
+mapConfig f (Config c) = Config $ \s -> c (f s)
 
 instance Monoid Config where
-    mempty _ =  return []
-    mappend c1 c2 s = do
+    mempty =  Config $ \_ -> return []
+    mappend (Config c1) (Config c2) = Config $ \s -> do
 	x <- c1 s
 	y <- c2 s
 	return (x ++ y)
 
 configShow :: [String] -> Config -> IO String
-configShow ss c = do
+configShow ss (Config c) = do
     v <- mapM c ss
     return $ unlines $ map p $ zip ss v where
 	p (k,((w,(k',v))):_) = k ++ " " ++ v ++ "\n#  in " ++ w ++
