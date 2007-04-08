@@ -370,7 +370,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
     icmain <- newChan
 
     let fsw = newSVarWidget filter_r $ \fs ->
-	    widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (reverse $ map showFilter fs))
+	    widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (map showFilter fs))
 
     selPuff <- newCacheIO $ do
         ps <-  readVal psr
