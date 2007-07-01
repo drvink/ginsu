@@ -129,7 +129,7 @@ bin-dist: ginsu ginsu_static ginsu.config.sample
 
 
 KeyHelpTable.hs: actions.def gen_keyhelp.prl
-	perl ./gen_keyhelp.prl -h actions.def > $@ || rm -f -- $@
+	perl @srcdir@/gen_keyhelp.prl -h actions.def > $@ || rm -f -- $@
 
 ExampleConf.hs: ginsu.config.sample
 	echo "module ExampleConf(exampleConf) where" > ExampleConf.hs
