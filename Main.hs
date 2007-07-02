@@ -850,10 +850,10 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
     Just time = getFragmentTime frags f_idTime `mplus` getFragmentTime frags (fromString "_ginsu.timestamp")
     kwds = getFragmentStrings p f_messageKeyword
     n = length body'
-    addCat w (Category (x,y)) = withColor w (Pair c) $ Curses.withAttr w attrBold (waddstr w x) >> waddstr w ('@':y)  where
-        c = fromIntegral $ (hashPS (packString (x ++ "@" ++ y)) `mod` 7) + 1
+    addCat w (Category (x,y)) = withColorId w c $ Curses.withAttr w attrBold (waddstr w x) >> waddstr w ('@':y)  where
+        c = fromIntegral $ hashPS (packString (x ++ "@" ++ y))
     doit = do
-        let ac = Pair $ (fromIntegral $ (hashPS $ packString (getAuthor p)) `mod` 7) + 1
+        let ac = fromIntegral $ hashPS $ packString (getAuthor p)
 	when (y >= 0 && y < ys) $ do
 	    wmove w y 0
 	    when selected $ standout >> return ()
@@ -866,7 +866,7 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
             st <-  fmap (formatCalendarTime defaultTimeLocale fmt) $ toCalendarTime time
             let lst = length st
             wAttrOn w attrBold
-            withColor w ac $ mvwaddstr w y (mw - length sender - lst - 1) sender
+            withColorId w ac $ mvwaddstr w y (mw - length sender - lst - 1) sender
             wAttrOff w attrBold
             mvwaddstr w y (mw - lst) st
             when selected $  standend >> return ()
@@ -879,7 +879,7 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
         when (y + 1 + n < ys) $ do
             mvwaddstr w (y + 1 + n) 0 (take mw bs)
             --mvwaddstr w (y + 1 + n) 0 (bs)
-            --withColor w ac $ mvwaddstr w (y + 1 + n) (length bs) (getAuthor p)
+            --withColorId w ac $ mvwaddstr w (y + 1 + n) (length bs) (getAuthor p)
             --mvwaddstr w (y + 1 + n) (length bs + length (getAuthor p)) (take mw es)
         when selected $ wAttrOff w attrBold
         return ()

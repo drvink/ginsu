@@ -36,6 +36,7 @@ module Curses (
     initColor,      -- :: Color -> (Int, Int, Int) -> IO ()
     colorContent,   -- :: Color -> IO (Int, Int, Int)
     withColor,
+    withColorId,
     withAttr,
 
     --------------------------------------------------------------------
@@ -117,7 +118,6 @@ import Monad
 import Char           (chr, ord, isPrint, isSpace, toLower)
 import Ix             (Ix)
 
-import Data.Bits
 import Control.Concurrent
 import Foreign
 import Foreign.C hiding(withCWString, withCWStringLen)
@@ -129,9 +129,9 @@ import GenUtil(foldl')
 import System.Posix.Signals
 import CWString
 import List
-import Monad
 import Doc.Chars hiding(elem)
 import Maybe
+import Data.IORef
 
 
 #include "my_curses.h"
@@ -220,10 +220,9 @@ defineKey k s =  withCString s (\s -> define_key s k) >> return ()
 
 useDefaultColors = do
     b <- hasColors
-    let f n = initPair (Pair n) (Color n) defaultBackground
     when b $ do
         use_default_colors
-        mapM_ f [1 .. 7]
+        initColorPairs defaultBackground
 
 #else
 
@@ -238,14 +237,40 @@ defineKey k s = return ()
 
 #endif
 
+{-# NOINLINE nColorPairs #-}
+nColorPairs :: IORef Int
+nColorPairs = unsafePerformIO $ newIORef 0
+
+-- we want only full intensity colors, and assume the default 88- and 256-color xterm palettes
+initColorPairs :: Color -> IO ()
+initColorPairs bg = do
+    cs <- colors
+    ps <- colorPairs
+    ccc <- canChangeColor
+    icp ccc (min cs ps) >>= writeIORef nColorPairs
+    where
+    f n m = initPair (Pair n) (Color m) bg
+    i l = zipWithM_ f [1 .. n] l >> return n where n = length l
+    -- the full intensity colors of a w*w*w rgb box
+    rgbbox w = [ b+o |
+	  b <- [0, w*w .. (w-2)*w*w ],
+	  o <- [w-1, 2*w-1 .. (w-1)*w-1] -- blue
+	    ++ [(w-1)*w .. w*w-1] ] -- green
+	++ [(w-1)*w*w .. w*w*w-1] -- red
+    icp _ n
+      | n < 2 = return 0
+      | n < 8 = initPair (Pair 1) defaultForeground bg >> return 1
+      | n == 88 = i $ [1 .. 7] ++ map (16+) (rgbbox 4)
+      | n >= 256 = i $ [1 .. 7] ++ map (16+) (rgbbox 6)
+      | otherwise = i [1 .. 7]
+
 initCurses :: IO ()
 initCurses = do
     initScr
     b <- hasColors
     when b $ do
         startColor
-        let f n = initPair (Pair n) (Color n) (Color 0)
-        mapM_ f [1 .. 7]
+	initColorPairs (Color 0)
     --when b useDefaultColors
     --cBreak True
     cbreak
@@ -419,6 +444,12 @@ withColor win np action = do
         return x)
       else action
 
+withColorId :: Window -> Int -> IO a -> IO a
+withColorId win c action = do
+    ncp <- readIORef nColorPairs
+    if ncp == 0 
+      then action
+      else withColor win (Pair $ 1 + c `mod` ncp) action
 
 newtype Attr = Attr (#type attr_t) deriving (Eq,Storable,Bits, Num, Show)
 
