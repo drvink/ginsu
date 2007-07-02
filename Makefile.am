@@ -128,15 +128,15 @@ bin-dist: ginsu ginsu_static ginsu.config.sample
 .PHONY: bin-dist depend clean
 
 
-KeyHelpTable.hs: actions.def gen_keyhelp.prl
-	perl @srcdir@/gen_keyhelp.prl -h actions.def > $@ || rm -f -- $@
+KeyHelpTable.hs: $(srcdir)/actions.def $(srcdir)/gen_keyhelp.prl
+	perl $(srcdir)/gen_keyhelp.prl -h $(srcdir)/actions.def > $@ || rm -f -- $@
 
-ExampleConf.hs: ginsu.config.sample
+ExampleConf.hs: $(srcdir)/ginsu.config.sample
 	echo "module ExampleConf(exampleConf) where" > ExampleConf.hs
 	echo "{-# NOINLINE exampleConf #-}" >> ExampleConf.hs
 	echo "exampleConf :: String" >> ExampleConf.hs
 	echo "exampleConf = unlines [" >> ExampleConf.hs
-	cat ginsu.config.sample | sed -e 's/"/\\"/g;s/.*/    "&",/' >> ExampleConf.hs
+	cat $(srcdir)/ginsu.config.sample | sed -e 's/"/\\"/g;s/.*/    "&",/' >> ExampleConf.hs
 	echo "  \"\"]" >> ExampleConf.hs
 
 PUBLISH_DIR = /home/john/public_html/computer/ginsu
