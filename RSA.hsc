@@ -19,6 +19,9 @@ import Foreign.ForeignPtr
 import MarshalArray
 import System.IO.Unsafe
 
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Unsafe as BS
+
 data RSAStruct
 data EVP_PKEY
 data EVP_CIPHER
@@ -39,12 +42,23 @@ fi x = fromIntegral x
 
 throwZero_ s = throwIf_ (== 0) (const s)
 
-withData :: [Word8] -> (Ptr CUChar -> CInt -> IO a) -> IO a
-withData xs f = withArray xs (\a -> f (castPtr a) (fromIntegral $ length xs))
+--withData :: [Word8] -> (Ptr CUChar -> CInt -> IO a) -> IO a
+--withData xs f = withArray xs (\a -> f (castPtr a) (fromIntegral $ length xs))
 
-returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO [Word8]
+withData :: BS.ByteString -> (Ptr CUChar -> CInt -> IO a) -> IO a
+withData xs f = BS.unsafeUseAsCStringLen xs (\ (cp,cl) -> f (castPtr cp) (fromIntegral cl))
+
+--returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO [Word8]
+--returnData sz f = do
+--	alloca (\bp -> allocaArray sz (\m -> f m bp >> peek bp >>= \s -> fmap (map fromIntegral) (peekArray (fromIntegral s) m)))
+
+returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO BS.ByteString
 returnData sz f = do
-	alloca (\bp -> allocaArray sz (\m -> f m bp >> peek bp >>= \s -> fmap (map fromIntegral) (peekArray (fromIntegral s) m)))
+	alloca $ \bp ->
+            allocaArray sz $ \m -> do
+                f m bp
+                s <- peek bp
+                BS.packCStringLen (castPtr m, fromIntegral s)
 
 ---------------
 -- RSA routines
@@ -59,34 +73,16 @@ foreign import ccall unsafe "my_rsa.h RSA_check_key" rsa_check_key :: RSA -> IO 
 rsaCheckKey :: RSA -> IO ()
 rsaCheckKey rsa = throwZero_ "RSA_check_key" $ rsa_check_key rsa
 
-data RSAElems a = RSAElemsPrivate { rsaN :: a, rsaE :: a, rsaD :: a, rsaIQMP :: a, rsaP :: a, rsaQ :: a, rsaDMP1 :: a, rsaDMQ1 :: a } |  RSAElemsPublic { rsaN :: a, rsaE :: a }
-
-{-
-rsaSetN :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetN = (#poke RSA, n)
-
-rsaSetE :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetE = (#poke RSA, e)
-
-rsaSetD :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetD = (#poke RSA, d)
-
-rsaSetP :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetP = (#poke RSA, p)
-
-rsaSetQ :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetQ = (#poke RSA, q)
-
-rsaSetDMP1 :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetDMP1 = (#poke RSA, dmp1)
-
-rsaSetDMQ1 :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetDMQ1 = (#poke RSA, dmq1)
-
-rsaSetIQMP :: RSA -> Ptr BIGNUM -> IO ()
-rsaSetIQMP = (#poke RSA, iqmp)
-
--}
+data RSAElems a = RSAElemsPrivate {
+    rsaN :: a,
+    rsaE :: a,
+    rsaD :: a,
+    rsaIQMP :: a,
+    rsaP :: a,
+    rsaQ :: a,
+    rsaDMP1 :: a,
+    rsaDMQ1 :: a
+    } |  RSAElemsPublic { rsaN :: a, rsaE :: a }
 
 
 
@@ -102,9 +98,6 @@ foreign import ccall unsafe "openssl/evp.h EVP_OpenInit" evpOpenInit :: Ptr EVP_
 foreign import ccall unsafe "openssl/evp.h EVP_DecryptUpdate" evpOpenUpdate :: Ptr EVP_CIPHER_CTX -> Ptr CUChar -> Ptr CInt -> Ptr CUChar -> CInt -> IO CInt
 foreign import ccall unsafe "openssl/evp.h EVP_OpenFinal" evpOpenFinal :: Ptr EVP_CIPHER_CTX -> Ptr CUChar -> Ptr CInt -> IO CInt
 
---foreign import ccall unsafe "openssl/evp.h EVP_EncryptInit" evpEncryptInit :: Ptr EVP_CIPHER_CTX -> Ptr EVP_CIPHER -> Ptr CUChar -> Ptr CUChar -> IO CInt
---foreign import ccall unsafe "openssl/evp.h EVP_EncryptUpdate" evpEncryptUpdate :: Ptr EVP_CIPHER_CTX -> Ptr CUChar -> Ptr CInt -> Ptr CUChar -> CInt -> IO CInt
---foreign import ccall unsafe "openssl/evp.h EVP_EncryptFinal" evpEncryptFinal :: Ptr EVP_CIPHER_CTX -> Ptr CUChar -> Ptr CInt ->  IO CInt
 
 foreign import ccall unsafe "openssl/evp.h EVP_SealInit" evpSealInit :: Ptr EVP_CIPHER_CTX -> Ptr EVP_CIPHER -> Ptr (Ptr CUChar) -> Ptr CInt -> Ptr CUChar -> Ptr (Ptr EVP_PKEY) -> CInt -> IO CInt
 foreign import ccall unsafe "openssl/evp.h EVP_EncryptUpdate" evpSealUpdate :: Ptr EVP_CIPHER_CTX -> Ptr CUChar -> Ptr CInt -> Ptr CUChar -> CInt -> IO CInt
@@ -118,19 +111,13 @@ foreign import ccall unsafe evpCipherContextBlockSize :: Ptr EVP_CIPHER_CTX -> I
 #def inline HsInt evpCipherContextBlockSize(EVP_CIPHER_CTX *e) {return EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(e));}
 
 
-{-
-evp_OpenInit :: Ptr EVP_CIPHER_CTX -> Ptr EVP_CIPHER -> [Word8] -> [Word8] -> Ptr EVP_PKEY -> IO ()
-evp_OpenInit cctx cipher ek iv pkey =  do
-	throwZero_ "EVP_OpenInit" $ withData ek (\a b -> withArray iv (\iv -> evpOpenInit cctx cipher a b (castPtr iv) pkey))
-	return ()
--}	
-evp_OpenUpdate :: Ptr EVP_CIPHER_CTX -> [Word8] -> IO [Word8]
+evp_OpenUpdate :: Ptr EVP_CIPHER_CTX -> BS.ByteString -> IO BS.ByteString
 evp_OpenUpdate cctx ind = do
     bsz <- evpCipherContextBlockSize cctx
-    let sz = length ind + bsz
+    let sz = BS.length ind + bsz
     withData ind (\ina inl -> returnData sz (\outa outl -> throwZero_ "EVP_OpenUpdate" (evpOpenUpdate cctx outa outl ina inl)))
 
-evp_OpenFinal ::  Ptr EVP_CIPHER_CTX -> IO [Word8]
+evp_OpenFinal ::  Ptr EVP_CIPHER_CTX -> IO BS.ByteString
 evp_OpenFinal cctx = do
     bsz <- evpCipherContextBlockSize cctx
     d <- returnData bsz (\outa outl -> throwZero_ "EVP_OpenFinal" (evpOpenFinal cctx outa outl))
@@ -138,9 +125,6 @@ evp_OpenFinal cctx = do
 
 
 
---foreign import ccall unsafe "EVP_PKEY_new" evpPKEYNew :: IO (Ptr EVP_PKEY)
---foreign import ccall unsafe "EVP_PKEY_assign" evpPKEYAssign :: Ptr EVP_PKEY -> CInt -> Ptr a -> IO CInt
---foreign import ccall unsafe "EVP_PKEY_free" evpPKEYFree :: Ptr EVP_PKEY -> IO ()
 foreign import ccall unsafe "EVP_PKEY_size" evpPKEYSize :: Ptr EVP_PKEY -> IO CInt
 
 foreign import ccall unsafe "EVP_CIPHER_CTX_init" evpCipherCtxInit :: Ptr EVP_CIPHER_CTX -> IO ()
@@ -157,20 +141,20 @@ withMdCtx :: (Ptr EVP_MD_CTX -> IO a) -> IO a
 withMdCtx = allocaBytes (#const sizeof(EVP_MD_CTX))
 
 
-decryptAll :: [Word8] -> [Word8] -> EvpPkey -> [Word8] -> IO [Word8]
+decryptAll :: BS.ByteString -> BS.ByteString -> EvpPkey -> BS.ByteString -> IO BS.ByteString
 decryptAll keydata iv pkey xs = withCipherCtx $ \cctx -> do
-    withData keydata $ \a b -> withArray iv $ \iv -> do
+    withData keydata $ \a b -> BS.useAsCStringLen iv $ \ (iv,_) -> do
     withForeignPtr pkey $ \pkey -> do
     throwZero_ "EVP_OpenInit" $ evpOpenInit cctx cipher a b (castPtr iv) pkey
     d <- evp_OpenUpdate cctx xs
     dr <- evp_OpenFinal cctx
-    return $ d ++ dr
+    return $ d `BS.append` dr
 
 cipher = unsafePerformIO evpDesEde3Cbc
 md5 = unsafePerformIO evpMD5
 
 
-signAll :: EvpPkey -> [Word8] -> IO [Word8]
+signAll :: EvpPkey -> BS.ByteString -> IO BS.ByteString
 signAll  pkey xs = withMdCtx $ \cctx -> do
     evpSignInit cctx md5
     withData xs $ \a b -> (evpSignUpdate cctx a b)
@@ -179,15 +163,13 @@ signAll  pkey xs = withMdCtx $ \cctx -> do
     d <- returnData bsz (\outa outl -> throwZero_ "EVP_SignFinal" (evpSignFinal cctx outa outl pkey))
     return d
 
---putLog _ = putStrLn
-
 
 withForeignPtrs :: [ForeignPtr a] -> ([Ptr a] -> IO b) -> IO b
 withForeignPtrs ps action = fp' ps []   where
     fp' [] xs = action (reverse xs)
     fp' (p:ps) xs = withForeignPtr p (\x -> fp' ps (x:xs))
 
-encryptAll :: [EvpPkey] -> [Word8] -> IO ([Word8], [[Word8]], [Word8])
+encryptAll :: [EvpPkey] -> BS.ByteString -> IO (BS.ByteString, [BS.ByteString], BS.ByteString)
 encryptAll [] _ = error "encryptAll: no keys"
 encryptAll  keys xs = doit' where
     doit' = do
@@ -213,16 +195,16 @@ encryptAll  keys xs = doit' where
         putLog LogDebug $ "encryptAll: bsize " ++ show bsize
         rd <- returnData (dsize + bsize) $ \ra rb ->  withData xs $ \a b -> (throwZero_ "EVP_SealUpdate" $ evpSealUpdate cctx ra rb a b)
         d <- returnData bsize (\outa outl -> throwZero_ "EVP_SealFinal" (evpSealFinal cctx outa outl))
-        iva <- peekArray ivs (castPtr iv)
+        iva <- BS.packCStringLen (castPtr iv, fi ivs) -- peekArray ivs (castPtr iv)
         ks <- mapM (pa ek ekl) [0 .. n - 1]
-        return (rd ++ d,ks,iva)
+        return (rd `BS.append` d,ks,iva)
     pa ek ekl n = do
         l <- peekElemOff ekl n
         p <- peekElemOff ek n
-        peekArray (fi l) (castPtr p)
+        BS.packCStringLen (castPtr p,fi l) -- (fi l) (castPtr p)
     n = length keys
     ivs = 8
-    dsize = length xs
+    dsize = BS.length xs
 --    bsize = 64
 
 
@@ -246,7 +228,7 @@ foreign import ccall unsafe pkeyNewRSA :: RSA -> IO (Ptr EVP_PKEY)
 foreign import ccall "get_KEY" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 #def inline HsFunPtr  get_KEY (void) {return (HsFunPtr)&EVP_PKEY_free;}
 
-createPkey :: RSAElems [Word8] -> IO NEvpPkey
+createPkey :: RSAElems BS.ByteString -> IO NEvpPkey
 createPkey re =  create_rsa re >>= create_pkey where
     setBn pb d = do
         np <- peek pb
@@ -279,6 +261,37 @@ createPkey re =  create_rsa re >>= create_pkey where
 
 
 {-
+createPkey :: RSAElems [Word8] -> IO NEvpPkey
+createPkey re =  create_rsa re >>= create_pkey where
+    setBn pb d = do
+        np <- peek pb
+        n <- withData d (\a b -> bnBin2Bn a b np)
+        poke pb n
+    create_private _ RSAElemsPublic {} = return ()
+    create_private rsa re = do
+        setBn ((#ptr RSA, d) rsa) (rsaD re)
+        setBn ((#ptr RSA, iqmp) rsa) (rsaIQMP re)
+        setBn ((#ptr RSA, p) rsa) (rsaP re)
+        setBn ((#ptr RSA, q) rsa) (rsaQ re)
+        setBn ((#ptr RSA, dmp1) rsa) (rsaDMP1 re)
+        setBn ((#ptr RSA, dmq1) rsa) (rsaDMQ1 re)
+        rsaCheckKey rsa
+    create_rsa re = do
+        let n = rsaN re
+            e = rsaE re
+        rsa <- rsaNew
+        np <- (#peek RSA, n) rsa
+        n <- withData n (\a b -> bnBin2Bn a b np)
+        (#poke RSA, n) rsa n
+        ep <- (#peek RSA, e) rsa
+        e <- withData e (\a b -> bnBin2Bn a b ep)
+        (#poke RSA, e) rsa e
+        create_private rsa re
+        return rsa
+    create_pkey rsa = do
+        pkey <- pkeyNewRSA rsa
+        newForeignPtr evpPkeyFreePtr pkey
+
 
 
 readSymbolicLink :: FilePath -> IO FilePath

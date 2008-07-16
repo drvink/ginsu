@@ -300,8 +300,8 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
 		Just o -> return [(f_messageSender, FragmentText o)]
 		Nothing -> return []
 	    let fl = xdrWriteUInt 0 (createFragments (fragments p `mergeFrags` sfl))
-	    sig <- signAll pkey fl
-	    let sd = signature_magic1 ++ xdrWriteUInt (fromIntegral $ length sig) [] ++ sig ++ pubkey_magic3 ++ xdrWriteUInt (fromIntegral $ length kn) [] ++ galeEncodeString kn
+	    sig <- signAll pkey (BS.pack fl)
+	    let sd = signature_magic1 ++ xdrWriteUInt (fromIntegral $ BS.length sig) [] ++ BS.unpack sig ++ pubkey_magic3 ++ xdrWriteUInt (fromIntegral $ length kn) [] ++ galeEncodeString kn
                 fd = xdrWriteUInt (fromIntegral $ length sd) $ sd ++ fl
                 fragments = [(f_securitySignature,FragmentData (BS.pack fd))]
             nfragments <- cryptFragments gc es fragments
@@ -319,9 +319,9 @@ cryptFragments gc ss fl = do
         fl' = xdrWriteUInt 0 (createFragments fl)
         n = fromIntegral (length ks')
     --putStrLn $ show (ks,ks',fl')
-    (d,ks,iv) <- encryptAll (snds ks') fl'
+    (d,ks,iv) <- encryptAll (snds ks') (BS.pack fl')
     --putLog LogDebug $ show (d,ks,iv)
-    return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ iv ++ xdrWriteUInt n (foldr f d $ zip (fsts ks') ks) ))]
+    return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ BS.unpack iv ++ xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) ))]
   where
      f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
 
@@ -392,7 +392,7 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tr
     galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = tryElse p $ do
     (cd,ks) <- parser pe (BS.unpack xs)
-    dfl <- first (map (td' cd) ks)
+    dfl <- first (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
 	pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
@@ -409,7 +409,7 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 	td' cd (iv,kname,keydata) = do
 	    Just (_,pkey) <- getPrivateKey (keyCache gc) kname
 	    dd <- decryptAll keydata iv pkey cd
-	    let dfl = decodeFragments (drop 4 dd)
+	    let dfl = decodeFragments (drop 4 (BS.unpack dd))
 	    return dfl
 galeDecryptPuff _ x = return x
 

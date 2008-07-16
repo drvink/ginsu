@@ -74,7 +74,31 @@ newKeyCache galeDir = do
     kk <- newMVar Map.empty
     return KeyCache { {- keyCache = kc, publicKeyCache = pkc,-} galeDir = galeDir, pkeyCache = pk, kkeyCache = kk }
 
+keyToRSAElems :: Monad m => Key -> m (RSAElems BS.ByteString)
+keyToRSAElems fl = do
+    if not (keyIsPubKey fl) then fail "key does not have bits" else do
+    n <- getFragmentData fl f_rsaModulus
+    e <- getFragmentData fl f_rsaExponent
+    if not (keyIsPrivKey fl) then
+        return RSAElemsPublic { rsaN = n, rsaE = e } else do
+    d <- getFragmentData fl f_rsaPrivateExponent
+    iqmp <- getFragmentData fl f_rsaPrivateCoefficient
+    pq <- getFragmentData fl f_rsaPrivatePrime
+    dmpq1 <- getFragmentData fl f_rsaPrivatePrimeExponent
+    let (p,q) = BS.splitAt galeRSAPrimeLen pq     -- should be "rsa.bits"?
+        (dmp1,dmq1) = BS.splitAt galeRSAPrimeLen dmpq1
+    return RSAElemsPrivate {
+        rsaN = n,
+        rsaE = e,
+        rsaD = d ,
+        rsaIQMP = iqmp,
+        rsaP = p,
+        rsaQ =  q,
+        rsaDMP1 = dmp1,
+        rsaDMQ1 = dmq1
+        }
 
+{-
 keyToRSAElems :: Monad m => Key -> m (RSAElems [Word8])
 keyToRSAElems fl = do
     if not (keyIsPubKey fl) then fail "key does not have bits" else do
@@ -98,6 +122,7 @@ keyToRSAElems fl = do
         rsaDMP1 = dmp1,
         rsaDMQ1 = dmq1
         }
+        -}
 
 
 
