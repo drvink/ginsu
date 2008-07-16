@@ -1,4 +1,3 @@
--- arch-tag: f5954078-d1ae-430d-8bf5-e89bef6beeb3
 module RSA(
     EvpPkey,
     decryptAll,
@@ -7,7 +6,6 @@ module RSA(
     createPkey,
     RSAElems(..)
     ) where
-
 
 #include "my_rsa.h"
 
@@ -42,15 +40,9 @@ fi x = fromIntegral x
 
 throwZero_ s = throwIf_ (== 0) (const s)
 
---withData :: [Word8] -> (Ptr CUChar -> CInt -> IO a) -> IO a
---withData xs f = withArray xs (\a -> f (castPtr a) (fromIntegral $ length xs))
 
 withData :: BS.ByteString -> (Ptr CUChar -> CInt -> IO a) -> IO a
 withData xs f = BS.unsafeUseAsCStringLen xs (\ (cp,cl) -> f (castPtr cp) (fromIntegral cl))
-
---returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO [Word8]
---returnData sz f = do
---	alloca (\bp -> allocaArray sz (\m -> f m bp >> peek bp >>= \s -> fmap (map fromIntegral) (peekArray (fromIntegral s) m)))
 
 returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO BS.ByteString
 returnData sz f = do
@@ -260,50 +252,3 @@ createPkey re =  create_rsa re >>= create_pkey where
         newForeignPtr evpPkeyFreePtr pkey
 
 
-{-
-createPkey :: RSAElems [Word8] -> IO NEvpPkey
-createPkey re =  create_rsa re >>= create_pkey where
-    setBn pb d = do
-        np <- peek pb
-        n <- withData d (\a b -> bnBin2Bn a b np)
-        poke pb n
-    create_private _ RSAElemsPublic {} = return ()
-    create_private rsa re = do
-        setBn ((#ptr RSA, d) rsa) (rsaD re)
-        setBn ((#ptr RSA, iqmp) rsa) (rsaIQMP re)
-        setBn ((#ptr RSA, p) rsa) (rsaP re)
-        setBn ((#ptr RSA, q) rsa) (rsaQ re)
-        setBn ((#ptr RSA, dmp1) rsa) (rsaDMP1 re)
-        setBn ((#ptr RSA, dmq1) rsa) (rsaDMQ1 re)
-        rsaCheckKey rsa
-    create_rsa re = do
-        let n = rsaN re
-            e = rsaE re
-        rsa <- rsaNew
-        np <- (#peek RSA, n) rsa
-        n <- withData n (\a b -> bnBin2Bn a b np)
-        (#poke RSA, n) rsa n
-        ep <- (#peek RSA, e) rsa
-        e <- withData e (\a b -> bnBin2Bn a b ep)
-        (#poke RSA, e) rsa e
-        create_private rsa re
-        return rsa
-    create_pkey rsa = do
-        pkey <- pkeyNewRSA rsa
-        newForeignPtr evpPkeyFreePtr pkey
-
-
-
-readSymbolicLink :: FilePath -> IO FilePath
-readSymbolicLink file =
-  allocaBytes (#const PATH_MAX) $ \buf -> do
-
-    len <- withCString file $ \s ->
-      throwErrnoIfMinus1 "readSymbolicLink" $
-	c_readlink s buf (#const PATH_MAX)
-    peekCStringLen (buf,fromIntegral len)
-
-foreign import ccall unsafe "unistd.h readlink"
-  c_readlink :: CString -> CString -> CInt -> IO CInt
-
--}

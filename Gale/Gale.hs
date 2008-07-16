@@ -32,6 +32,7 @@ import Network.Socket
 import PackedString
 import Data.Binary
 import Data.Binary.Get
+import Data.Binary.Put
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 
@@ -308,8 +309,6 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
 	    createPuff gc will $ p {signature = [], fragments = nfragments }
 createPuff _ _ _ = error "createPuff: invalid arguments"
 
-la xs = BS.pack xs -- listArray (0, length xs - 1) xs
-
 cryptFragments :: GaleContext -> [String] -> FragmentList -> IO FragmentList
 cryptFragments _ [] fl = return fl
 cryptFragments gc ss fl = do
@@ -321,7 +320,8 @@ cryptFragments gc ss fl = do
     --putStrLn $ show (ks,ks',fl')
     (d,ks,iv) <- encryptAll (snds ks') (BS.pack fl')
     --putLog LogDebug $ show (d,ks,iv)
-    return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ BS.unpack iv ++ xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) ))]
+    --return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ BS.unpack iv ++ xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) ))]
+    return [(f_securityEncryption,FragmentData $ (bs_cipher_magic2 `BS.append` iv `BS.append` BS.pack (xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) )))]
   where
      f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
 
@@ -340,6 +340,20 @@ expandEncryptionList gc p = do
 --    if any (maybe True (keyIsPublic ) ) (snds ks) then return p else do
 --        return p { signature = Encrypted [ n | Just k@(Key n _) <-  snds ks, keyIsPubKey k ]: signature p }
 
+putGaleString s = putByteString . BS.pack $ galeEncodeString s
+
+putFragments :: FragmentList -> Put
+putFragments fl = mapM_ f fl where
+    f (s',f) = putWord32be t >> putWord32be (fromIntegral $ LBS.length nxs) >> putLazyByteString nxs  where
+        nxs = runPut (n >> xs)
+	(t, xs) = g f
+	n = putWord32be (fromIntegral $ length s) >> (putGaleString s)
+        s = toString s'
+    g (FragmentData ws) = (1, putByteString ws)
+    g (FragmentText s) = (0, putGaleString (unpackPS s))
+    g (FragmentTime (TOD s _)) = (2, putWord64be (fromIntegral s) >> putWord64be 0)
+    g (FragmentInt i) = (3, putWord32be (fromIntegral i))
+    g (FragmentNest fl) = (4, putFragments fl)
 
 createFragments :: FragmentList -> [Word8]
 createFragments fl = concatMap f fl where
@@ -409,8 +423,8 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 	td' cd (iv,kname,keydata) = do
 	    Just (_,pkey) <- getPrivateKey (keyCache gc) kname
 	    dd <- decryptAll keydata iv pkey cd
-	    let dfl = decodeFragments (drop 4 (BS.unpack dd))
-	    return dfl
+	    --let dfl = decodeFragments (drop 4 (BS.unpack dd))
+	    return $ runGet decodeFrags (LBS.fromChunks [BS.drop 4 dd])
 galeDecryptPuff _ x = return x
 
 
@@ -618,6 +632,9 @@ signature_magic1 :: [Word8]
 
 cipher_magic1 = stons "h\DC3\002\000"
 cipher_magic2 = stons "h\DC3\002\001"
+
+bs_cipher_magic1 = BS.pack cipher_magic1
+bs_cipher_magic2 = BS.pack cipher_magic2
 
 signature_magic1 = stons "h\DC3\001\000"
 
