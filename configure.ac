@@ -1,4 +1,4 @@
-AC_INIT(ginsu,0.7.3)
+AC_INIT(ginsu,0.8.0)
 AC_CONFIG_SRCDIR(Main.hs)
 AM_INIT_AUTOMAKE(no-dependencies)
 AM_CONFIG_HEADER([config.h])
