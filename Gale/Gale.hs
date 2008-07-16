@@ -27,14 +27,16 @@ import Control.Concurrent
 import Control.Exception
 import Control.Exception as E
 import Data.Bits
-import Data.Word(Word8, Word32)
 import Network.BSD
 import Network.Socket
 import PackedString
+import Data.Binary
+import Data.Binary.Get
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 
 import Atom
 import Control.Monad.Error
-import Data.Array.IArray
 import Data.Array.IO
 import Data.Monoid
 import Doc.DocLike((<+>))
@@ -48,7 +50,7 @@ import qualified System.Posix as Posix
 import RSA
 import SHA1
 import SimpleParser
-import UArrayParser
+--import UArrayParser
 
 -- TODO - prove concurrent-correctness, make sure all network errors are accounted for.
 
@@ -145,21 +147,6 @@ connectTo hostname port = do
       	  socketToHandle sock ReadWriteMode
 	)
 
-{-
-bracketOnError
-	:: IO a		-- ^ computation to run first (\"acquire resource\")
-	-> (a -> IO b)  -- ^ computation to run last (\"release resource\")
-	-> (a -> IO c)	-- ^ computation to run in-between
-	-> IO c		-- returns the value from the in-between computation
-bracketOnError before after thing =
-  block (do
-    a <- before
-    r <- E.catch
-	   (unblock (thing a))
-	   (\e -> do { after a; throw e })
-    return r
- )
- -}
 
 
 attemptConnect s = do
@@ -196,29 +183,26 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
 	    w <- readWord32 h
 	    l <- readWord32 h
 	    --d <- readRaw h (fromIntegral l)
-            arr <- newArray_ (0,fromIntegral l - 1)
-            dsz <- hGetArray h arr (fromIntegral l)
-            when (dsz /= fromIntegral l) $ fail "short read !"
+            --arr <- newArray_ (0,fromIntegral l - 1)
+            --dsz <- hGetArray h arr (fromIntegral l)
+            bs <- LBS.hGet h (fromIntegral l)
+            --when (dsz /= fromIntegral l) $ fail "short read !"
 	    when (w == 0) $ do
-                d <- getElems arr
-                hash <- evaluate $ sha1 d
-                arr <- unsafeFreeze arr
+                hash <- evaluate $ sha1 (LBS.unpack bs)
+--                arr <- unsafeFreeze arr
                 --(cat,puff) <- runUArrayParser decodePuff $  arr
-                case  runUArrayParser decodePuff  arr of
-                    Right (cat,puff) -> do
-                        cat <- tryMapM parseCategoryOld (spc $ cat)
-                        ct <- getClockTime
-                        let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (sha1ShowHash $ hash))):xs)
-                        p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
-                        writeChan (channel gc) $ p'
-                        case getFragmentData p' f_answerKey' of
-                            Just d -> putKey (keyCache gc) d
-                            Nothing -> return ()
-                        case (cats p',getFragmentString p' f_answerKeyError') of
-                            ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
-                            (_,_) -> return ()
-                    Left err -> do
-                        putLog LogError err
+                let (cat,puff) = runGet decodePuff bs
+                cat <- tryMapM parseCategoryOld (spc $ cat)
+                ct <- getClockTime
+                let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (sha1ShowHash $ hash))):xs)
+                p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
+                writeChan (channel gc) $ p'
+                case getFragmentData p' f_answerKey' of
+                    Just d -> putKey (keyCache gc) d
+                    Nothing -> return ()
+                case (cats p',getFragmentString p' f_answerKeyError') of
+                    ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
+                    (_,_) -> return ()
 
                 {-
     doit = bracket openHandle (hClose . fst) $ \(h,hn) -> do
@@ -251,50 +235,100 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
 
 -}
 
+decodePuff :: Get (String,FragmentList)
 decodePuff = do
-    clen <- word32
-    cs <- times (fromIntegral (clen `div` 2)) word16
-    word32 -- fragment header
+    clen <- getWord32be
+    cs <- replicateM (fromIntegral (clen `div` 2)) getWord16be
+    --getWord32be
+    skip 4
     fl <- decodeFrags
     return (map (chr . fromIntegral) cs, fl)
 
+decodeFrags :: Get FragmentList
 decodeFrags = df [] where
     df xs = do
-        b <- atEof
+        b <- isEmpty
         if b then return (reverse xs) else do
         z <- decodeFrag
         df (z:xs)
 
+decodeFrag :: Get (Atom,Fragment)
 decodeFrag = do
-    ty <- word32
-    ln <- word32
-    fnl <- word32
-    fn <- times (fromIntegral (fnl)) word16
+    ty <- getWord32be
+    ln <- getWord32be
+    fnl <- getWord32be
+    fn <- replicateM (fromIntegral fnl) getWord16be
     let fn' = fromString (map (chr . fromIntegral) fn)
     let dl = fromIntegral $ ln - (4 + (fnl * 2))
     fr <- case ty of
         0 -> do
-            tx <- times (dl `div` 2) word16
+            tx <- replicateM (dl `div` 2) getWord16be
             return $ FragmentText $ packString (map (chr . fromIntegral) tx)
         1 -> do
-            d <- bytes dl
-            --d <- times dl byte
-            return $ FragmentData d
+            --d <- bytes dl
+            --d <- replicateM dl byte
+            up <- getBytes dl
+            return $ FragmentData up
         2 -> do
-            w <- word64
-            word64
+            w <- getWord64be
+            skip 8 --word64
             return $ FragmentTime (TOD (fromIntegral w) 0)
         3 -> do
-            w <- word32
+            w <- getWord32be
             return $ FragmentInt (fromIntegral w)
         4 -> do
-            up <- bytes dl
-            fl <- runUArrayParser decodeFrags up
-            return $ FragmentNest fl
+            up <- getBytes dl
+            return $ FragmentNest (runGet decodeFrags (LBS.fromChunks [up]))
         _ -> fail $ "unknown fragment type: " <+> show ty <+> show ln <+> show fnl <+> show fn'
     return (fn', fr)
 
 
+    
+
+--decodePuff = do
+--    clen <- word32
+--    cs <- times (fromIntegral (clen `div` 2)) word16
+--    word32 -- fragment header
+--    fl <- decodeFrags
+--    return (map (chr . fromIntegral) cs, fl)
+--
+--decodeFrags = df [] where
+--    df xs = do
+--        b <- atEof
+--        if b then return (reverse xs) else do
+--        z <- decodeFrag
+--        df (z:xs)
+--
+--decodeFrag = do
+--    ty <- word32
+--    ln <- word32
+--    fnl <- word32
+--    fn <- times (fromIntegral (fnl)) word16
+--    let fn' = fromString (map (chr . fromIntegral) fn)
+--    let dl = fromIntegral $ ln - (4 + (fnl * 2))
+--    fr <- case ty of
+--        0 -> do
+--            tx <- times (dl `div` 2) word16
+--            return $ FragmentText $ packString (map (chr . fromIntegral) tx)
+--        1 -> do
+--            d <- bytes dl
+--            --d <- times dl byte
+--            return $ FragmentData d
+--        2 -> do
+--            w <- word64
+--            word64
+--            return $ FragmentTime (TOD (fromIntegral w) 0)
+--        3 -> do
+--            w <- word32
+--            return $ FragmentInt (fromIntegral w)
+--        4 -> do
+--            up <- bytes dl
+--            fl <- runUArrayParser decodeFrags up
+--            return $ FragmentNest fl
+--        _ -> fail $ "unknown fragment type: " <+> show ty <+> show ln <+> show fnl <+> show fn'
+--    return (fn', fr)
+--
+--
 
 
 
@@ -359,12 +393,12 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
 	    sig <- signAll pkey fl
 	    let sd = signature_magic1 ++ xdrWriteUInt (fromIntegral $ length sig) [] ++ sig ++ pubkey_magic3 ++ xdrWriteUInt (fromIntegral $ length kn) [] ++ galeEncodeString kn
                 fd = xdrWriteUInt (fromIntegral $ length sd) $ sd ++ fl
-                fragments = [(f_securitySignature,FragmentData (listArray (0, length fd - 1) fd))]
+                fragments = [(f_securitySignature,FragmentData (BS.pack fd))]
             nfragments <- cryptFragments gc es fragments
 	    createPuff gc will $ p {signature = [], fragments = nfragments }
 createPuff _ _ _ = error "createPuff: invalid arguments"
 
-la xs = listArray (0, length xs - 1) xs
+la xs = BS.pack xs -- listArray (0, length xs - 1) xs
 
 cryptFragments :: GaleContext -> [String] -> FragmentList -> IO FragmentList
 cryptFragments _ [] fl = return fl
@@ -403,7 +437,7 @@ createFragments fl = concatMap f fl where
 	(t, xs) = g f
 	n = xdrWriteUInt (fromIntegral $ length s) (galeEncodeString s)
         s = toString s'
-    g (FragmentData ws) = (1, elems ws)
+    g (FragmentData ws) = (1, BS.unpack ws)
     g (FragmentText s) = (0, galeEncodeString (unpackPS s))
     g (FragmentTime (TOD s _)) = (2, replicate 4 0 ++ xdrWriteUInt (fromIntegral s) (replicate 8 0))
     g (FragmentInt i) = (3, xdrWriteUInt (fromIntegral i) [])
@@ -471,14 +505,13 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 	    let dfl = decodeFragments (drop 4 dd)
 	    return dfl
 galeDecryptPuff _ x = return x
--}
 
 _parseSecuritySignature = do
     l <- word32
     dropBytes 4 -- signature_magic1
     sb <- word32
     dropBytes (fromIntegral sb)
-    kb <- times (fromIntegral $ l - (8 + sb)) byte
+    kb <- replicateM (fromIntegral $ l - (8 + sb)) byte
     word32
     fl <- decodeFrags
     return (kb,fl)
@@ -490,16 +523,17 @@ _parseSecuritySignature = do
 --    key <- parseKey $ kb
 --    let fl' = fl ++ [ f | f <- fragments p, fst f /= f_securitySignature]
 --    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl' }
+-}
 
 galeDecryptPuff :: GaleContext -> Puff -> IO Puff
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tryElse p $ do
-    let (l,xs') = xdrReadUInt (elems xs)
+    let (l,xs') = xdrReadUInt (BS.unpack xs)
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
     key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
     galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
 galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = tryElse p $ do
-    (cd,ks) <- parser pe (elems xs)
+    (cd,ks) <- parser pe (BS.unpack xs)
     dfl <- first (map (td' cd) ks)
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where

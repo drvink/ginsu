@@ -19,6 +19,7 @@ import Foreign
 import List(sort)
 import qualified Data.HashTable as HT
 import System.IO.Unsafe
+import Data.Binary
 
 import PackedString
 
@@ -54,6 +55,10 @@ instance Read Atom where
 toPackedString atom = atomToPS atom
 toString atom = unpackPS $ toPackedString atom
 atomIndex (Atom x) = x
+
+instance Binary Atom where
+    put x = put (toPackedString x)
+    get = (unsafePerformIO . fromPackedStringIO) `fmap` get
 
 {- these are separate in case operations are one-way -}
 class ToAtom a where

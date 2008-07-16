@@ -3,14 +3,15 @@ module Gale.Proto where
 import Atom
 import Bits
 import Char
-import Data.Array.Unboxed
 import GenUtil
 import PackedString
 import Gale.Puff
 import SimpleParser
 import System
 import System.Time
+import qualified Data.ByteString as BS
 import Word
+
 
 pubkey_magic3 :: [Word8]
 pubkey_magic3 = map (fromIntegral . ord) "GALE\000\001"
@@ -27,7 +28,7 @@ decodeFragment t xs = (fn,f t) where
     (fnl,xs') = xdrReadUInt xs
     (fn,xs'') = liftT2 (fromString . galeDecodeString,id) (splitAt (fromIntegral $ fnl * 2) xs')
     f 0 = FragmentText $ packString (galeDecodeString xs'')
-    f 1 = FragmentData $ listArray (0, length xs'' - 1) xs''
+    f 1 = FragmentData $ BS.pack  xs''
     f 2 = FragmentTime $ decodeTime xs''
     f 3 = FragmentInt (fromIntegral $ fst $ xdrReadUInt xs'')
     f 4 = FragmentNest (decodeFragments xs'')
@@ -36,6 +37,7 @@ decodeFragment t xs = (fn,f t) where
 decodeTime :: [Word8] -> ClockTime
 decodeTime xs = TOD (fromIntegral t) 0 where
     (t,_) = xdrReadUInt (drop 4 xs)
+
 
 parseNullString :: GenParser Word8 String
 parseNullString = (sat (== 0) >> return "") <|> (parseSome 1 >>= \[x] -> fmap ((chr $ fromIntegral x):) parseNullString)

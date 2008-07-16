@@ -20,9 +20,6 @@ import Atom
 import Bits
 import Char
 import Control.Concurrent
-import Data.Array.IO
-import Data.Array.MArray
-import Data.Array.Unboxed
 import Directory
 import EIO
 import ErrorLog
@@ -38,6 +35,7 @@ import SimpleParser
 import System.Mem.Weak
 import Word
 import qualified Data.Map as Map
+import qualified Data.ByteString as BS
 
 stons :: [Char] -> [Word8]
 stons = map (fromIntegral . ord)
@@ -83,18 +81,18 @@ keyToRSAElems fl = do
     n <- getFragmentData fl f_rsaModulus
     e <- getFragmentData fl f_rsaExponent
     if not (keyIsPrivKey fl) then
-        return RSAElemsPublic { rsaN = elems n, rsaE = elems e } else do
+        return RSAElemsPublic { rsaN = BS.unpack n, rsaE = BS.unpack e } else do
     d <- getFragmentData fl f_rsaPrivateExponent
     iqmp <- getFragmentData fl f_rsaPrivateCoefficient
     pq <- getFragmentData fl f_rsaPrivatePrime
     dmpq1 <- getFragmentData fl f_rsaPrivatePrimeExponent
-    let (p,q) = splitAt galeRSAPrimeLen (elems pq)     -- should be "rsa.bits"?
-        (dmp1,dmq1) = splitAt galeRSAPrimeLen (elems dmpq1)
+    let (p,q) = splitAt galeRSAPrimeLen (BS.unpack pq)     -- should be "rsa.bits"?
+        (dmp1,dmq1) = splitAt galeRSAPrimeLen (BS.unpack dmpq1)
     return RSAElemsPrivate {
-        rsaN = elems n,
-        rsaE = elems e,
-        rsaD = elems d ,
-        rsaIQMP = elems iqmp,
+        rsaN = BS.unpack n,
+        rsaE = BS.unpack e,
+        rsaD = BS.unpack d ,
+        rsaIQMP = BS.unpack iqmp,
         rsaP = p,
         rsaQ =  q,
         rsaDMP1 = dmp1,
@@ -141,9 +139,9 @@ noKey kc kn = modifyMVar (kkeyCache kc) f where
 
 
 
-putKey :: KeyCache -> (UArray Int Word8) -> IO ()
+putKey :: KeyCache -> BS.ByteString -> IO ()
 putKey kc xs = do
-    mk <- first [fmap Just (parseKey $ elems xs),return Nothing]
+    mk <- first [fmap Just (parseKey $ BS.unpack xs),return Nothing]
     case mk of
         Nothing -> return ()
         Just v'@(Key kn _) -> do
@@ -152,10 +150,10 @@ putKey kc xs = do
                 f kkeyCache = do
                     first [createDirectory $ galeDir kc ++ "/auth/", return ()]
                     first [createDirectory $ galeDir kc ++ "/auth/cache/", return ()]
-                    xs <- unsafeThaw xs
-                    bnds <- getBounds xs
+                    --xs <- unsafeThaw xs
+                    --bnds <- getBounds xs
                     atomicWrite  (galeDir kc ++ "/auth/cache/" ++ kn ++ ".gpub")  $
-                        \h -> hPutArray h xs (rangeSize bnds)
+                        \h -> BS.hPut h xs -- hPutArray h xs (rangeSize bnds)
                     v' <- mkWeakPtr v' Nothing
                     return (Map.insert kn v' kkeyCache, ())
 
@@ -205,7 +203,8 @@ keyRequestPuff s = emptyPuff { cats = [Category ("_gale.query." ++ n, d)], fragm
     s' = flipLocalPart s
     Category (n,d) = catParseNew s
 
-la xs = listArray (0, length xs - 1) xs
+--la xs = listArray (0, length xs - 1) xs
+la xs = BS.pack xs
 
 keyDecode12 xs = [ (fromString x,y) | (x,y) <- fl] where
     fl = [("rsa.modulus",FragmentData $ la modulusD),
@@ -307,7 +306,7 @@ unsignData xs = do
 
 unsignFragments :: FragmentList -> IO FragmentList
 unsignFragments tfl | (xs:_) <- [xs | (n,FragmentData xs) <- tfl, n == f_securitySignature] = do
-    (fl,_) <- unsignData (elems xs)
+    (fl,_) <- unsignData (BS.unpack xs)
     unsignFragments fl
 unsignFragments x = return x
 
