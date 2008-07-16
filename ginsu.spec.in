@@ -1,4 +1,3 @@
-# arch-tag: d5772aad-1f8c-4f95-bec9-ecb3534b9b65
 %define version @VERSION@
 %define release 1
 %define prefix /usr
@@ -37,5 +36,5 @@ make prefix=$RPM_BUILD_ROOT%{prefix} install
 %attr(-, root, root) %doc LICENSE
 %attr(-, root, root) %{prefix}/bin/ginsu
 %attr(-, root, root) %{prefix}/bin/ginsu-mdk
-%attr(-, root, root) %{prefix}/man/man1/ginsu.1.gz
+%attr(-, root, root) %{prefix}/share/man/man1/ginsu.1.gz
 
