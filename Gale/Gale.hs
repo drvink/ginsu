@@ -340,11 +340,8 @@ cryptFragments gc ss fl = do
         n = fromIntegral (length ks')
     --putStrLn $ show (ks,ks',fl')
     (d,ks,iv) <- encryptAll (snds ks') (BS.concat (LBS.toChunks $ runPut fl'))
-    --putLog LogDebug $ show (d,ks,iv)
-    --return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ BS.unpack iv ++ xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) ))]
     return [(f_securityEncryption,FragmentData . BS.concat $ [bs_cipher_magic2,iv] ++ LBS.toChunks (runPut $ do putWord32be n;  mapM_ g (zip (fsts ks') ks) ; putByteString d))]
   where
-     --f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
      g (kn,kd) = do
         putWord32be (fromIntegral $ length kn)
         putGaleString kn
@@ -352,8 +349,6 @@ cryptFragments gc ss fl = do
         putByteString kd
 
 
-
---keyIsPublic key = any nullPS (getFragmentStrings key f_keyMember)
 
 expandEncryptionList :: GaleContext -> Puff -> IO Puff
 expandEncryptionList gc p = do
@@ -381,18 +376,6 @@ putFragments fl = mapM_ f fl where
     g (FragmentTime (TOD s _)) = (2, putWord64be (fromIntegral s) >> putWord64be 0)
     g (FragmentInt i) = (3, putWord32be (fromIntegral i))
     g (FragmentNest fl) = (4, putFragments fl)
-
-createFragments :: FragmentList -> [Word8]
-createFragments fl = concatMap f fl where
-    f (s',f) = xdrWriteUInt t $ xdrWriteUInt (fromIntegral $ length n + length xs) $ n ++ xs where
-	(t, xs) = g f
-	n = xdrWriteUInt (fromIntegral $ length s) (galeEncodeString s)
-        s = toString s'
-    g (FragmentData ws) = (1, BS.unpack ws)
-    g (FragmentText s) = (0, galeEncodeString (unpackPS s))
-    g (FragmentTime (TOD s _)) = (2, replicate 4 0 ++ xdrWriteUInt (fromIntegral s) (replicate 8 0))
-    g (FragmentInt i) = (3, xdrWriteUInt (fromIntegral i) [])
-    g (FragmentNest fl) = (4, createFragments fl)
 
 
 
@@ -617,12 +600,6 @@ verifyDestinations gc cs = do
 -- Gale stream Parsing
 ----------------------
 
-xdrWriteUInt :: Word32 -> [Word8] -> [Word8]
-xdrWriteUInt x bs = (b1:b2:b3:b4:bs) where
-    b1 = fromIntegral $ (x `shiftR` 24) .&. 0xFF
-    b2 = fromIntegral $ (x `shiftR` 16) .&. 0xFF
-    b3 = fromIntegral $ (x `shiftR` 8) .&. 0xFF
-    b4 = fromIntegral $ x .&. 0xFF
 
 putWord32 :: Handle -> Word32 -> IO ()
 putWord32 h x = do
