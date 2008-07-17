@@ -29,31 +29,33 @@ import Charset
 import ConfigFile
 import Control.Monad.Error
 import Curses
+import Doc.Chars(rTee,hLine,lTee)
 import Doc.DocLike hiding(space)
 import EIO
 import ErrorLog
 import Filter
 import Gale.Gale
+import Gale.KeyCache(numberKeys)
+import Gale.Puff
 import GenUtil
 import GinsuConfig
 import Help
-import Gale.KeyCache(numberKeys)
 import KeyName
 import MyLocale
 import Options
 import PackedString
 import Prelude hiding((&&),(||),not,and,or,any,all)
-import Gale.Puff
 import Regex
+import RSA
 import Screen
-import SHA1
 import Status
 import System.Locale
 import Version
-import Doc.Chars(rTee,hLine,lTee)
+
+import qualified Data.ByteString.Lazy as LBS
 
 idleThreshold = 240
-pufflog = "ginsu.4.pufflog"
+pufflog = "ginsu.5.pufflog"
 helpText = "Need help? Press F1 or ?"
 
 getTmpFile = do
@@ -269,10 +271,10 @@ puffTemplate = do
     n <- case gn of
 	Just n -> return ((f_messageSender,FragmentText (packString n)):)
 	Nothing -> return id
-    let mid = sha1String $ show t ++ " " ++ idText ++ " " ++ show (hashUnique u)
+    let mid = sha1 . LBS.pack $ map (fromIntegral . ord) (show t ++ " " ++ idText ++ " " ++ show (hashUnique u))
     let sig = [Signed (Key gi [])]
     let ef = n [
-	    (f_messageId, FragmentText $ packString mid),
+	    (f_messageId, FragmentText $ packString $ bsToHex mid),
 	    (fromString "id/class",FragmentText $ packString (package ++ "/" ++ version) ),
 	    (fromString "id/instance", FragmentText $ packString idText),
 	    (f_idTime,FragmentTime t)]

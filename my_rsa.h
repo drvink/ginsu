@@ -15,6 +15,7 @@
 #include <openssl/rsa.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
+#include <openssl/sha.h>
 #include <limits.h>
 
 #endif

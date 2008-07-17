@@ -54,10 +54,10 @@ import Int(Int32)
 import List
 import Maybe(isJust)
 import PackedString
-import SHA1
 import System.IO
 import System.Time
 import Time
+import RSA
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
@@ -211,7 +211,7 @@ instance Show Key where
 instance Show Fragment where
     show (FragmentText s) = show s
     --show (FragmentData xs) = "<DATA:" ++ show (rangeSize $ bounds xs)  ++ ":" ++ show (map (chr . fromIntegral) $ elems xs) ++ ">"
-    show (FragmentData xs) = "<DATA:" ++ show (BS.length xs)  ++ ":" ++ sha1ShowHash (sha1 $ BS.unpack xs) ++ ">"
+    show (FragmentData xs) = "<DATA:" ++ show (BS.length xs)  ++ ":" ++ bsToHex (sha1 $ LBS.fromChunks [xs]) ++ ">"
     show (FragmentTime ct) = show ct
     show (FragmentInt x) = show x
     show (FragmentNest fl) = "Nest:" ++ (indentLines 2 $ showFragments fl)

@@ -49,7 +49,6 @@ import Gale.Puff
 import GenUtil hiding(replicateM)
 import qualified System.Posix as Posix
 import RSA
-import SHA1
 import SimpleParser
 
 -- TODO - prove concurrent-correctness, make sure all network errors are accounted for.
@@ -184,11 +183,11 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
 	    l <- readWord32 h
             bs <- LBS.hGet h (fromIntegral l)
 	    when (w == 0) $ do
-                hash <- evaluate $ sha1 (LBS.unpack bs)
+                let hash = sha1 bs
                 let (cat,puff) = runGet decodePuff bs
                 cat <- tryMapM parseCategoryOld (spc $ cat)
                 ct <- getClockTime
-                let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (sha1ShowHash $ hash))):xs)
+                let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (bsToHex hash))):xs)
                 p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
                 writeChan (channel gc) $ p'
                 case getFragmentData p' f_answerKey' of

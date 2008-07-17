@@ -4,6 +4,8 @@ module RSA(
     encryptAll,
     signAll,
     createPkey,
+    sha1,
+    bsToHex,
     RSAElems(..)
     ) where
 
@@ -16,7 +18,9 @@ import Foreign
 import Foreign.ForeignPtr
 import MarshalArray
 import System.IO.Unsafe
+import Numeric(showHex)
 
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Unsafe as BS
 
@@ -210,6 +214,30 @@ encryptAll  keys xs = doit' where
 
 foreign import ccall unsafe "BN_bin2bn" bnBin2Bn :: Ptr CUChar -> CInt -> Ptr BIGNUM -> IO (Ptr BIGNUM)
 
+newtype SHA_CTX = SHA_CTX (Ptr SHA_CTX)   
+
+foreign import ccall unsafe "SHA1_Init" sha1Init :: SHA_CTX -> IO () 
+foreign import ccall unsafe "SHA1_Update" sha1Update :: SHA_CTX -> Ptr a -> CULong -> IO () 
+foreign import ccall unsafe "SHA1_Final" sha1Final :: Ptr CChar -> SHA_CTX -> IO ()
+
+
+sha1 :: LBS.ByteString -> BS.ByteString
+sha1 lbs = unsafePerformIO $ withSHA_CTX $ \sctx -> do
+    let supdate bs = BS.unsafeUseAsCStringLen bs $ \ (p,l) -> sha1Update sctx p (fromIntegral l)
+    mapM_ supdate (LBS.toChunks lbs)
+    allocaBytes (#const SHA_DIGEST_LENGTH) $ \pp -> do
+        sha1Final pp sctx
+        BS.packCStringLen (pp,(#const SHA_DIGEST_LENGTH))
+
+bsToHex :: BS.ByteString -> String
+bsToHex bs = BS.foldr f [] bs where
+    f w = showHex x . showHex y where
+        (x,y) = divMod w 16
+        
+
+withSHA_CTX :: (SHA_CTX -> IO a) -> IO a
+withSHA_CTX action = allocaBytes (#const sizeof(SHA_CTX)) $ \cctx ->
+    sha1Init (SHA_CTX cctx) >> action (SHA_CTX cctx)
 
 type NEvpPkey = ForeignPtr EVP_PKEY
 

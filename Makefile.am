@@ -39,7 +39,7 @@ ACLOCAL_AMFLAGS = -I ac-macros
 ginsu_SOURCES = ConfigFile.hs Gale/Gale.hs GenUtil.hs \
     Main.hs  Version.hs ExampleConf.hs Filter.hs SimpleParser.hs  ErrorLog.hs  UTF8.hs \
     EIO.hs Gale/Puff.hs my_curses.h my_rsa.h Charset.hs Format.hs Screen.hs \
-    SHA1.hs  KeyName.hs Help.hs  hs_include.h  CacheIO.hs  \
+    KeyName.hs Help.hs  hs_include.h  CacheIO.hs  \
     PackedString.hs  Options.hs GinsuConfig.hs Regex.hs KeyHelpTable.hs \
     Doc/DocLike.hs Gale/KeyCache.hs Gale/Proto.hs  Atom.hs \
     Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs
