@@ -266,13 +266,13 @@ galeSendPuff gc puff = void $ forkIO $ do
     puff' <- expandEncryptionList gc puff
     writeChan (channel gc) puff'
     d <- createPuff  gc False puff'
-    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> putRaw h d >> hFlush h
+    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 galeWillPuff :: GaleContext -> Puff -> IO ()
 galeWillPuff gc puff = void $ forkIO $ do
     putLog LogDebug $ "willing puff:\n" ++ (indent 4 $ showPuff puff)
     d <- createPuff gc True puff
-    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> putRaw h d >> hFlush h
+    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 
 getPrivateKey kc kn = getPKey kc kn >>= \n -> case n of
@@ -286,12 +286,30 @@ collectSigs ss = liftT2 (snub, snub) $ cs ss ([],[]) where
     cs (Encrypted es':ss) (ks,es) = cs ss (ks,es' ++ es)
     cs [] x = x
 
-createPuff :: GaleContext -> Bool -> Puff -> IO [Word8]
+
+tagWord :: Int -> Put -> Put
+tagWord i p = putWord32be (fromIntegral i) >> p
+
+class RawPut a where
+    rawPut :: a -> Put
+
+instance RawPut BS.ByteString where
+    rawPut = putByteString
+
+instance RawPut LBS.ByteString where
+    rawPut = putLazyByteString
+
+instance RawPut [Word8] where
+    rawPut = putByteString . BS.pack
+
+runPutBS = BS.concat . LBS.toChunks . runPut
+
+createPuff :: GaleContext -> Bool -> Puff -> IO LBS.ByteString
 createPuff _ will puff | [] <- signature puff = do
-    let cn = galeEncodeString (concatInter ":" (map catShowOld $ cats puff))
-    let ad = xdrWriteUInt (fromIntegral $ length cn) (cn ++ xdrWriteUInt 0 []) ++ createFragments (fragments puff)
-    let pd = xdrWriteUInt (if will then 1 else 0) (xdrWriteUInt (fromIntegral $ length ad) ad)
-    evaluate pd
+    let cn = runPut $ putGaleString (concatInter ":" (map catShowOld $ cats puff))
+    let ad = runPut $ tagWord (fromIntegral $ LBS.length cn) $ do putLazyByteString cn; tagWord 0 $ putFragments (fragments puff)
+    let pd = tagWord (if will then 1 else 0) (tagWord (fromIntegral $ LBS.length ad) (putLazyByteString ad))
+    evaluate $ runPut pd
 createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
     getPrivateKey (keyCache gc) kn >>= \v -> case v of
 	Nothing -> createPuff gc will $ p {signature = []}
@@ -299,11 +317,15 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
 	    sfl <- case fragmentString f_keyOwner kfl of
 		Just o -> return [(f_messageSender, FragmentText o)]
 		Nothing -> return []
-	    let fl = xdrWriteUInt 0 (createFragments (fragments p `mergeFrags` sfl))
-	    sig <- signAll pkey (BS.pack fl)
-	    let sd = signature_magic1 ++ xdrWriteUInt (fromIntegral $ BS.length sig) [] ++ BS.unpack sig ++ pubkey_magic3 ++ xdrWriteUInt (fromIntegral $ length kn) [] ++ galeEncodeString kn
-                fd = xdrWriteUInt (fromIntegral $ length sd) $ sd ++ fl
-                fragments = [(f_securitySignature,FragmentData (BS.pack fd))]
+	    let fl = runPutBS $ tagWord 0 (putFragments (fragments p `mergeFrags` sfl))
+	    sig <- signAll pkey fl
+	    let sd = runPutBS $ do
+                    putByteString bs_signature_magic1
+                    tagWord (BS.length sig) (putByteString sig)
+                    putByteString (BS.pack pubkey_magic3)
+                    tagWord (fromIntegral $ length kn) (putGaleString kn)
+                fd = tagWord (BS.length sd) (putByteString sd) >> putByteString fl
+                fragments = [(f_securitySignature,FragmentData (runPutBS fd))]
             nfragments <- cryptFragments gc es fragments
 	    createPuff gc will $ p {signature = [], fragments = nfragments }
 createPuff _ _ _ = error "createPuff: invalid arguments"
@@ -314,15 +336,20 @@ cryptFragments gc ss fl = do
     putLog LogDebug $ "cryptFragments " ++ show ss
     ks <-  mapM (getPKey (keyCache gc)) ss
     let ks' = [ (n,x) | Just (Key n _,x) <- ks]
-        fl' = xdrWriteUInt 0 (createFragments fl)
+        fl' = putWord32be 0 >> (putFragments fl)
         n = fromIntegral (length ks')
     --putStrLn $ show (ks,ks',fl')
-    (d,ks,iv) <- encryptAll (snds ks') (BS.pack fl')
+    (d,ks,iv) <- encryptAll (snds ks') (BS.concat (LBS.toChunks $ runPut fl'))
     --putLog LogDebug $ show (d,ks,iv)
     --return [(f_securityEncryption,FragmentData $ la (cipher_magic2 ++ BS.unpack iv ++ xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) ))]
-    return [(f_securityEncryption,FragmentData $ (bs_cipher_magic2 `BS.append` iv `BS.append` BS.pack (xdrWriteUInt n (foldr f (BS.unpack d) $ zip (fsts ks') (map BS.unpack ks)) )))]
+    return [(f_securityEncryption,FragmentData . BS.concat $ [bs_cipher_magic2,iv] ++ LBS.toChunks (runPut $ do putWord32be n;  mapM_ g (zip (fsts ks') ks) ; putByteString d))]
   where
-     f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
+     --f (kn,kd) x = xdrWriteUInt (fromIntegral $ length kn) $ galeEncodeString kn ++ xdrWriteUInt (fromIntegral $ length kd) (kd ++ x)
+     g (kn,kd) = do
+        putWord32be (fromIntegral $ length kn)
+        putGaleString kn
+        putWord32be (fromIntegral $ BS.length kd)
+        putByteString kd
 
 
 
@@ -339,6 +366,7 @@ expandEncryptionList gc p = do
 --    if any (maybe True (keyIsPublic ) ) (snds ks) then return p else do
 --        return p { signature = Encrypted [ n | Just k@(Key n _) <-  snds ks, keyIsPubKey k ]: signature p }
 
+putGaleString :: String -> Put
 putGaleString s = putByteString . BS.pack $ galeEncodeString s
 
 putFragments :: FragmentList -> Put
@@ -535,7 +563,7 @@ requestKey gc c = do
         galeAddCategories gc [Category ("_gale.key", categoryCell c)]
         d <- createPuff  gc False $ keyRequestPuff c'
         putLog LogDebug $ "sending request for: " ++ c'
-        retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> putRaw h d >> hFlush h
+        retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 
 findDest gc c = fd c >>= res where
@@ -627,7 +655,7 @@ stons :: [Char] -> [Word8]
 stons = map (fromIntegral . ord)
 
 cipher_magic1, cipher_magic2 :: [Word8]
-signature_magic1 :: [Word8]
+bs_signature_magic1 :: BS.ByteString
 
 cipher_magic1 = stons "h\DC3\002\000"
 cipher_magic2 = stons "h\DC3\002\001"
@@ -635,6 +663,6 @@ cipher_magic2 = stons "h\DC3\002\001"
 bs_cipher_magic1 = BS.pack cipher_magic1
 bs_cipher_magic2 = BS.pack cipher_magic2
 
-signature_magic1 = stons "h\DC3\001\000"
+bs_signature_magic1 = BS.pack $ stons "h\DC3\001\000"
 
 
