@@ -42,7 +42,8 @@ ginsu_SOURCES = ConfigFile.hs Gale/Gale.hs GenUtil.hs \
     KeyName.hs Help.hs  hs_include.h  CacheIO.hs  \
     PackedString.hs  Options.hs GinsuConfig.hs Regex.hs KeyHelpTable.hs \
     Doc/DocLike.hs Gale/KeyCache.hs Gale/Proto.hs  Atom.hs \
-    Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs
+    Boolean/Boolean.hs Status.hs Doc/Chars.hs CircularBuffer.hs Boolean/Algebra.hs \
+    Text/ParserCombinators/ReadP/ByteString.hs
 
 
 HSNODISTSOURCES= Curses.hs MyLocale.hs CWString.hs RSA.hs

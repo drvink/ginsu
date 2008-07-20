@@ -207,43 +207,6 @@ decodePuff = do
     fl <- decodeFrags
     return (map (chr . fromIntegral) cs, fl)
 
-decodeFrags :: Get FragmentList
-decodeFrags = df [] where
-    df xs = do
-        b <- isEmpty
-        if b then return (reverse xs) else do
-        z <- decodeFrag
-        df (z:xs)
-
-decodeFrag :: Get (Atom,Fragment)
-decodeFrag = do
-    ty <- getWord32be
-    ln <- getWord32be
-    fnl <- getWord32be
-    fn <- replicateM (fromIntegral fnl) getWord16be
-    let fn' = fromString (map (chr . fromIntegral) fn)
-    let dl = fromIntegral $ ln - (4 + (fnl * 2))
-    fr <- case ty of
-        0 -> do
-            tx <- replicateM (dl `div` 2) getWord16be
-            return $ FragmentText $ packString (map (chr . fromIntegral) tx)
-        1 -> do
-            --d <- bytes dl
-            --d <- replicateM dl byte
-            up <- getBytes dl
-            return $ FragmentData up
-        2 -> do
-            w <- getWord64be
-            skip 8 --word64
-            return $ FragmentTime (TOD (fromIntegral w) 0)
-        3 -> do
-            w <- getWord32be
-            return $ FragmentInt (fromIntegral w)
-        4 -> do
-            up <- getBytes dl
-            return $ FragmentNest (runGet decodeFrags (LBS.fromChunks [up]))
-        _ -> fail $ "unknown fragment type: " <+> show ty <+> show ln <+> show fnl <+> show fn'
-    return (fn', fr)
 
 galeNextPuff :: GaleContext -> IO Puff
 galeNextPuff gc = do

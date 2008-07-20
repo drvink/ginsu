@@ -79,6 +79,7 @@ data RSAElems a = RSAElemsPrivate {
     rsaDMP1 :: a,
     rsaDMQ1 :: a
     } |  RSAElemsPublic { rsaN :: a, rsaE :: a }
+    deriving(Show)
 
 
 

@@ -1,4 +1,3 @@
--- arch-tag: 0863bbd6-b533-440d-b88f-77871b5359be
 module Gale.KeyCache(
     dumpKey,
     KeyCache,
@@ -23,7 +22,7 @@ import Control.Concurrent
 import Directory
 import EIO
 import ErrorLog
-import Gale.Proto
+import Gale.Proto(decodeTime, decodeFrags, xdrReadUInt, getGaleDir, decodeFragments)
 import GenUtil
 import List
 import Maybe
@@ -31,25 +30,28 @@ import Monad
 import PackedString
 import Gale.Puff
 import RSA
-import SimpleParser
 import System.Mem.Weak
 import Word
 import qualified Data.Map as Map
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
+import Text.ParserCombinators.ReadP.ByteString
+import Data.Binary.Get(runGet,Get())
 
 stons :: [Char] -> [Word8]
 stons = map (fromIntegral . ord)
 
-private_magic1, private_magic2, private_magic3 :: [Word8]
-pubkey_magic1, pubkey_magic2 :: [Word8]
+private_magic1, private_magic2, private_magic3 :: BS.ByteString
+pubkey_magic1, pubkey_magic2 :: BS.ByteString
 
-private_magic1 = stons "h\DC3\000\001"
-private_magic2 = stons "h\DC3\000\003"
-private_magic3 = stons "GALE\000\002"
+private_magic1 = BS.pack $ stons "h\DC3\000\001"
+private_magic2 = BS.pack $ stons "h\DC3\000\003"
+private_magic3 = BS.pack $ stons "GALE\000\002"
 
 
-pubkey_magic1 = stons "h\DC3\000\000"
-pubkey_magic2 = stons "h\DC3\000\002"
+pubkey_magic1 = BS.pack $ stons "h\DC3\000\000"
+pubkey_magic2 = BS.pack $ stons "h\DC3\000\002"
+pubkey_magic3 = BS.pack $ stons "GALE\000\001"
 
 galeRSAModulusBits = 1024
 galeRSAModulusLen = (galeRSAModulusBits + 7) `div` 8
@@ -129,6 +131,8 @@ keyToRSAElems fl = do
 keyToPkey :: Key -> IO EvpPkey
 keyToPkey key  = do
     re <- keyToRSAElems key
+    putLog LogDebug $ show re
+
     createPkey re
 
 getPKey :: KeyCache -> String -> IO (Maybe (Key,EvpPkey))
@@ -229,17 +233,44 @@ keyRequestPuff s = emptyPuff { cats = [Category ("_gale.query." ++ n, d)], fragm
     Category (n,d) = catParseNew s
 
 --la xs = listArray (0, length xs - 1) xs
-la xs = BS.pack xs
+--la xs = BS.pack xs
 
-keyDecode12 xs = [ (fromString x,y) | (x,y) <- fl] where
-    fl = [("rsa.modulus",FragmentData $ la modulusD),
-	  ("rsa.exponent",FragmentData $ la exponentD),
-	  ("rsa.private.exponent",FragmentData $ la privateExponentD),
-	  ("rsa.private.prime",FragmentData $ la privatePrimeD),
-	  ("rsa.private.prime.exponent",FragmentData $ la privatePrimeExponentD),
-	  ("rsa.private.coefficient",FragmentData $ la privateCoefficientD),
+parseWord32 :: ReadP Word32
+parseWord32 = do
+    b1 <- get
+    b2 <- get
+    b3 <- get
+    b4 <- get
+    return $ (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
+	    (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
+
+parseWord16 :: ReadP Word16
+parseWord16 = do
+    b1 <- get
+    b2 <- get
+    return $ (fromIntegral b2) .|. (fromIntegral b1 `shiftL` 8)
+
+parseIntegral32 = fmap fromIntegral parseWord32
+
+
+keyDecode12 = do
+    bits <- parseIntegral32
+    modulusD <- splitRLE galeRSAModulusLen
+    exponentD <- splitRLE galeRSAModulusLen
+    privateExponentD <- splitRLE (galeRSAPrimeLen * 2)
+    privatePrimeD <- splitRLE galeRSAModulusLen
+    privatePrimeExponentD <- splitRLE (galeRSAPrimeLen * 2)
+    privateCoefficientD <- splitRLE galeRSAPrimeLen
+    let fl = [("rsa.modulus",FragmentData  modulusD),
+	  ("rsa.exponent",FragmentData exponentD),
+	  ("rsa.private.exponent",FragmentData  privateExponentD),
+	  ("rsa.private.prime",FragmentData  privatePrimeD),
+	  ("rsa.private.prime.exponent",FragmentData privatePrimeExponentD),
+	  ("rsa.private.coefficient",FragmentData  privateCoefficientD),
 	  ("rsa.bits", FragmentInt (fromIntegral bits))
 	 ]
+    return [ (fromString x,y) | (x,y) <- fl]
+    {-
     (bits,ys) = xdrReadUInt xs
     (modulusD,xs') = splitRLE galeRSAModulusLen ys
     (exponentD,xs'') = splitRLE galeRSAModulusLen xs'
@@ -248,64 +279,107 @@ keyDecode12 xs = [ (fromString x,y) | (x,y) <- fl] where
     (privatePrimeExponentD,xs''''') = splitRLE (galeRSAPrimeLen * 2) xs''''
     (privateCoefficientD,_) = splitRLE galeRSAPrimeLen xs'''''
 
+-}
+
+eof = do
+    l <- look
+    guard $ BS.null l
+
+parseNullString :: ReadP String
+parseNullString = map (chr . fromIntegral) `fmap` manyTill get (char 0)
+
+parseLenString :: ReadP String
+parseLenString = do
+    len <- parseIntegral32
+    ws <- replicateM len parseWord16
+    return $ map (chr . fromIntegral) ws
 
 
-keyParse :: GenParser Word8 Key
+
+keyParse :: ReadP Key
 keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
     ppk1 = do
-	parseExact private_magic1
+	string private_magic1
 	kn <- fmap flipLocalPart parseNullString
-	fl <- toParser keyDecode12
+	fl <- keyDecode12
 	return $ Key kn fl
     ppk2 = do
-	parseExact private_magic2
+	string private_magic2
 	kn <- fmap flipLocalPart parseLenString
-	fl <- toParser keyDecode12
+	fl <- keyDecode12
 	return $ Key kn fl
     ppk3 = do
-	parseExact private_magic3
+	string private_magic3
 	kn <- fmap flipLocalPart parseLenString
-	fl <- toParser decodeFragments
+	fl <- toParser decodeFrags
 	return $ Key kn fl
     pk1 = do
-	parseExact pubkey_magic1
+	string pubkey_magic1
 	kn <- fmap flipLocalPart parseNullString
-	(eof >> return (Key kn [])) <|> do
+	(eof >> return (Key kn [])) +++ do
 	comment <- parseNullString
 	fl <- parsePublic12
-	_signature <- parseRest
+	skipMany get -- the signature
 	return $ Key kn ([(f_keyOwner, FragmentText (packString comment))] ++ fl)
     pk2 = do
-	parseExact pubkey_magic2
+	string pubkey_magic2
 	kn <- fmap flipLocalPart parseLenString
-	(eof >> return (Key kn [])) <|> do
+	(eof >> return (Key kn [])) +++ do
 	comment <- parseLenString
 	fl' <- parsePublic12
 	let fl = ((f_keyOwner, FragmentText (packString comment)):fl')
-	(eof >> return (Key kn fl)) <|> do
-	ts <- parseSome 16
-	te <- parseSome 16
-	_signature <- parseRest
+	(eof >> return (Key kn fl)) +++ do
+	ts <- replicateM 16 get
+	te <- replicateM 16 get
+        skipMany get
+	--_signature <- parseRest
 	return $ Key kn $ fl ++ [(f_keySigned,FragmentTime (decodeTime ts)), (f_keyExpires,FragmentTime (decodeTime te))]
     pk3 = do
-	parseExact pubkey_magic3
+	string pubkey_magic3
 	kn <- fmap flipLocalPart parseLenString
-	fl <- toParser decodeFragments
+	fl <- toParser decodeFrags
 	return $ Key kn fl
     parsePublic12 = do
 	bits <- parseIntegral32
-	modulus <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
-	exponent <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
-	return [(f_rsaModulus, FragmentData $ la modulus),
-		(f_rsaExponent, FragmentData $ la exponent),
-		(f_rsaBits, FragmentInt bits)]
+	--modulus <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
+	--exponent <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
+	modulus <- splitRLE galeRSAModulusLen
+	exponent <- splitRLE galeRSAModulusLen
+	return [(f_rsaModulus, FragmentData modulus),
+		(f_rsaExponent, FragmentData exponent),
+		(f_rsaBits, FragmentInt $ fromIntegral bits)]
 
+
+parser :: Monad m => ReadP a -> BS.ByteString -> m a
+parser p bs = case readP_to_S p bs of
+    [(a,bs)] | BS.null bs -> return a
+    _ -> fail "parser failed"
 
 parseKey :: [Word8] -> IO Key
 parseKey xs = do
-    (Key kn fl) <- parser keyParse xs
+    (Key kn fl) <- parser keyParse (BS.pack xs)
     fl <- unsignFragments fl
     return $ Key kn fl
+
+splitRLE :: Int -> ReadP BS.ByteString
+splitRLE n = f n [] where
+    f n _ | n < 0 = fail "invalid RLE encoding"
+    f 0 xs = return $ BS.concat (reverse xs)
+    f n rs = plain +++ rep where
+        plain = do
+            c <- get
+            guard $ c .&. 0x80 /= 0
+            let count = fromIntegral $ (c .&. 0x7f) + 1
+            (x,_) <- gather (skip count)
+            f (n - count) (x:rs)
+        rep = do
+            c <- get
+            guard $ c .&. 0x80 == 0
+            x <- get
+            let count = fromIntegral $ (c .&. 0x7f) + 1
+            f (n - count) (BS.replicate count x:rs)
+
+{-
 
 splitRLE :: Int -> [Word8] -> ([Word8], [Word8])
 splitRLE n _ | n < 0 = error "invalid RLE encoding"
@@ -318,8 +392,26 @@ splitRLE n (c:x:xs) | c .&. 0x80 == 0 = (replicate count x ++ ys,rest) where
     (ys,rest) = splitRLE (n - count) xs
 splitRLE _ _  = error "invalid RLE encoding"
 
-toParser :: ([c] -> a) -> GenParser c a
-toParser f = MkP (\xs -> Just (f xs, []))
+-}
+
+rest = do
+    s <- look
+    skip (BS.length s)
+    return s
+
+toParser :: Get a -> ReadP a
+toParser g = (runGet g . LBS.fromChunks . (:[])) `fmap` rest
+
+{-
+unsignData :: Monad m => BS.ByteString -> m (FragmentList,Key)
+unsignData xs = flip parser xs $ do
+    l <- parseIntegral32
+    skip 4
+    sb <- parseIntegral32
+
+-}
+
+
 
 unsignData :: [Word8] -> IO (FragmentList,Key)
 unsignData xs = do
