@@ -19,6 +19,7 @@ EXTRA_DIST = docs/Changelog.old Curses.hsc ginsu.config.sample \
              ac-macros/curses.m4 \
              ac-macros/mp_with_curses.m4 \
              gen_keyhelp.prl \
+	     ginsu.spec   \
              actions.def
 
 
