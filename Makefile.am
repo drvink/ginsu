@@ -61,7 +61,7 @@ ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@
 SUFFIXES = .hs .lhs .o .hi .hsc .c .h
 
 ginsu: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
-	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . --make @srcdir@/Main.hs
+	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . --make @srcdir@/Main.hs Curses_hsc.c RSA_hsc.c CWString_hsc.c
 
 ginsu_static: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
 	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . -static -optl-static -ldl -lgpm --make @srcdir@/Main.hs

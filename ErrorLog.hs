@@ -51,7 +51,7 @@ module ErrorLog(
     indent
     ) where
 
-import Control.Exception as E
+import Control.OldException as E
 import IO hiding(bracket, try, catch)
 import System.IO.Unsafe
 import Monad

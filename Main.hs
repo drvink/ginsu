@@ -11,7 +11,7 @@ import Time
 import Random
 
 import Control.Concurrent
-import Control.Exception
+import Control.OldException as Control.Exception
 import Data.Array.IO
 import Data.Array.MArray
 import Data.IORef

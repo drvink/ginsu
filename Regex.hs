@@ -2,7 +2,7 @@ module Regex where
 
 import Char
 import ConfigFile
-import Control.Exception
+import Control.OldException
 import GenUtil
 import Maybe
 import Monad

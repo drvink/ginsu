@@ -11,7 +11,7 @@ module GinsuConfig(
     ) where
 
 import ConfigFile
-import Control.Exception
+import Control.OldException
 import Data.Monoid
 import Directory
 import ErrorLog
