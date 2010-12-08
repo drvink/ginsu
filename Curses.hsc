@@ -120,14 +120,13 @@ import Ix             (Ix)
 
 import Control.Concurrent
 import Foreign
-import Foreign.C hiding(withCWString, withCWStringLen)
+import Foreign.C
 
 import System.IO.Unsafe
 import Control.Exception hiding(block)
 
 import GenUtil(foldl')
 import System.Posix.Signals
-import CWString
 import List
 import Doc.Chars hiding(elem)
 import Maybe
@@ -604,7 +603,7 @@ wAddStr win str = do
         convStr f = case f [] of
             [] -> return ()
             s  -> throwIfErr_ "waddnstr" $
-                withLCStringLen  (sanifyOutput s) (\(ws,len) ->  (waddnstr win ws (fi len)))
+                withCStringLen  (sanifyOutput s) (\(ws,len) ->  (waddnstr win ws (fi len)))
         loop []        acc = convStr acc
         loop (ch:str') acc = recognize
             ch

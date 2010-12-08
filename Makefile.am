@@ -9,7 +9,7 @@ CFLAGS=  @CURSES_INCLUDEDIR@ -I. -I@srcdir@
 CC=$(HC)
 
 EXTRA_DIST = docs/Changelog.old Curses.hsc ginsu.config.sample \
-             Changelog RSA.hsc  docs/ginsu.1 ginsu.spec.in LICENSE MyLocale.hsc CWString.hsc \
+             Changelog RSA.hsc  docs/ginsu.1 ginsu.spec.in LICENSE MyLocale.hsc \
              Version.hs.in docs/ginsu-manual.txt docs/ginsu-manual.html \
              docs/wiki.css ginsu-mdk \
              ac-macros/ac_caolan_check_package.m4 \
@@ -30,7 +30,7 @@ man_MANS = docs/ginsu.1
 bin_PROGRAMS = ginsu
 bin_SCRIPTS =  ginsu-mdk
 
-# BUILT_SOURCES = RSA.hs RSA_hsc.h RSA_hsc.c Curses.hs Curses_hsc.c Curses_hsc.h Locale.hs CWString_hsc.h CWString_hsc.c
+# BUILT_SOURCES = RSA.hs RSA_hsc.h RSA_hsc.c Curses.hs Curses_hsc.c Curses_hsc.h Locale.hs
 
 BUILT_SOURCES =
 
@@ -47,8 +47,8 @@ ginsu_SOURCES = ConfigFile.hs Gale/Gale.hs GenUtil.hs \
     Text/ParserCombinators/ReadP/ByteString.hs
 
 
-HSNODISTSOURCES= Curses.hs MyLocale.hs CWString.hs RSA.hs
-nodist_ginsu_SOURCES = $(HSNODISTSOURCES) Curses_hsc.c RSA_hsc.c RSA_hsc.h Curses_hsc.h CWString_hsc.c CWString_hsc.h
+HSNODISTSOURCES= Curses.hs MyLocale.hs RSA.hs
+nodist_ginsu_SOURCES = $(HSNODISTSOURCES) Curses_hsc.c RSA_hsc.c RSA_hsc.h Curses_hsc.h
 
 ginsu_static_SOURCES = $(ginsu_SOURCES)
 nodist_ginsu_static_SOURCES =   $(nodist_ginsu_SOURCES)
@@ -61,7 +61,7 @@ ginsu_LINK = $(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS)  @CURSES_LIBS@ -o $@
 SUFFIXES = .hs .lhs .o .hi .hsc .c .h
 
 ginsu: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
-	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . --make @srcdir@/Main.hs Curses_hsc.c RSA_hsc.c CWString_hsc.c
+	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . --make @srcdir@/Main.hs Curses_hsc.c RSA_hsc.c
 
 ginsu_static: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
 	$(HC) $(HCFLAGS) $(GHCOPTS) $(LIBS) @CURSES_LIBS@ -o $@ -hidir . -odir . -static -optl-static -ldl -lgpm --make @srcdir@/Main.hs
@@ -69,7 +69,7 @@ ginsu_static: $(ginsu_SOURCES) $(nodist_ginsu_SOURCES)
 .c.o:
 	$(HC) $(CFLAGS) $(GHCOPTS) -o $@ -c $<
 
-CHEADERS= RSA_hsc.h Curses_hsc.h CWString_hsc.h
+CHEADERS= RSA_hsc.h Curses_hsc.h
 
 .hs.o: $(CHEADERS)
 	$(HC) -i. -i@srcdir@ $(HCFLAGS) $(GHCOPTS) -hidir . -o $(@F) -c $<
@@ -93,7 +93,7 @@ $(ginsu_OBJECTS): $(CHEADERS)
 Changelog: _darcs/inventory
 	darcs changes > $@
 
-CLEANFILES = Gale/*.hi Gale/*.o Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static CWString.hs MyLocale.hs
+CLEANFILES = Gale/*.hi Gale/*.o Boolean/*.hi Boolean/*.o Doc/*.hi Doc/*.o *.hi *.o *_hsc.c *_hsc.h RSA.hs Curses.hs ginsu_static MyLocale.hs
 DISTCLEANFILES = Version.hs ginsu.spec Boolean.o Algebra.o DocLike.o Chars.o
 MAINTAINERCLEANFILES = ExampleConf.hs KeyHelpTable.hs
 
@@ -101,7 +101,6 @@ MAINTAINERCLEANFILES = ExampleConf.hs KeyHelpTable.hs
 
 Curses_hsc.o : Curses_hsc.h my_curses.h
 RSA_hsc.o : RSA_hsc.h my_rsa.h
-CWString_hsc.o: CWString_hsc.h
 
 
 #depend.make: $(HSNODISTSOURCES) $(ginsu_SOURCES)
