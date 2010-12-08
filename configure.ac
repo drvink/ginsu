@@ -71,9 +71,9 @@ AC_PATH_PROGS(SH, sh)
 AC_PATH_PROGS(RM, rm)
 
 
-OPT_ARGS="-O2 -fvia-C"
+OPT_ARGS="-O"
 
-AC_ARG_ENABLE(unopt,[  --enable-unopt         disable optimization],OPT_ARGS="-fvia-C")
+AC_ARG_ENABLE(unopt,[  --enable-unopt         disable optimization],OPT_ARGS="")
 
 AC_ARG_ENABLE(profile,[  --enable-profile        compile in profiling support],PROFILE_ARGS="-prof -auto-all -osuf .prof.o -hisuf .prof.hi ")
 
