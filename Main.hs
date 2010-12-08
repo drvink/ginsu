@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fallow-overlapping-instances #-}
+{-# LANGUAGE OverlappingInstances #-}
 module Main(main) where
 
 import Char
@@ -7,13 +7,11 @@ import List hiding(or,and,any,all)
 import Maybe
 import System.Cmd
 import System.Time
-import Time
 import Random
 
 import Control.Concurrent
 import Control.OldException as Control.Exception
 import Data.Array.IO
-import Data.Array.MArray
 import Data.IORef
 import Data.Unique
 import qualified Data.HashTable as Hash

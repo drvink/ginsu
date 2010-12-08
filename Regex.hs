@@ -10,7 +10,6 @@ import PackedString
 import System.IO.Unsafe
 import Text.Regex.Posix
 import Text.Regex.Posix.String
-import Text.Regex
 
 subst :: String -> [String] -> String
 subst "" _ = ""

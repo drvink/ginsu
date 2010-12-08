@@ -12,13 +12,11 @@ module Atom(
     toPackedString
     ) where
 
-import Char
 import Data.Generics
 import Data.Monoid
 import Foreign
 import List(sort)
 import qualified Data.HashTable as HT
-import System.IO.Unsafe
 import Data.Binary
 
 import PackedString

@@ -45,7 +45,6 @@ module Gale.Puff(
     ) where
 
 import Atom
-import Char
 import Data.Binary
 import EIO
 import ErrorLog
@@ -56,7 +55,6 @@ import Maybe(isJust)
 import PackedString
 import System.IO
 import System.Time
-import Time
 import RSA
 
 import qualified Data.ByteString.Lazy as LBS

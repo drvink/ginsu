@@ -8,7 +8,6 @@ import System.IO.Unsafe
 import List
 import EIO
 import ErrorLog
-import Control.Monad.Error
 import Data.IORef
 import MyLocale
 

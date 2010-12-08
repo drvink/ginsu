@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fallow-overlapping-instances #-}
+{-# LANGUAGE OverlappingInstances #-}
 module Curses (
     --------------------------------------------------------------------
 
@@ -122,7 +122,6 @@ import Control.Concurrent
 import Foreign
 import Foreign.C
 
-import System.IO.Unsafe
 import Control.Exception hiding(block)
 
 import GenUtil(foldl')

@@ -22,7 +22,6 @@ import GenUtil
 import Monad
 import System
 import System.Posix as Posix hiding (getEnv)
-import System.Posix.Files
 
 checkConfigIsGood = do
     gd <- configLookup "GALE_DOMAIN"

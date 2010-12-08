@@ -15,9 +15,6 @@ import CForeign
 import Control.Exception as E
 import ErrorLog
 import Foreign
-import Foreign.ForeignPtr
-import MarshalArray
-import System.IO.Unsafe
 import Numeric(showHex)
 
 import qualified Data.ByteString.Lazy as LBS

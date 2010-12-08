@@ -25,7 +25,6 @@ import ErrorLog
 import Gale.Proto(decodeTime, decodeFrags, xdrReadUInt, getGaleDir, decodeFragments)
 import GenUtil
 import List
-import Maybe
 import Monad
 import PackedString
 import Gale.Puff

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -ffi #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.PackedString
@@ -49,7 +49,6 @@ module PackedString (
 
     ) where
 
-import Data.Array.IO
 import Data.Typeable
 import Data.Char
 import Data.Int
@@ -58,10 +57,7 @@ import qualified Data.ByteString as BS
 
 import Bits
 import GHC.Exts
-import Data.Array.Base
-import Word
 import Data.Monoid
-import Foreign.C.Types
 
 instance Monoid PackedString where
     mempty = nilPS

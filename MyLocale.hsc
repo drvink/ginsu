@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -ffi -#include <locale.h> #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 -- arch-tag: d48a3194-c698-43c7-b581-08e7a213f0c8
 module MyLocale(
     setupLocale,
@@ -13,7 +13,6 @@ module MyLocale(
 
 import Foreign
 import Foreign.C
-import Char
 import GHC.Exts
 
 

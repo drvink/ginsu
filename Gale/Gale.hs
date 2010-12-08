@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fallow-overlapping-instances #-}
+{-# LANGUAGE OverlappingInstances #-}
 module Gale.Gale(
     GaleContext,
     galeNextPuff,
@@ -21,10 +21,8 @@ import IO hiding(bracket, bracket_)
 import List
 import Maybe
 import System.Time
-import Time
 
 import Control.Concurrent
-import Control.Exception
 import Control.Exception as E
 import Data.Bits
 import Network.BSD
@@ -40,7 +38,6 @@ import Atom
 import Control.Monad.Error
 import Data.Array.IO
 import Data.Monoid
-import Doc.DocLike((<+>))
 import EIO
 import ErrorLog
 import Gale.Proto
