@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS=no-dependencies foreign subdir-objects
 
-GHCPACKAGES= -package unix  -package network -package parsec -package mtl
+GHCPACKAGES= -package unix  -package network -package parsec -package mtl -package utf8-string
 GHCFEATURES= @OPT_ARGS@ @PROFILE_ARGS@ -fglasgow-exts # -fallow-overlapping-instances -fallow-undecidable-instances
 GHCWARN= -W -fwarn-deprecations -fwarn-incomplete-patterns -fwarn-unused-binds -fwarn-unused-imports
 GHCOPTS=  $(GHCDEBUGOPTS) $(GHCINC) $(GHCWARN) $(GHCFLAGS) $(GHCPACKAGES) $(GHCFEATURES) @CURSES_INCLUDEDIR@  -\#include hs_include.h -I. -I@srcdir@ -i. -i@srcdir@
@@ -38,7 +38,7 @@ BUILT_SOURCES =
 ACLOCAL_AMFLAGS = -I ac-macros
 
 ginsu_SOURCES = ConfigFile.hs Gale/Gale.hs GenUtil.hs \
-    Main.hs  Version.hs ExampleConf.hs Filter.hs SimpleParser.hs  ErrorLog.hs  UTF8.hs \
+    Main.hs  Version.hs ExampleConf.hs Filter.hs SimpleParser.hs  ErrorLog.hs  \
     EIO.hs Gale/Puff.hs my_curses.h my_rsa.h Charset.hs Format.hs Screen.hs \
     KeyName.hs Help.hs  hs_include.h  CacheIO.hs  \
     PackedString.hs  Options.hs GinsuConfig.hs Regex.hs KeyHelpTable.hs \

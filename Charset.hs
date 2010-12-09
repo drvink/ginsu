@@ -1,6 +1,6 @@
 module Charset(stringToBytes, bytesToString, charsetSetup, csHPutStr) where
 
-import UTF8
+import qualified Codec.Binary.UTF8.String as U
 import System
 import Char
 import Word(Word8)
@@ -30,7 +30,7 @@ bytesToString s = f s where
 
 
 charMap = [
-    (["UTF8"],(toUTF,fromUTF)),
+    (["UTF8"],(U.encode,U.decode)),
     (["ASCII", "ANSIX341968"],(toAscii,fromSingleByte)),
     (["LATIN1","ISO88591"],(toLatin1,fromSingleByte)) ]
 
