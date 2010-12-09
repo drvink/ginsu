@@ -1,13 +1,13 @@
 module EIO(readRawFile,writeRawFile,  putRaw, readRaw,atomicWriteFile, getUniqueName, atomicWrite, getTempFileName, memoIO, withTempfile, hPutRawContents) where
 
 import Char
+import Control.Monad
 import Control.Exception as E
 import Data.Array.IO
 import Data.Unique
 import Directory(removeFile)
 import System.IO.Unsafe
 import Data.IORef
-import Monad(liftM)
 import System.Posix
 import Word
 import System.IO
@@ -24,7 +24,7 @@ writeRawFile fn xs = E.bracket (openBinaryFile fn WriteMode) hClose $ \h -> hPut
 
 hGetRawContents :: Handle -> IO [Word8]
 hGetRawContents h = do
-    a <- newArray_ (0,bufSize)
+    a <- newArray_ (1,bufSize)
     getall a where
 	getall a = do
 	    sz <- hGetArray h a bufSize
@@ -35,15 +35,20 @@ hGetRawContents h = do
 
 hPutRawContents :: Handle -> [Word8] -> IO ()
 hPutRawContents h xs = do
-    a <- newArray_ (0,bufSize)
+    a <- newArray_ (1,bufSize)
     prc a h xs where
 	prc _ _ [] = return ()
 	prc a h xs@(_:_) = do
 	    let (ys,zs) = splitAt bufSize xs
-	    let lys = length ys
-	    mapM_ (\(i,e) -> writeArray a i e) (zip [0..lys - 1] ys)
-	    hPutArray h a lys
-	    prc a h zs
+	    if null zs
+	      then do -- work around a ghc bug in hPutArray
+	        let lys = length ys
+		a' <- newListArray (1,lys) ys
+		hPutArray h a' lys
+	      else do
+		zipWithM_ (writeArray a) [1..] ys
+		hPutArray h a bufSize
+		prc a h zs
 
 
 putRaw :: Handle -> [Word8] -> IO ()
