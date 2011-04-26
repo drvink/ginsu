@@ -1,5 +1,4 @@
 {-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
--- arch-tag: 8aa47e06-b867-41c7-8127-4d0172706024
 
 -- | This is the main module of the Boolean hierachy and provides a class which
 -- abstracts common operations on boolean algebras.  note, we redefine some

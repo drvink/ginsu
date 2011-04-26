@@ -204,5 +204,4 @@ $GALE_DIR is ~/.gale/ by default.
 There is also a public arch repository for ginsu at http://repetae.net/john/arch/2004/
 
 <html>
-<!-- arch-tag: caede51f-65ee-45e1-a9d9-745766841cf6 -->
 </html>

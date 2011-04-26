@@ -1,7 +1,5 @@
 {-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
 
--- arch-tag: 15d3cb07-cddc-4f7b-8fff-ca7132a88d7e
-
 -- | This module provides a data constructor which lifts any type into a
 -- boolean algebra and some operations on said lifted type.
 --

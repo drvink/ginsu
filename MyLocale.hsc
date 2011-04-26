@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
--- arch-tag: d48a3194-c698-43c7-b581-08e7a213f0c8
 module MyLocale(
     setupLocale,
     getCharset,

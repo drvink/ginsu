@@ -1,8 +1,3 @@
-
---  $Id: GenUtil.hs,v 1.51 2006/06/07 00:16:10 john Exp $
--- arch-tag: 835e46b7-8ffd-40a0-aaf9-326b7e347760
-
-
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a

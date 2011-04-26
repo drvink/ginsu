@@ -1,6 +1,3 @@
---  $Id: ErrorLog.hs,v 1.9 2005/08/09 23:07:00 john Exp $
--- arch-tag: 3849d358-d4bb-4bfc-b95f-a99a510cf553
-
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a

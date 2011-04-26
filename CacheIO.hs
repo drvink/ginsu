@@ -1,6 +1,4 @@
 
--- arch-tag: e415587a-fa81-4c0f-be6e-f69ec5162ea7
-
 module CacheIO(
     -- cacheIO
     CacheIO,

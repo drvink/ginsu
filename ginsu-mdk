@@ -1,7 +1,5 @@
 #!/usr/bin/env python2
 
-# arch-tag: 87f506e5-2a67-4ec9-8bb5-9f202eb6d2a1
-
 import xmlrpclib, sys, getopt, os, getpass, string
 
 

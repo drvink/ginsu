@@ -11,8 +11,6 @@ import ErrorLog
 import Data.IORef
 import MyLocale
 
--- arch-tag: 7ca73986-7350-4bbf-8a7e-2331a5fe94d6
-
 {-# NOINLINE stb_r #-}
 {-# NOINLINE bts_r #-}
 stb_r = unsafePerformIO $ newIORef toLatin1

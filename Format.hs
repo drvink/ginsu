@@ -1,6 +1,3 @@
---  $Id: Format.hs,v 1.10 2005/07/21 09:36:14 john Exp $
--- arch-tag: 072f88a5-e441-4131-8934-f3a4a3aa0c12
-
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a

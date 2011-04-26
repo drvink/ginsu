@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-# arch-tag: c784e11d-c261-4a7b-ad9d-7b89c1757eaf
-
-
 use strict;
 use Getopt::Std;
 use IO::File;

@@ -12,8 +12,6 @@ import System.Posix
 import Word
 import System.IO
 
--- arch-tag: 8b85853b-b1bb-4953-929a-2663fdecebee
-
 bufSize = 4096
 
 readRawFile :: String -> IO [Word8]

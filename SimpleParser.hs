@@ -1,6 +1,3 @@
---  $Id: SimpleParser.hs,v 1.4 2004/02/28 04:20:54 john Exp $
--- arch-tag: b8b68a0d-1f68-48d3-af44-1704404ef004
-
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a

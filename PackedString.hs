@@ -17,7 +17,6 @@
 -- rewritten to use UArray by Simon Marlow.
 -- modified by John Meacham for use in ginsu
 -- changed to a trivial wrapper for Data.ByteString.UTF8 by Dylan Simon
--- arch-tag: 8ad19c9c-9511-48a1-b25a-f5f98a386b8c
 
 module PackedString (
 	-- * The @PackedString@ type

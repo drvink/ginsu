@@ -1,8 +1,6 @@
 {-# OPTIONS -fallow-undecidable-instances -fallow-overlapping-instances #-}
 module Doc.DocLike where
 
--- arch-tag: a88f19fb-e18d-475f-b6d1-8da78676261a
-
 import Data.Monoid
 import Control.Monad.Reader()
 import List
