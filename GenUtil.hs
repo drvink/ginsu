@@ -1,3 +1,4 @@
+{-# LANGUAGE ParallelListComp #-}
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a

@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, MagicHash, UnliftedFFITypes #-}
 module MyLocale(
     setupLocale,
     getCharset,

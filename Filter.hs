@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 module Filter(
     Filter,
     BasicFilter(..),

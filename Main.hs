@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE OverlappingInstances, PatternGuards #-}
 module Main(main) where
 
 import Char

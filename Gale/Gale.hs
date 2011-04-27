@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE OverlappingInstances, FlexibleInstances, PatternGuards #-}
 module Gale.Gale(
     GaleContext,
     galeNextPuff,
@@ -35,7 +35,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 
 import Atom
-import Control.Monad.Error
+import Control.Monad.Error (when, replicateM)
 import Data.Array.IO
 import Data.Monoid
 import EIO

@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
+{-# LANGUAGE UndecidableInstances, OverlappingInstances, PatternGuards #-}
 
 -- | This module provides a data constructor which lifts any type into a
 -- boolean algebra and some operations on said lifted type.

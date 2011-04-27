@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 module KeyName(
     stringToKeys,
     keyCanon,

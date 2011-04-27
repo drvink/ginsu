@@ -1,4 +1,4 @@
-{-# OPTIONS -fallow-undecidable-instances -fallow-overlapping-instances #-}
+{-# LANGUAGE UndecidableInstances, OverlappingInstances, TypeSynonymInstances, FlexibleInstances #-}
 module Doc.DocLike where
 
 import Data.Monoid

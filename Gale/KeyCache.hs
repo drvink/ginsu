@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 module Gale.KeyCache(
     dumpKey,
     KeyCache,

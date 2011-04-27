@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 module Regex where
 
 import Char

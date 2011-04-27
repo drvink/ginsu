@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fallow-overlapping-instances #-}
+{-# LANGUAGE UndecidableInstances, OverlappingInstances, FlexibleInstances #-}
 
 -- | This is the main module of the Boolean hierachy and provides a class which
 -- abstracts common operations on boolean algebras.  note, we redefine some

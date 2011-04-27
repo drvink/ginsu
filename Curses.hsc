@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE OverlappingInstances, ForeignFunctionInterface, EmptyDataDecls, GeneralizedNewtypeDeriving #-}
 module Curses (
     --------------------------------------------------------------------
 

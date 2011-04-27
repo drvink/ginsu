@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, DeriveDataTypeable #-}
 module Atom(
     Atom(),
     Atom.toString,

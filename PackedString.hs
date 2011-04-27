@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.PackedString

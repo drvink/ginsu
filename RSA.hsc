@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
 module RSA(
     EvpPkey,
     decryptAll,

@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE ParallelListComp, PatternGuards #-}
 module CircularBuffer(
     CircularBuffer,
     new,

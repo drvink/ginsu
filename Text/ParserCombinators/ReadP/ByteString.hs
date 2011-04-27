@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC  -cpp -fno-implicit-prelude -fglasgow-exts #-}
--- -XTypeOperators -XExistentialQuantification -XPolymorphicComponents
+{-# LANGUAGE CPP, NoImplicitPrelude, TypeOperators, ExistentialQuantification, PolymorphicComponents #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.ParserCombinators.ReadP.ByteString
