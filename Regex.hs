@@ -3,7 +3,7 @@ module Regex where
 
 import Char
 import ConfigFile
-import Control.OldException
+import Exception
 import GenUtil
 import Maybe
 import Monad

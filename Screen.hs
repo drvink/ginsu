@@ -29,7 +29,7 @@ module Screen(
     ) where
 
 import Control.Concurrent
-import Control.OldException as E
+import Exception as E
 import Data.Bits
 import Monad
 

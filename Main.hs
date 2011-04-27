@@ -10,7 +10,7 @@ import System.Time
 import Random
 
 import Control.Concurrent
-import Control.OldException as Control.Exception
+import Exception as Control.Exception
 import Data.Array.IO
 import Data.IORef
 import Data.Unique

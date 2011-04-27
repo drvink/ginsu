@@ -51,6 +51,7 @@ Executable ginsu
                 EIO
                 ErrorLog
                 ExampleConf
+                Exception
                 Filter
                 Format
                 Gale.Gale
@@ -78,7 +79,7 @@ Executable ginsu
                 my_rsa.c
     Include-Dirs: .
     Build-Depends:	
-                base == 4.*,
+                base >= 3 && < 5,
                 bytestring,
                 old-locale,
                 containers,
