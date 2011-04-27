@@ -1,0 +1,2 @@
+executable: ginsu
+extra-libraries: @CURSES_LIB@

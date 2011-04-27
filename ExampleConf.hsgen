@@ -1,0 +1,10 @@
+conf=ginsu.config.sample
+echo "module ExampleConf(exampleConf, exampleConfFile) where"
+echo "import Paths_ginsu"
+echo "exampleConfFile :: IO FilePath"
+echo "exampleConfFile = getDataFileName \"$conf\""
+echo "{-# NOINLINE exampleConf #-}"
+echo "exampleConf :: String"
+echo "exampleConf = unlines ["
+sed -e 's/"/\\"/g;s/.*/    "&",/' $conf
+echo "  \"\"]"

@@ -159,7 +159,6 @@ stdScr :: Window
 stdScr = unsafePerformIO (peek stdscr)
 --foreign import ccall "static my_curses.h &stdscr" stdscr :: Ptr Window
 foreign import ccall "my_curses.h get_stdscr" stdscr :: Ptr Window
-#def inline WINDOW ** get_stdscr (void) {return &stdscr;}
 
 
 initScr :: IO Window
@@ -298,9 +297,7 @@ scrSize = do
 --foreign import ccall "my_curses.h &COLS" colsPtr :: Ptr CInt
 
 foreign import ccall "my_curses.h get_LINES" linesPtr :: Ptr CInt
-#def inline int * get_LINES (void) {return &LINES;}
 foreign import ccall "my_curses.h get_COLS" colsPtr :: Ptr CInt
-#def inline int * get_COLS (void) {return &COLS;}
 
 
 refresh :: IO ()
@@ -325,7 +322,6 @@ colorPairs = fmap fromIntegral $ peek colorPairsPtr
 
 --foreign import ccall "my_curses.h &COLOR_PAIRS" colorPairsPtr :: Ptr CInt
 foreign import ccall "my_curses.h get_COLOR_PAIRS" colorPairsPtr :: Ptr CInt
-#def inline int * get_COLOR_PAIRS (void) {return &COLOR_PAIRS;}
 
 newtype Color = Color Int deriving (Eq, Ord, Ix)
 
@@ -334,7 +330,6 @@ colors = liftM fromIntegral $ peek colorsPtr
 
 --foreign import ccall "my_curses.h &COLORS" colorsPtr :: Ptr CInt
 foreign import ccall "my_curses.h get_COLORS" colorsPtr :: Ptr CInt
-#def inline int * get_COLORS (void) {return &COLORS;}
 
 --black, red, green, yellow, blue, magenta, cyan, white :: Color
 
@@ -405,7 +400,6 @@ colorContent (Color c) =
 foreign import ccall unsafe color_content :: CShort -> Ptr CShort -> Ptr CShort -> Ptr CShort -> IO CInt
 
 foreign import ccall unsafe "my_curses.h hs_curses_color_pair" colorPair :: Pair -> (#type chtype)
-#def inline chtype hs_curses_color_pair (HsInt pair) {return COLOR_PAIR (pair);}
 
 -------------
 -- Attributes
@@ -1132,41 +1126,6 @@ foreign import ccall unsafe hs_curses_acs_gequal   :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_pi       :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_nequal   :: IO (#type chtype)
 foreign import ccall unsafe hs_curses_acs_sterling :: IO (#type chtype)
-#  endif
-
-#def inline chtype hs_curses_acs_ulcorner (void) {return ACS_ULCORNER;}
-#def inline chtype hs_curses_acs_llcorner (void) {return ACS_LLCORNER;}
-#def inline chtype hs_curses_acs_urcorner (void) {return ACS_URCORNER;}
-#def inline chtype hs_curses_acs_lrcorner (void) {return ACS_LRCORNER;}
-#def inline chtype hs_curses_acs_rtee     (void) {return ACS_RTEE;}
-#def inline chtype hs_curses_acs_ltee     (void) {return ACS_LTEE;}
-#def inline chtype hs_curses_acs_btee     (void) {return ACS_BTEE;}
-#def inline chtype hs_curses_acs_ttee     (void) {return ACS_TTEE;}
-#def inline chtype hs_curses_acs_hline    (void) {return ACS_HLINE;}
-#def inline chtype hs_curses_acs_vline    (void) {return ACS_VLINE;}
-#def inline chtype hs_curses_acs_plus     (void) {return ACS_PLUS;}
-#def inline chtype hs_curses_acs_s1       (void) {return ACS_S1;}
-#def inline chtype hs_curses_acs_s9       (void) {return ACS_S9;}
-#def inline chtype hs_curses_acs_diamond  (void) {return ACS_DIAMOND;}
-#def inline chtype hs_curses_acs_ckboard  (void) {return ACS_CKBOARD;}
-#def inline chtype hs_curses_acs_degree   (void) {return ACS_DEGREE;}
-#def inline chtype hs_curses_acs_plminus  (void) {return ACS_PLMINUS;}
-#def inline chtype hs_curses_acs_bullet   (void) {return ACS_BULLET;}
-#def inline chtype hs_curses_acs_larrow   (void) {return ACS_LARROW;}
-#def inline chtype hs_curses_acs_rarrow   (void) {return ACS_RARROW;}
-#def inline chtype hs_curses_acs_darrow   (void) {return ACS_DARROW;}
-#def inline chtype hs_curses_acs_uarrow   (void) {return ACS_UARROW;}
-#def inline chtype hs_curses_acs_board    (void) {return ACS_BOARD;}
-#def inline chtype hs_curses_acs_lantern  (void) {return ACS_LANTERN;}
-#def inline chtype hs_curses_acs_block    (void) {return ACS_BLOCK;}
-#  ifdef ACS_S3
-#def inline chtype hs_curses_acs_s3       (void) {return ACS_S3;}
-#def inline chtype hs_curses_acs_s7       (void) {return ACS_S7;}
-#def inline chtype hs_curses_acs_lequal   (void) {return ACS_LEQUAL;}
-#def inline chtype hs_curses_acs_gequal   (void) {return ACS_GEQUAL;}
-#def inline chtype hs_curses_acs_pi       (void) {return ACS_PI;}
-#def inline chtype hs_curses_acs_nequal   (void) {return ACS_NEQUAL;}
-#def inline chtype hs_curses_acs_sterling (void) {return ACS_STERLING;}
 #  endif
 
 #endif

@@ -103,7 +103,6 @@ foreign import ccall unsafe "openssl/evp.h EVP_md5" evpMD5 :: IO (Ptr EVP_MD)
 
 
 foreign import ccall unsafe evpCipherContextBlockSize :: Ptr EVP_CIPHER_CTX -> IO Int
-#def inline HsInt evpCipherContextBlockSize(EVP_CIPHER_CTX *e) {return EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(e));}
 
 
 evp_OpenUpdate :: Ptr EVP_CIPHER_CTX -> BS.ByteString -> IO BS.ByteString
@@ -241,11 +240,9 @@ withSHA_CTX action = allocaBytes (#const sizeof(SHA_CTX)) $ \cctx ->
 type NEvpPkey = ForeignPtr EVP_PKEY
 
 foreign import ccall unsafe pkeyNewRSA :: RSA -> IO (Ptr EVP_PKEY)
-#def inline EVP_PKEY *pkeyNewRSA(RSA *rsa) {EVP_PKEY *pk; pk = EVP_PKEY_new(); EVP_PKEY_assign_RSA(pk, rsa); return pk;}
 
 -- foreign import ccall "&EVP_PKEY_free" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 foreign import ccall "get_KEY" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
-#def inline HsFunPtr  get_KEY (void) {return (HsFunPtr)&EVP_PKEY_free;}
 
 createPkey :: RSAElems BS.ByteString -> IO NEvpPkey
 createPkey re =  create_rsa re >>= create_pkey where
