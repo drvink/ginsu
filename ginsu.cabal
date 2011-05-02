@@ -11,7 +11,7 @@ Synopsis:	Ginsu Gale Client
 Description:	Ginsu is a client for the gale chat system. It is designed to be powerful and above all stable, as well as having a quick learning curve.
 Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
-Build-Type:	Simple
+Build-Type:	Custom
 Cabal-Version:	>= 1.6
 tested-with:    GHC == 6.12.3, GHC == 7.0.2
 extra-source-files: 
