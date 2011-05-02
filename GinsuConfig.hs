@@ -27,7 +27,7 @@ checkConfigIsGood = do
     gd <- configLookup "GALE_DOMAIN"
     case gd of
         Just _ -> return ()
-        Nothing -> putStrLn "GALE_DOMAIN is not set! either set $GALE_DOMAIN in the enviornment or set it in ~/.gale/conf or ~/.gale/ginsu.conf\n" >> doCheckConfig
+        Nothing -> putStrLn "GALE_DOMAIN is not set! either set $GALE_DOMAIN in the enviornment or set it in ~/.gale/conf or ~/.gale/ginsu.config\n" >> doCheckConfig
 
 configFileG xs = mapConfig ("GINSU_" ++) (configFile xs) `mappend` configFile xs
 
