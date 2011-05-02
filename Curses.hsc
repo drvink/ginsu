@@ -734,7 +734,7 @@ foreign import ccall unsafe wclrtoeol :: Window -> IO CInt
 
 
 
-foreign import ccall threadsafe getch :: IO CInt
+foreign import ccall safe getch :: IO CInt
 
 
 foreign import ccall unsafe def_prog_mode :: IO CInt
