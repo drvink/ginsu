@@ -13,13 +13,13 @@ module Status(
     ) where
 
 
-import Char(chr)
+import Data.Char(chr)
 import CircularBuffer as CB
 import Data.IORef
 import Data.Tree
 import Doc.Chars
 import GenUtil
-import List(intersperse,groupBy)
+import Data.List(intersperse,groupBy)
 import qualified Data.Map as Map
 import System.IO.Unsafe
 

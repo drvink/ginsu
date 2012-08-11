@@ -19,7 +19,7 @@ module Boolean.Algebra(
 ) where
 
 import Prelude hiding((&&),(||),not,and,or,any,all)
-import Monad
+import Control.Monad
 
 infixr 3 &&
 infixr 2 ||

@@ -1,9 +1,9 @@
 {-# LANGUAGE UndecidableInstances, OverlappingInstances, TypeSynonymInstances, FlexibleInstances #-}
 module Doc.DocLike where
 
-import Data.Monoid
+import Data.Monoid hiding ((<>))
 import Control.Monad.Reader()
-import List
+import Data.List
 import qualified Text.PrettyPrint.HughesPJ as P
 
 infixr 5 <$> -- ,<//>,<$>,<$$>
@@ -152,11 +152,6 @@ instance TextLike P.Doc where
     empty = P.empty
     text = P.text
     char = P.char
-
-instance Monoid P.Doc where
-    mappend = (P.<>)
-    mempty = P.empty
-    mconcat = P.hcat
 
 instance DocLike P.Doc where
     (<>) = (P.<>)

@@ -62,8 +62,8 @@ module Format(
     testFormat
     ) where
 
-import Char(isDigit,ord)
-import List(intersperse)
+import Data.Char(isDigit,ord)
+import Data.List(intersperse)
 
 -- | the type of patterns
 data Pattern = Pattern {
@@ -201,7 +201,7 @@ formatShow x = formatString (show x)
 
 integralChars = "xboiu"
 
-formatIntegral :: Integral n => n -> Pattern -> String
+formatIntegral :: (Integral n, Show n) => n -> Pattern -> String
 formatIntegral v p@(Pattern {patternChar = 'x'}) = integralFmt p v 16
 formatIntegral v p@(Pattern {patternChar = 'b'}) = integralFmt p v 2
 formatIntegral v p@(Pattern {patternChar = 'o'}) = integralFmt p v 8

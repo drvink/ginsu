@@ -8,11 +8,11 @@ module KeyName(
     getKeyHelpTable
     ) where
 
-import Char
+import Data.Char
 import ConfigFile
 import GenUtil
 import KeyHelpTable
-import List
+import Data.List
 import Screen(Key(..))
 
 stringToKeys :: String -> [Key]

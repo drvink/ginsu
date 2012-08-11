@@ -19,8 +19,8 @@ module ConfigFile(
 
     ) where
 
-import Char
-import System
+import Data.Char
+import System.Environment
 import System.IO.Unsafe
 
 import CacheIO

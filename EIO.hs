@@ -1,15 +1,15 @@
 module EIO(readRawFile,writeRawFile,  putRaw, readRaw,atomicWriteFile, getUniqueName, atomicWrite, getTempFileName, memoIO, withTempfile, hPutRawContents) where
 
-import Char
+import Data.Char
 import Control.Monad
 import Control.Exception as E
 import Data.Array.IO
 import Data.Unique
-import Directory(removeFile)
+import System.Directory(removeFile)
 import System.IO.Unsafe
 import Data.IORef
 import System.Posix
-import Word
+import Data.Word
 import System.IO
 
 bufSize = 4096

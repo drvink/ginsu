@@ -21,9 +21,9 @@
 
 module SimpleParser where
 
-import Char
-import Monad
-import List
+import Data.Char
+import Control.Monad
+import Data.List
 
 infixr 1 <|>
 

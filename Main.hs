@@ -1,13 +1,13 @@
 {-# LANGUAGE OverlappingInstances, PatternGuards #-}
 module Main(main) where
 
-import Char
-import Directory
-import List hiding(or,and,any,all)
-import Maybe
+import Data.Char
+import System.Directory
+import Data.List hiding(or,and,any,all)
+import Data.Maybe
 import System.Cmd
 import System.Time
-import Random
+import System.Random
 
 import Control.Concurrent
 import Exception as Control.Exception

@@ -50,9 +50,9 @@ import Data.Binary
 import EIO
 import ErrorLog
 import GenUtil
-import Int(Int32)
-import List
-import Maybe(isJust)
+import Data.Int(Int32)
+import Data.List
+import Data.Maybe(isJust)
 import PackedString
 import System.IO
 import System.Time

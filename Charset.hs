@@ -1,11 +1,11 @@
 module Charset(stringToBytes, bytesToString, charsetSetup, csHPutStr) where
 
 import qualified Codec.Binary.UTF8.String as U
-import System
-import Char
-import Word(Word8)
+import System.Environment
+import Data.Char
+import Data.Word(Word8)
 import System.IO.Unsafe
-import List
+import Data.List
 import EIO
 import ErrorLog
 import Data.IORef

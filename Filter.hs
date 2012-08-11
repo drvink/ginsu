@@ -10,7 +10,7 @@ module Filter(
 import Atom
 import Boolean.Algebra
 import Boolean.Boolean
-import Char
+import Data.Char
 import PackedString
 import Prelude hiding((&&),(||),not,and,or,any,all)
 import Gale.Puff

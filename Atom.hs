@@ -16,7 +16,7 @@ module Atom(
 import Data.Generics
 import Data.Monoid
 import Foreign
-import List(sort)
+import Data.List(sort)
 import qualified Data.HashTable as HT
 import Data.Binary
 

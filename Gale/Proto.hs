@@ -1,18 +1,18 @@
 module Gale.Proto where
 
 import Atom
-import Bits
-import Char
+import Data.Bits
+import Data.Char
 import GenUtil
 import PackedString
 import Gale.Puff
 import SimpleParser
-import System
+import System.Environment
 import System.Time
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import Data.Binary.Get
-import Word
+import Data.Word
 
 
 pubkey_magic3 :: [Word8]

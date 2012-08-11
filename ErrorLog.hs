@@ -48,13 +48,13 @@ module ErrorLog(
     indent
     ) where
 
-import Exception as E
-import IO hiding(bracket, try, catch)
+import Control.OldException as E
+import System.IO
 import System.IO.Unsafe
-import Monad
+import Control.Monad
 import Control.Concurrent
-import Time(getClockTime)
-import List(delete)
+import System.Time(getClockTime)
+import Data.List(delete)
 
 ------------
 -- Error log

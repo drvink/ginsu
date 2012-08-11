@@ -16,10 +16,10 @@ module Gale.Gale(
     getGaleDir) where
 
 
-import Char(chr,ord)
-import IO hiding(bracket, bracket_)
-import List
-import Maybe
+import Data.Char(chr,ord)
+import System.IO
+import Data.List
+import Data.Maybe
 import System.Time
 
 import Control.Concurrent

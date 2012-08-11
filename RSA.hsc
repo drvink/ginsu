@@ -12,7 +12,7 @@ module RSA(
 
 #include "my_rsa.h"
 
-import CForeign
+import Foreign.C
 import Control.Exception as E
 import ErrorLog
 import Foreign

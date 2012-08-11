@@ -25,7 +25,7 @@ module CacheIO(
 
 import Control.Monad.Trans
 import Control.Concurrent
-import Monad
+import Control.Monad
 import System.Mem.StableName
 import Control.Exception
 import System.IO.Unsafe(unsafePerformIO)

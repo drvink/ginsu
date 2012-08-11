@@ -115,14 +115,16 @@ module GenUtil(
     UniqueProducer(..)
     ) where
 
-import Char(isAlphaNum, isSpace, toLower, ord, chr)
-import List
-import Monad
-import qualified IO
-import qualified System
-import Random(StdGen, newStdGen, Random(randomR))
-import Time
-import CPUTime
+import Data.Char(isAlphaNum, isSpace, toLower, ord, chr)
+import Data.List
+import Control.Monad
+import qualified System.IO as IO
+import qualified System.IO.Error as IO
+import qualified System.Exit as System 
+import qualified System.Environment as System 
+import System.Random(StdGen, newStdGen, Random(randomR))
+import System.Time
+import System.CPUTime
 
 {-# SPECIALIZE snub :: [String] -> [String] #-}
 {-# SPECIALIZE snub :: [Int] -> [Int] #-}
@@ -340,19 +342,6 @@ repeatM x = sequence $ repeat x
 {-# SPECIALIZE repeatM_ :: IO a -> IO () #-}
 repeatM_ :: Monad m => m a -> m ()
 repeatM_ x = sequence_ $ repeat x
-
-{-# RULES "replicateM/0" replicateM 0 = const (return []) #-}
-{-# RULES "replicateM_/0" replicateM_ 0 = const (return ()) #-}
-
-{-# INLINE replicateM #-}
-{-# SPECIALIZE replicateM :: Int -> IO a -> IO [a] #-}
-replicateM :: Monad m => Int -> m a -> m [a]
-replicateM n x = sequence $ replicate n x
-
-{-# INLINE replicateM_ #-}
-{-# SPECIALIZE replicateM_ :: Int -> IO a -> IO () #-}
-replicateM_ :: Monad m => Int -> m a -> m ()
-replicateM_ n x = sequence_ $ replicate n x
 
 {-# SPECIALIZE maybeToMonad :: Maybe a -> IO a #-}
 -- | convert a maybe to an arbitrary failable monad
@@ -594,12 +583,6 @@ buildTableLL ps = map f ps where
     f (x,y) = x ++ replicate (bs - length x) ' ' ++ replicate 4 ' ' ++ y
     bs = maximum (map (length . fst) ps)
 
-{-# INLINE foldl' #-}
--- | strict version of 'foldl'
-foldl' :: (a -> b -> a) -> a -> [b] -> a
-foldl' _ a []     = a
-foldl' f a (x:xs) = (foldl' f $! f a x) xs
-
 -- | count elements of list that have a given property
 count :: (a -> Bool) -> [a] -> Int
 count f xs = g 0 xs where
@@ -658,7 +641,7 @@ overlaps :: Ord a => (a,a) -> (a,a) -> Bool
 _ `overlaps` _ = True
 
 -- | translate a number of seconds to a string representing the duration expressed.
-showDuration :: Integral a => a -> String
+showDuration :: (Integral a, Show a) => a -> String
 showDuration x = st "d" dayI ++ st "h" hourI ++ st "m" minI ++ show secI ++ "s" where
         (dayI, hourI) = divMod hourI' 24
         (hourI', minI) = divMod minI' 60

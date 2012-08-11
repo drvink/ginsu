@@ -17,21 +17,21 @@ module Gale.KeyCache(
     ) where
 
 import Atom
-import Bits
-import Char
+import Data.Bits
+import Data.Char
 import Control.Concurrent
-import Directory
+import System.Directory
 import EIO
 import ErrorLog
 import Gale.Proto(decodeTime, decodeFrags, xdrReadUInt, getGaleDir, decodeFragments)
 import GenUtil
-import List
-import Monad
+import Data.List
+import Control.Monad
 import PackedString
 import Gale.Puff
 import RSA
 import System.Mem.Weak
-import Word
+import Data.Word
 import qualified Data.Map as Map
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS

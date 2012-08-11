@@ -13,14 +13,14 @@ module GinsuConfig(
 import ConfigFile
 import Exception
 import Data.Monoid
-import Directory
+import System.Directory
 import ErrorLog
 import ExampleConf
 import Gale.Gale
 import Gale.Puff
 import GenUtil
-import Monad
-import System
+import Control.Monad
+import System.Environment
 import System.Posix as Posix hiding (getEnv)
 
 checkConfigIsGood = do

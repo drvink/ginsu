@@ -1,5 +1,6 @@
+-- vim:et
 Name:		ginsu
-Version:	0.8.0.1
+Version:	0.8.0.2
 Copyright:	2002-2009 John Meacham <john@repetae.net>
 		2011 Dylan Simon <dylan@dylex.net>
 Author:		John Meacham <john@foo.net>
@@ -13,7 +14,7 @@ Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
 Build-Type:	Custom
 Cabal-Version:	>= 1.6
-tested-with:    GHC == 6.12.3, GHC == 7.0.2
+tested-with:    GHC == 6.12.3, GHC == 7.0.2, GHC == 7.4.1
 extra-source-files: 
                 configure
                 ginsu.buildinfo.in
@@ -33,7 +34,7 @@ data-files:     ginsu.config.sample
 
 Source-Repository head
     Type:	darcs
-    Location:	https://dylex.net:9947/src/ginsu
+    Location:	http://dylex.net/src/ginsu
 
 Executable ginsu
     Main-is:	Main.hs
@@ -83,14 +84,15 @@ Executable ginsu
                 bytestring,
                 old-locale,
                 containers,
-                haskell98,
+                random,
+                directory,
                 pretty,
                 mtl,
                 array,
                 unix,
                 regex-posix,
                 utf8-string >= 0.3.1,
-                ghc-binary,
+                binary,
                 old-time,
                 syb,
                 network,

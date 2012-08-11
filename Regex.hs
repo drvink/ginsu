@@ -1,12 +1,12 @@
 {-# LANGUAGE PatternGuards #-}
 module Regex where
 
-import Char
+import Data.Char
 import ConfigFile
 import Exception
 import GenUtil
-import Maybe
-import Monad
+import Data.Maybe
+import Control.Monad
 import PackedString
 import System.IO.Unsafe
 import Text.Regex.Posix

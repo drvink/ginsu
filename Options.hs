@@ -11,7 +11,7 @@ import GinsuConfig
 import Help
 import Gale.KeyCache
 import KeyName
-import System
+import System.Environment
 import System.Console.GetOpt
 import Version
 

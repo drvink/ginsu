@@ -114,21 +114,22 @@ module Curses (
     where
 
 import Prelude hiding (pi)
-import Monad
-import Char           (chr, ord, isPrint, isSpace, toLower)
-import Ix             (Ix)
+import Control.Monad
+import Data.Char           (chr, ord, isPrint, isSpace, toLower)
+import Data.Ix             (Ix)
 
 import Control.Concurrent
-import Foreign
+import Foreign hiding (void, unsafePerformIO)
 import Foreign.C
+import System.IO.Unsafe
 
 import Control.Exception hiding(block)
 
 import GenUtil(foldl')
 import System.Posix.Signals
-import List
+import Data.List
 import Doc.Chars hiding(elem)
-import Maybe
+import Data.Maybe
 import Data.IORef
 
 
@@ -139,7 +140,7 @@ import Data.IORef
 
 fi = fromIntegral
 
-throwIfErr :: Num a => String -> IO a -> IO a
+throwIfErr :: (Num a, Eq a, Show a) => String -> IO a -> IO a
 --throwIfErr name act = do
 --    res <- act
 --    if res == (#const ERR)
@@ -147,7 +148,7 @@ throwIfErr :: Num a => String -> IO a -> IO a
 --        else return res
 throwIfErr s = throwIf (== (#const ERR)) (\a -> "Curses[" ++ show a ++ "]:"  ++ s)
 
-throwIfErr_ :: Num a => String -> IO a -> IO ()
+throwIfErr_ :: (Num a, Eq a, Show a) => String -> IO a -> IO ()
 throwIfErr_ name act = void $ throwIfErr name act
 
 ------------------------------------------------------------------------

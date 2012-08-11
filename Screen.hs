@@ -31,7 +31,7 @@ module Screen(
 import Control.Concurrent
 import Exception as E
 import Data.Bits
-import Monad
+import Control.Monad
 
 import CacheIO
 import Curses

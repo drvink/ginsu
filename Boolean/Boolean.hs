@@ -18,8 +18,8 @@ module Boolean.Boolean(
 import Boolean.Algebra
 import Prelude hiding((&&),(||),not,and,or,any,all)
 import qualified Prelude
-import Monad
-import List hiding(and,or)
+import Control.Monad
+import Data.List hiding(and,or)
 import Text.ParserCombinators.Parsec
 
 
