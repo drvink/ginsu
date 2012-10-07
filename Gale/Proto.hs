@@ -83,7 +83,7 @@ decodeTime xs = TimeDiff {tdDay = 0, tdPicosec = 0, tdYear = 0, tdMonth = 0, tdH
 
 getGaleDir :: IO String
 getGaleDir = do
-    gd <- lookupEnv "GALE_DIR"
+    gd <- GenUtil.lookupEnv "GALE_DIR"
     case gd of
 	Just v -> return $ v ++ "/"
 	Nothing -> do

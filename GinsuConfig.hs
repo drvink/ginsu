@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module GinsuConfig(
     checkConfigIsGood,
     configureGinsu,
@@ -11,7 +12,7 @@ module GinsuConfig(
     ) where
 
 import ConfigFile
-import Exception
+import Control.Exception
 import Data.Monoid
 import System.Directory
 import ErrorLog
@@ -75,7 +76,7 @@ doCheckConfig = do
 
 configBuilder = toConfig cb where
     cb "GALE_ID" = do
-        n <- first [getEnv "LOGNAME", getEnv "USER", Posix.getLoginName]
+        n <- firstIO [getEnv "LOGNAME", getEnv "USER", Posix.getLoginName]
         d <- configLookup "GALE_DOMAIN"
         case d of
             Just d -> return [("<LOGIN>@$GALE_DOMAIN",("GALE_ID", n ++ "@" ++ d))]
@@ -114,15 +115,14 @@ getGaleDomain = do
 getGaleAliases :: IO [(String,Category)]
 getGaleAliases = do
     v <- galeFile "aliases/"
-    fs <- handle (\_ -> return []) $ getDirectoryContents v
+    fs <- handle (\(_ :: IOException) -> return []) $ getDirectoryContents v
     --putLog LogDebug $ "aliases/ " ++ show fs
     let f fn = do
 	--fc <- first [readFile (v ++ fn), readSymbolicLink (v ++ fn)]
         fc <- readAlias (v ++ fn)
         --putLog LogDebug $ "readAlias " ++ (v ++ fn) ++ " " ++ fc
 	return (fn, catParseNew fc)
-    ks <- mapM (\x -> tryMost (f x)) fs
-    return [x | (Right x) <- ks]
+    tryMapM f fs
 
 
 readAlias :: String -> IO String

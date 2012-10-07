@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, ScopedTypeVariables #-}
 module Gale.KeyCache(
     dumpKey,
     KeyCache,
@@ -20,6 +20,7 @@ import Atom
 import Data.Bits
 import Data.Char
 import Control.Concurrent
+import qualified Control.Exception as E
 import System.Directory
 import EIO
 import ErrorLog
@@ -166,19 +167,17 @@ noKey kc kn = modifyMVar (kkeyCache kc) f where
         return (Map.insert kn n  kkeyCache, ())
 
 
-
-
 putKey :: KeyCache -> BS.ByteString -> IO ()
 putKey kc xs = do
-    mk <- first [fmap Just (parseKey $ BS.unpack xs),return Nothing]
+    let mk = parseKey $ BS.unpack xs
     case mk of
         Nothing -> return ()
         Just v'@(Key kn _) -> do
             modifyMVar (kkeyCache kc) f where
                 f kkeyCache | Just _ <- Map.lookup kn kkeyCache = return (kkeyCache, ())
                 f kkeyCache = do
-                    first [createDirectory $ galeDir kc ++ "/auth/", return ()]
-                    first [createDirectory $ galeDir kc ++ "/auth/cache/", return ()]
+                    E.catch (createDirectory $ galeDir kc ++ "/auth/") (\(_ :: E.IOException) -> return ())
+                    E.catch (createDirectory $ galeDir kc ++ "/auth/cache/") (\(_ :: E.IOException) -> return ())
                     --xs <- unsafeThaw xs
                     --bnds <- getBounds xs
                     atomicWrite  (galeDir kc ++ "/auth/cache/" ++ kn ++ ".gpub")  $
@@ -196,10 +195,10 @@ getKey kc kn = modifyMVar (kkeyCache kc) f where
             Nothing -> g kkeyCache
     f kkeyCache = g kkeyCache
     g kkeyCache = do
-	    v <- ioM getFromDisk
+	    v <- tryIO getFromDisk
             case v of
-                Nothing -> return (kkeyCache, Nothing)
-                Just v' -> do
+                Left _ -> return (kkeyCache, Nothing)
+                Right v' -> do
                     v'' <- mkWeakPtr v' Nothing
                     return (Map.insert kn v'' kkeyCache, Just v')
     getFromDisk :: IO Key
@@ -207,10 +206,10 @@ getKey kc kn = modifyMVar (kkeyCache kc) f where
         let pc = galeDir kc ++ "/auth/cache/"
             pp = galeDir kc ++ "/auth/private/"
             knames = [ pp ++ kn ++ ".gpri", pp ++ kn ++ ".gpub", pp ++ kn , pc ++ kn ++ ".gpub" ]
-            gn = (map (\fn -> (readRawFile fn >>= parseKey >>= \c -> return (c,fn))) knames)
+            gf fn = readRawFile fn >>= return . (,) fn . parseKey
         --putLog LogDebug $ "Looking for: " ++ show  knames
-        xs <- mapM tryMost gn
-        let ks = [ k | Right (k@(Key n _),_) <- xs, kn == n]
+        xs <- tryMapM gf knames
+        let ks = [ k | (_,Just k@(Key n _)) <- xs, kn == n]
         let nk = foldr (\(Key _ fl) (Key n fl') -> Key n (fl `mergeFrags` fl')) (Key kn []) ks
         --(key_c, fn) <- (first  gn)
 	--key <- parseKey key_c
@@ -350,12 +349,12 @@ keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
 		(f_rsaBits, FragmentInt $ fromIntegral bits)]
 
 
-parser :: Monad m => ReadP a -> BS.ByteString -> m a
+parser :: ReadP a -> BS.ByteString -> Maybe a
 parser p bs = case readP_to_S p bs of
-    [(a,bs)] | BS.null bs -> return a
-    _ -> fail "parser failed"
+    [(a,bs)] | BS.null bs -> Just a
+    _ -> Nothing
 
-parseKey :: [Word8] -> IO Key
+parseKey :: [Word8] -> Maybe Key
 parseKey xs = do
     (Key kn fl) <- parser keyParse (BS.pack xs)
     fl <- unsignFragments fl
@@ -413,7 +412,7 @@ unsignData xs = flip parser xs $ do
 
 
 
-unsignData :: [Word8] -> IO (FragmentList,Key)
+unsignData :: [Word8] -> Maybe (FragmentList,Key)
 unsignData xs = do
     key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
     return (fl,key) where
@@ -421,7 +420,7 @@ unsignData xs = do
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs')
 
-unsignFragments :: FragmentList -> IO FragmentList
+unsignFragments :: FragmentList -> Maybe FragmentList
 unsignFragments tfl | (xs:_) <- [xs | (n,FragmentData xs) <- tfl, n == f_securitySignature] = do
     (fl,_) <- unsignData (BS.unpack xs)
     unsignFragments fl
@@ -441,7 +440,7 @@ dumpKey arg = do
         Just key -> return key
         Nothing -> do
             c <- readRawFile arg
-            parseKey c
+            maybe (fail "parseKey") return $ parseKey c
     putStrLn $ showKey key
 
 

@@ -83,9 +83,9 @@ parseBasic = parseMark <|> parseFlag <|> parseSlash <|> parseTwiddle <|> parseAl
     qstring = between (char '\'') (char '\'') $ many ((char '\'' >> char '\'' >> return '\'') <|> noneOf "'")
 
 
-parseFilter :: Monad m => String -> m Filter
+parseFilter :: String -> Either String Filter
 parseFilter s = case parse (between spaces eof pb)  "" s  of
-        Left e -> fail (show e)
+        Left e -> Left (show e)
         Right x -> return x
     where
     pb = parseBoolean' spaces parseTrue parseFalse parseBasic

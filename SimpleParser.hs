@@ -125,15 +125,10 @@ exactWord s = do
     w <- word
     if w == s then return w else mzero
 
-{-# SPECIALIZE parser :: GenParser c a -> [c] -> Maybe a #-}
-{-# SPECIALIZE parser :: GenParser c a -> [c] -> IO a #-}
-{-# SPECIALIZE parser :: GenParser Char a -> String -> Maybe a #-}
-{-# SPECIALIZE parser :: GenParser Char a -> String -> IO a #-}
-
-parser :: Monad m => GenParser c a -> [c] -> m a
+parser :: GenParser c a -> [c] -> Maybe a
 parser (MkP fn) s = case fn s of
-    Just (v,[]) -> return v
-    _ -> fail "parser failed"
+    Just (v,[]) -> Just v
+    _ -> Nothing
 
 {-
 parseIO p xs = case parser p xs of

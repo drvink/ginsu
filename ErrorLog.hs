@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,20 +36,19 @@ module ErrorLog(
     putLogLn,putLog,
     putLogException,
     -- ** annotating exceptions
-    emapM, eannM,
+    -- emapM, eannM,
     -- ** exception-aware composition
-    retry,
-    first,
-    tryMap, tryMapM,
+    retryIO,
+    firstIO,
+    tryMapM,
     trySeveral,
     -- ** random functions
-    attempt, tryElse, tryMost, tryMost_, catchMost,
-    handleMost,
-    ioElse,
+    attemptIO, tryIO,
     indent
     ) where
 
-import Control.OldException as E
+import Control.Exception as E
+import Data.Either
 import System.IO
 import System.IO.Unsafe
 import Control.Monad
@@ -102,7 +102,7 @@ withStartEndEntrys :: String  -- ^ title to use in log entries
 withStartEndEntrys n action = do
     gct >>= \ct -> putLogLn (ct ++ " " ++ n ++ " Starting")
     handle
-	(\e -> gct >>= \ct -> putLogException (ct ++ " " ++ n ++ " Ending due to Exception:" ) e >> throw e)
+	(\(e :: SomeException) -> gct >>= \ct -> putLogException (ct ++ " " ++ n ++ " Ending due to Exception:" ) e >> throw e)
 	(action >>= \r -> gct >>= \ct -> putLogLn (ct ++ " " ++ n ++ " Ending") >> return r) where
 	    gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
 
@@ -111,8 +111,8 @@ withStartEndEntrys n action = do
 -- this is similar to 'withStartEndEntrys' but only adds an entry on error.
 withErrorMessage :: String -> IO a -> IO a
 withErrorMessage n action = do
-    handleMost
-	(\e -> gct >>= \ct -> putLogLn (normalize n ++ ct ++ " Ending due to Exception:\n" ++ indent 4 (show e) ) >> throw e )
+    handle
+	(\(e :: SomeException) -> gct >>= \ct -> putLogLn (normalize n ++ ct ++ " Ending due to Exception:\n" ++ indent 4 (show e) ) >> throw e )
 	action  where
 	    gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
 
@@ -152,6 +152,7 @@ putLog ll s = do
     cll <- readMVar log_level
     when (ll <= cll) $ putLogLn s
 
+{-
 -- | transform an exception with a function.
 emapM :: (Exception -> Exception) -> IO a -> IO a
 emapM f action = do
@@ -165,67 +166,42 @@ eannM :: String -> IO a -> IO a
 eannM s action = emapM f action where
     f (ErrorCall es) = ErrorCall $ normalize s ++ normalize es
     f e = ErrorCall $ normalize s ++ normalize (show e)
+-}
 
 -- | attempt an action, add a log entry with the exception if it
 -- fails
-attempt :: IO a -> IO ()
-attempt action = tryMost action >>= \x -> case x of
-    Left e -> putLogException "attempt ExceptionCaught" e
-    Right _ -> return ()
-
-
-tryElse r x = tryMost x >>= \y -> case y of
-    Left e -> putLogException "tryElse ExceptionCaught" e >> return r
-    Right v -> return v
-
-tryMost_ x = tryMost x >> return ()
-
-tryMap :: (a -> b) -> [a] -> IO [b]
-tryMap f xs = do
-    ys <- mapM (tryMost . evaluate . f ) xs
-    return [y|(Right y) <- ys]
+attemptIO :: IO a -> IO ()
+attemptIO action = catch (action >> return ()) 
+  (\(e :: IOException) -> putLogException "attempt ExceptionCaught" e)
 
 tryMapM :: (a -> IO b) -> [a] -> IO [b]
 tryMapM f xs = do
-    ys <- mapM (tryMost . f ) xs
-    return [y|(Right y) <- ys]
+    ys <- mapM (tryIO . f) xs
+    return $ rights ys
 
-tryMost = E.tryJust passKilled
-
-passKilled (AsyncException ThreadKilled) = Nothing
-passKilled x = Just x
-
-catchMost = E.catchJust passKilled
-handleMost = E.handleJust passKilled
+tryIO :: IO a -> IO (Either IOException a)
+tryIO = E.try
 
 -- | return the first non-excepting action. if all actions throw exceptions,
 -- the last actions exception is rethrown.
-first :: [IO a] -> IO a
-first [] = fail "empty  argument to first"
-first [x] = x
-first (x:xs) = E.try x >>= \z -> case z of
-    Left e@(AsyncException ThreadKilled) -> throw e
-    Left _ -> first xs
-    Right v -> return v
-
-ioElse :: IO a -> IO a -> IO a
-ioElse a b = tryMost a >>= \x -> case x of
-    Left _ -> b
-    Right x -> return x
+firstIO :: [IO a] -> IO a
+firstIO [] = fail "empty argument to first"
+firstIO [x] = x
+firstIO (x:xs) = E.try x >>= either (\(_ :: IOException) -> firstIO xs) return
 
 indent :: Int -> String -> String
 indent n s = unlines $ map (replicate n ' ' ++)$ lines s
 
--- | Retry an action untill it succeeds.
-retry :: Float      -- ^ number of seconds to pause between trys
+-- | Retry an action until it succeeds.
+retryIO :: Float      -- ^ number of seconds to pause between trys
 	 -> String  -- ^ string to annotate log entries with when retrying
 	 -> IO a    -- ^ action to retry
 	 -> IO a
-retry delay n action = do
-    handleMost (\e -> putLogException (n ++ " (retrying in " ++ show delay ++ "s):") e >> threadDelay (floor $ 1000000 * delay) >> retry delay n action) action
+retryIO delay n action = do
+    handle (\(e :: IOException) -> putLogException (n ++ " (retrying in " ++ show delay ++ "s):") e >> threadDelay (floor $ 1000000 * delay) >> retryIO delay n action) action
 
 
-putLogException :: String -> Exception -> IO ()
+putLogException :: Exception e => String -> e -> IO ()
 putLogException n e =  putLog LogError (n ++ "\n" ++ indent 4 (show e))
 
 
@@ -239,7 +215,7 @@ trySeveral arms = do
     g v ts where
 	f v arm = do
 	    t <- myThreadId
-	    r <- tryMost arm
+	    r <- tryIO arm
 	    putMVar v (t,r)
 	g v ts = do
 	    (t,r) <- takeMVar v

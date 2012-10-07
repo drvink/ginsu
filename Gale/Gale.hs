@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances, FlexibleInstances, PatternGuards #-}
+{-# LANGUAGE OverlappingInstances, FlexibleInstances, PatternGuards, ScopedTypeVariables #-}
 module Gale.Gale(
     GaleContext,
     galeNextPuff,
@@ -164,7 +164,7 @@ emptyPuffer hv = repeatM_ (threadDelay 30000000 >> sendEmptyPuff) where
 		hFlush h
 
 connectThread :: GaleContext ->  [String] -> MVar Handle -> IO ()
-connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
+connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
     openHandle = do
         ds <- readMVar $ proxy gc
         swapMVar (connectionStatus gc)  $ Left $ "Attempting to connect to: " ++ unwords ds
@@ -181,8 +181,8 @@ connectThread gc _ hv = retry 5.0 ("ConnectionError") doit where
             bs <- LBS.hGet h (fromIntegral l)
 	    when (w == 0) $ do
                 let hash = sha1 bs
-                let (cat,puff) = runGet decodePuff bs
-                cat <- tryMapM parseCategoryOld (spc $ cat)
+                    (catl,puff) = runGet decodePuff bs
+                    cat = mapMaybe parseCategoryOld (spc catl)
                 ct <- getClockTime
                 let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (bsToHex hash))):xs)
                 p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
@@ -217,7 +217,7 @@ galeNextPuff gc = do
 
 reconnectGaleContext gc = do
     -- p <- readMVar $ proxy gc
-    void $ forkIO $ attempt $ readMVar (gHandle gc) >>= hClose
+    void $ forkIO $ attemptIO $ readMVar (gHandle gc) >>= hClose
 
 
 galeSendPuff :: GaleContext -> Puff -> IO PuffStatus
@@ -226,13 +226,13 @@ galeSendPuff gc puff = void $ forkIO $ do
     puff' <- expandEncryptionList gc puff
     writeChan (channel gc) puff'
     d <- createPuff  gc False puff'
-    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
+    retryIO 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 galeWillPuff :: GaleContext -> Puff -> IO ()
 galeWillPuff gc puff = void $ forkIO $ do
     putLog LogDebug $ "willing puff:\n" ++ (indent 4 $ showPuff puff)
     d <- createPuff gc True puff
-    retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
+    retryIO 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 
 getPrivateKey kc kn = getPKey kc kn >>= \n -> case n of
@@ -341,7 +341,7 @@ putFragments fl = mapM_ f fl where
 
 catfixes = [ ("/", ".|"), (".", "/"), (":", "..") ]
 
-parseCategoryOld :: Monad m => String -> m Category
+parseCategoryOld :: String -> Maybe Category
 parseCategoryOld = parser p where
     con cs | [nv] <- [x ++ (con $ drop (length y) cs) |(x,y) <- catfixes, y `isPrefixOf` cs] = nv
     con (c:cs) = c:con cs
@@ -368,17 +368,18 @@ catShowOld (Category (c,d)) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
 --------------------
 
 galeDecryptPuff :: GaleContext -> Puff -> IO Puff
-galeDecryptPuff gc p | (Just xs) <- getFragmentData p (f_securitySignature) = tryElse p $ do
+galeDecryptPuff gc p = handle (\(_ :: IOException) -> return p) $ galeDecryptPuff' gc p
+galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securitySignature = do
     let (l,xs') = xdrReadUInt (BS.unpack xs)
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
-    key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
-    galeDecryptPuff gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
-galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = tryElse p $ do
-    (cd,ks) <- parser pe (BS.unpack xs)
-    dfl <- first (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
+    key <- maybe (fail "parseKey") return $ parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
+    galeDecryptPuff' gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
+galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securityEncryption = do
+    (cd,ks) <- maybe (fail "parseKey") return $ parser pe (BS.unpack xs)
+    dfl <- firstIO (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
-    galeDecryptPuff gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
+    galeDecryptPuff' gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
 	pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
 	pk pkname iv = do
 	    kname <- pkname
@@ -395,7 +396,7 @@ galeDecryptPuff gc p | (Just xs) <- getFragmentData p f_securityEncryption = try
 	    dd <- decryptAll keydata iv pkey cd
 	    --let dfl = decodeFragments (drop 4 (BS.unpack dd))
 	    return $ runGet decodeFrags (LBS.fromChunks [BS.drop 4 dd])
-galeDecryptPuff _ x = return x
+galeDecryptPuff' _ x = return x
 
 
 --data DestinationStatus = DSPublic { dsComment :: String } | DSPrivate { dsComment :: String } | DSGroup { dsComment :: String, dsComponents :: [DestinationStatus] } | DSUnknown
@@ -506,7 +507,7 @@ requestKey gc c = do
         galeAddCategories gc [Category ("_gale.key", categoryCell c)]
         d <- createPuff  gc False $ keyRequestPuff c'
         putLog LogDebug $ "sending request for: " ++ c'
-        retry 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
+        retryIO 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 
 
 findDest gc c = fd c >>= res where

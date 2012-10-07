@@ -1,4 +1,4 @@
-{-# LANGUAGE ParallelListComp #-}
+{-# LANGUAGE ParallelListComp, ScopedTypeVariables #-}
 -- Copyright (c) 2002 John Meacham (john@foo.net)
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,7 +55,7 @@ module GenUtil(
     -- ** Monad routines
     perhapsM,
     repeatM, repeatM_, replicateM, replicateM_, maybeToMonad,
-    toMonadM, ioM, ioMp, foldlM, foldlM_, foldl1M, foldl1M_,
+    toMonadM, foldlM, foldlM_, foldl1M, foldl1M_,
     -- ** Text Routines
     -- *** Quoting
     shellQuote, simpleQuote, simpleUnquote,
@@ -117,6 +117,7 @@ module GenUtil(
 
 import Data.Char(isAlphaNum, isSpace, toLower, ord, chr)
 import Data.List
+import Control.Exception
 import Control.Monad
 import qualified System.IO as IO
 import qualified System.IO.Error as IO
@@ -334,12 +335,10 @@ snds :: [(a,b)] -> [b]
 snds = map snd
 
 {-# INLINE repeatM #-}
-{-# SPECIALIZE repeatM :: IO a -> IO [a] #-}
 repeatM :: Monad m => m a -> m [a]
 repeatM x = sequence $ repeat x
 
 {-# INLINE repeatM_ #-}
-{-# SPECIALIZE repeatM_ :: IO a -> IO () #-}
 repeatM_ :: Monad m => m a -> m ()
 repeatM_ x = sequence_ $ repeat x
 
@@ -417,13 +416,15 @@ rights xs = [x | Right x <- xs]
 lefts :: [Either a b] -> [a]
 lefts xs = [x | Left x <- xs]
 
+{-
 -- | Trasform IO errors into the failing of an arbitrary monad.
 ioM :: Monad m => IO a -> IO (m a)
-ioM action = catch (fmap return action) (\e -> return (fail (show e)))
+ioM action = catch (fmap return action) (\(e :: IOException) -> return (fail (show e)))
 
 -- | Trasform IO errors into the mzero of an arbitrary member of MonadPlus.
 ioMp :: MonadPlus m => IO a -> IO (m a)
-ioMp action = catch (fmap return action) (\_ -> return mzero)
+ioMp action = catch (fmap return action) (\(_ :: IOException) -> return mzero)
+-}
 
 -- | reformat a string to not be wider than a given width, breaking it up
 -- between words.
@@ -537,7 +538,7 @@ shellQuote ss = unwords (map f ss) where
 -- | looks up an enviornment variable and returns it in an arbitrary Monad rather
 -- than raising an exception if the variable is not set.
 lookupEnv :: Monad m => String -> IO (m String)
-lookupEnv s = catch (fmap return $ System.getEnv s) (\e -> if IO.isDoesNotExistError e then return (fail (show e)) else ioError e)
+lookupEnv s = catchJust (guard . IO.isDoesNotExistError) (fmap return $ System.getEnv s) (\e -> return (fail (show e)))
 
 {-# SPECIALIZE fmapLeft :: (a -> c) -> [(Either a b)] -> [(Either c b)] #-}
 fmapLeft :: Functor f => (a -> c) -> f (Either a b) -> f (Either c b)

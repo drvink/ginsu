@@ -1,6 +1,6 @@
 -- vim:et
 Name:		ginsu
-Version:	0.8.0.3
+Version:	0.8.1
 Copyright:	2002-2009 John Meacham <john@repetae.net>
 		2011-2012 Dylan Simon <dylan@dylex.net>
 Author:		John Meacham <john@foo.net>
@@ -52,7 +52,6 @@ Executable ginsu
                 EIO
                 ErrorLog
                 ExampleConf
-                Exception
                 Filter
                 Format
                 Gale.Gale
@@ -80,7 +79,7 @@ Executable ginsu
                 my_rsa.c
     Include-Dirs: .
     Build-Depends:	
-                base >= 4 && < 4.6,
+                base >= 4 && < 5,
                 bytestring,
                 old-locale,
                 containers,

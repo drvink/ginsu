@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module ConfigFile(
     configLookupBool,
     configLookup,
@@ -19,6 +20,7 @@ module ConfigFile(
 
     ) where
 
+import qualified Control.Exception as E
 import Data.Char
 import System.Environment
 import System.IO.Unsafe
@@ -89,13 +91,13 @@ configFile fn = Config $ \k -> do
     case lookup fn cf of
 	Just cl -> basicLookup fn cl k
 	Nothing -> do
-	    cl <- catchMost (fmap parseConfigFile $ readFile fn) (\_ -> return [])
+	    cl <- E.catch (fmap parseConfigFile $ readFile fn) (\(_ :: E.IOException) -> return [])
 	    mapVal config_files_var ((fn,cl):)
 	    basicLookup fn cl k
 
 configEnv :: Config
 configEnv = Config $ \k -> do
-    ev <- catch (fmap return $ getEnv k) (\_ -> return [])
+    ev <- E.catch (fmap return $ getEnv k) (\(_ :: E.IOException) -> return [])
     return $ fmap (\v -> ("enviornment", (k,v))) ev
 
 mapConfig :: (String -> String) -> Config -> Config

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
 module Gale.Puff(
     Puff(..),
     Fragment(..),
@@ -47,6 +47,7 @@ module Gale.Puff(
 
 import Atom
 import Data.Binary
+import qualified Control.Exception as E
 import EIO
 import ErrorLog
 import GenUtil
@@ -264,10 +265,10 @@ instance HasFragmentList Fragment where
 ----------------
 
 writePuffs :: String -> [Puff] -> IO ()
-writePuffs fn ps = attempt $ putFile fn ps
+writePuffs fn ps = attemptIO $ putFile fn ps
 
 readPuffs :: String -> IO [Puff]
-readPuffs fn = tryElse [] $ getFile fn
+readPuffs fn = E.handle (\(e :: E.IOException) -> return []) $ getFile fn
 
 
 putFile fn a = atomicWrite fn $ \h -> do

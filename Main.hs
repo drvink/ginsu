@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances, PatternGuards #-}
+{-# LANGUAGE OverlappingInstances, PatternGuards, ScopedTypeVariables #-}
 module Main(main) where
 
 import Data.Char
@@ -10,7 +10,7 @@ import System.Time
 import System.Random
 
 import Control.Concurrent
-import Exception as Control.Exception
+import Control.Exception
 import Data.Array.IO
 import Data.IORef
 import Data.Unique
@@ -462,7 +462,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     pn <- getClockTime
                     Hash.insert idleHash author $ fromJust $ max mt (Just pn)
 		    v <- configLookupList "BEEP"
-		    let f = or (catMaybes (map parseFilter v))
+		    let f = or (rights (map parseFilter v))
 		    when (filterAp f p) Curses.beep
 		    n <- readVal next_r
 		    mapVal next_r (+1)
@@ -560,7 +560,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 		rp y (((i,p),n):rest) = do
 		    when ((0,ys) `overlaps` (y - yo, y - yo + n)) $ renderPuff p xs stdScr (y - yo) (xs,ys) (i == selected) (if isRot13 then rot13 else id)
 		    rp (y + n) rest
-	    attempt (rp 0 (reverse ps))
+	    attemptIO (rp 0 (reverse ps))
 	select_perhaps a = do
 	    ps <- getFilteredPuffs
 	    n <- readVal selected_r
@@ -761,7 +761,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             pcw <- puffConfirm gc (setRenderWidget rc fw) p ic
                             setRenderWidget rc pcw
                     continue
-		"redraw_screen" -> attempt (touchWin stdScr)  >> resizeRenderContext rc (return ()) >> continue
+		"redraw_screen" -> attemptIO (touchWin stdScr)  >> resizeRenderContext rc (return ()) >> continue
 		"show_help_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) hw) >> continue
 		"show_status_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) statusWidget) >> continue
 		"show_presence_status" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) presenceWidget) >> continue
@@ -891,9 +891,9 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
 -- Curses routines
 ------------------
 
-waddstr w s = Control.Exception.try (wAddStr w s) >> return ()
-mvwaddstr w y x s = Control.Exception.try (mvWAddStr w y x s) >> return ()
-wmove w y x = Control.Exception.try (wMove w y x) >> return ()
+waddstr w s = tryIO (wAddStr w s) >> return ()
+mvwaddstr w y x s = tryIO (mvWAddStr w y x s) >> return ()
+wmove w y x = tryIO (wMove w y x) >> return ()
 
 space w = waddstr w " "
 
@@ -963,7 +963,7 @@ editPuff puff ic done = do
     bgcmd <- if bgedit then configLookupList "BACKGROUND_COMMAND" else return []
     let (cmd:args) = (concatMap words bgcmd) ++ [e] ++ (concatMap words eo) ++ [fn]
     let after = editPuffDone fn ic done it puff
-    let handle = do st <- try $ Posix.getAnyProcessStatus False False
+    let handle = do st <- tryIO $ Posix.getAnyProcessStatus False False
                     case st of Right (Just _) -> handle
                                _ -> after
     if bgedit then do
@@ -976,7 +976,7 @@ editPuff puff ic done = do
 editPuffDone :: String -> Chan MainEvent -> IO () -> [String] -> Puff -> IO ()
 editPuffDone fn ic done it puff = do
     pn <- fmap (lines . bytesToString)$ readRawFile fn
-    handleMost (\_ -> return ()) (removeFile fn)
+    handle (\(_ :: IOException) -> return ()) (removeFile fn)
     ep <- if not (length pn > 1 && pn /= it) then return Nothing else do
         let (cs',kwds') = readDestination (drop 4 (head pn))
         ncats <- expandAliases (cs')

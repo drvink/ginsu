@@ -29,7 +29,7 @@ module Screen(
     ) where
 
 import Control.Concurrent
-import Exception as E
+import Control.Exception as E
 import Data.Bits
 import Control.Monad
 
@@ -116,9 +116,9 @@ resizeRenderContext rc action = swapMVar (needsResize rc) True >>= \x -> unless 
 
 tryDrawRenderContext rc = do
     y <- swapMVar (needsResize rc) False
-    withMVar (drawingStuff rc) $ \(z,_,_) -> when (True) $ do
+    withMVar (drawingStuff rc) $ \(z,_,_) -> do
 	erase
-	when y (attempt endWin >> refresh)
+	when y (attemptIO endWin >> refresh)
 	z
 	refresh
 
@@ -135,7 +135,8 @@ setRenderWidget rc w = do
     return (wdr, processKey w, return (){-, nf-}) where
 	wdr = do
 	    c <- newCanvas
-	    eannM ("doRender " ++ show c) $ render w c
+	    {- eannM ("doRender " ++ show c) $ -}
+            render w c
 
 keyRenderContext :: RenderContext -> Key -> IO Bool
 keyRenderContext _ KeyResize = return True
@@ -146,7 +147,8 @@ keyRenderContext rc k = do
 doRender w = do
     erase
     c <- newCanvas
-    eannM ("doRender " ++ show c) $ render w c
+    {- eannM ("doRender " ++ show c) $ -}
+    render w c
     refresh
 
 newCanvas = do
@@ -175,8 +177,8 @@ withAttr canvas attr action = E.bracket (wAttrGet w) (wAttrSet w) f where
 
 
 drawString :: Canvas -> String -> IO ()
-drawString canvas s = eannM (fmtSs "drawString %s %s" [(show canvas), s]) $ ds ml yb (origin canvas) where
-	ds (s:ls) yb (x,y) | yb > 0 = E.try (mvWAddStr (window canvas) y x (take xb s)) >> ds ls (yb - 1) (x,y + 1)
+drawString canvas s = {- eannM (fmtSs "drawString %s %s" [(show canvas), s]) $ -} ds ml yb (origin canvas) where
+	ds (s:ls) yb (x,y) | yb > 0 = tryIO (mvWAddStr (window canvas) y x (take xb s)) >> ds ls (yb - 1) (x,y + 1)
 	ds _ _ _ = return ()
 	(xb,yb) = bounds canvas
 	ls = lines s
