@@ -20,18 +20,16 @@ bugMsg :: String
 usageHeader = "Usage: ginsu [OPTION...] categories..."
 
 usageTrailer = unlines [
-    "For more information see the homepage at",
+    "For more information see the (unmaintained) homepage at",
     "   <http://repetae.net/john/computer/ginsu/>",
-    "To report a bug go to:",
-    "   <http://bugs.ofb.net/cgi-bin/bugzilla/enter_bug.cgi?product=Ginsu>",
+    "For current version information and maintainer, see",
+    "   <http://hackage.haskell.org/package/ginsu>",
     "When reporting a bug, include the last few lines of ~/.gale/ginsu.errorlog if it seems appropriate."
     ]
 
 bugMsg = unlines [
     "There has been an internal error",
-    "verify the output of ginsu --checkconfig and",
-    "please inform <john@ugcs.caltech.edu> or file a bug report at",
-    "<http://bugs.ofb.net/cgi-bin/bugzilla/enter_bug.cgi?product=Ginsu>",
+    "verify the output of ginsu --checkconfig",
     "Include the following text in any error report:"
     ]
 
