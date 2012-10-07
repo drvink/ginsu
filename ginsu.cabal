@@ -1,8 +1,8 @@
 -- vim:et
 Name:		ginsu
-Version:	0.8.0.2
+Version:	0.8.0.3
 Copyright:	2002-2009 John Meacham <john@repetae.net>
-		2011 Dylan Simon <dylan@dylex.net>
+		2011-2012 Dylan Simon <dylan@dylex.net>
 Author:		John Meacham <john@foo.net>
 		Dylan Simon <dylan@dylex.net>
 Maintainer:     dylan@dylex.net
@@ -34,7 +34,7 @@ data-files:     ginsu.config.sample
 
 Source-Repository head
     Type:	darcs
-    Location:	http://dylex.net/src/ginsu
+    Location:	http://hub.darcs.net/dylex/ginsu
 
 Executable ginsu
     Main-is:	Main.hs
