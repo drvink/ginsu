@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances, OverlappingInstances, TypeSynonymInstances, FlexibleInstances #-}
 module Doc.DocLike where
 
-import Data.Monoid hiding ((<>))
+-- import Data.Monoid hiding ((<>))
 import Control.Monad.Reader()
 import Data.List
 import qualified Text.PrettyPrint.HughesPJ as P

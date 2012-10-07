@@ -171,7 +171,7 @@ eannM s action = emapM f action where
 -- | attempt an action, add a log entry with the exception if it
 -- fails
 attemptIO :: IO a -> IO ()
-attemptIO action = catch (action >> return ()) 
+attemptIO action = E.catch (action >> return ()) 
   (\(e :: IOException) -> putLogException "attempt ExceptionCaught" e)
 
 tryMapM :: (a -> IO b) -> [a] -> IO [b]

@@ -149,7 +149,7 @@ throwIfErr :: (Num a, Eq a, Show a) => String -> IO a -> IO a
 throwIfErr s = throwIf (== (#const ERR)) (\a -> "Curses[" ++ show a ++ "]:"  ++ s)
 
 throwIfErr_ :: (Num a, Eq a, Show a) => String -> IO a -> IO ()
-throwIfErr_ name act = void $ throwIfErr name act
+throwIfErr_ name act = throwIfErr name act >> return ()
 
 ------------------------------------------------------------------------
 
