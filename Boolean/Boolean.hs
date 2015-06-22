@@ -15,13 +15,13 @@ module Boolean.Boolean(
     dropBoolean
 ) where
 
-import qualified GHC.Base as Base
 import Boolean.Algebra
 import Prelude hiding((&&),(||),not,and,or,any,all)
 import qualified Prelude
+import Control.Applicative
 import Control.Monad
 import Data.List hiding(and,or)
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding ((<|>))
 
 
 
@@ -54,7 +54,7 @@ instance Monad Boolean where
     return x = BoolJust x
     fail _ = false
 
-instance Base.Alternative Boolean where
+instance Alternative Boolean where
     empty = mzero
     (<|>) = mplus
 

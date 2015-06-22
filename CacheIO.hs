@@ -23,6 +23,7 @@ module CacheIO(
     ) where
 
 
+import Control.Applicative
 import Control.Monad.Trans
 import Control.Concurrent
 import Control.Monad

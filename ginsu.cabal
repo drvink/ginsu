@@ -14,7 +14,7 @@ Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
 Build-Type:	Custom
 Cabal-Version:	>= 1.6
-tested-with:    GHC == 7.10.1
+tested-with:    GHC == 7.8.4, GHC == 7.10.1
 extra-source-files: 
                 configure
                 ginsu.buildinfo.in

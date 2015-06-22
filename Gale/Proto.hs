@@ -13,6 +13,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import Data.Binary.Get
 import Data.Word
+import Control.Applicative ((<|>))
 
 
 pubkey_magic3 :: [Word8]

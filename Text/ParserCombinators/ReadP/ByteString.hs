@@ -71,12 +71,11 @@ module Text.ParserCombinators.ReadP.ByteString
   )
  where
 
-import GHC.Base (Alternative(empty, (<|>)), ap)
+import Control.Applicative (Alternative(empty, (<|>)), Applicative(pure, (<*>)))
 import Control.Monad ( MonadPlus(..), liftM2, Monad, (>>), (>>=),
-                       return, fail, Functor, fmap, replicateM, void )
+                       return, fail, Functor, fmap, replicateM, void, ap )
 import Prelude ( (+), (-), (++), Int, Bool(..), (==), error,
-                 (.), (>=), compare, Ordering(..), const,
-                 Applicative(pure, (<*>)) )
+                 (.), (>=), compare, Ordering(..), const )
 import Data.Word (Word8)
 import Data.ByteString (ByteString,length,take,takeWhile,null)
 

@@ -33,6 +33,7 @@ import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
+import Control.Applicative ((<|>))
 
 import Atom
 import Control.Monad.Error (when, replicateM)

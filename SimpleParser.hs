@@ -21,12 +21,10 @@
 
 module SimpleParser where
 
-import qualified GHC.Base as Base
-import Data.Char
+import Control.Applicative hiding (many)
 import Control.Monad
+import Data.Char
 import Data.List
-
-infixr 1 <|>
 
 -- very simple parser combinators with failure but limited non-determinism.
 -- designed for parsing single lines or simple expressions.
@@ -50,9 +48,10 @@ instance Applicative (GenParser c) where
 instance Functor (GenParser c) where
     fmap = liftM
 
-instance Base.Alternative (GenParser c) where
+instance Alternative (GenParser c) where
     empty = mzero
-    (<|>) = mplus
+    p <|> q = MkP $ \s -> maybe (app q s) Just (app p s)
+
 
 instance MonadPlus (GenParser c) where
     mzero = MkP (\_ -> Nothing)
@@ -108,8 +107,6 @@ sat p = MkP f where
     f _ = Nothing
 
 satisfy = sat
-
-p <|> q = MkP $ \s -> maybe (app q s) Just (app p s)
 
 many :: GenParser c a -> GenParser c [a]
 many p = (p >>= \x -> many p >>= \xs -> return (x:xs)) <|> return []
