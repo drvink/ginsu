@@ -63,6 +63,10 @@ cacheIOeq io = CacheIO $ do
 instance Functor CacheIO where
     fmap = liftM
 
+instance Applicative CacheIO where
+    pure = return
+    (<*>) = ap
+
 instance Monad CacheIO where
     {-# INLINE (>>=) #-}
     {-# INLINE return #-}

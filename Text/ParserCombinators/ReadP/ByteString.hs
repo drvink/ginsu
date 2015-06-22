@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, NoImplicitPrelude, TypeOperators, ExistentialQuantification, PolymorphicComponents #-}
+{-# LANGUAGE CPP, NoImplicitPrelude, TypeOperators, ExistentialQuantification, PolymorphicComponents, DeriveFunctor #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.ParserCombinators.ReadP.ByteString
@@ -71,10 +71,12 @@ module Text.ParserCombinators.ReadP.ByteString
   )
  where
 
+import GHC.Base (Alternative(empty, (<|>)), ap)
 import Control.Monad ( MonadPlus(..), liftM2, Monad, (>>), (>>=),
-                       return, fail, Functor, fmap, replicateM )
+                       return, fail, Functor, fmap, replicateM, void )
 import Prelude ( (+), (-), (++), Int, Bool(..), (==), error,
-                 fromInteger, (.), (>=), compare, Ordering(..) )
+                 (.), (>=), compare, Ordering(..), const,
+                 Applicative(pure, (<*>)) )
 import Data.Word (Word8)
 import Data.ByteString (ByteString,length,take,takeWhile,null)
 
@@ -107,6 +109,13 @@ data P a
   | Fail
   | Result a (P a)
   | Final [(a,ByteString)] -- invariant: list is non-empty!
+  deriving Functor
+
+-- Applicative
+
+instance Applicative P where
+  pure = return
+  (<*>) = ap
 
 -- Monad, MonadPlus
 
@@ -120,6 +129,10 @@ instance Monad (P) where
   (Final r)    >>= k = final [ys' | (x,s) <- r, ys' <- run (k x) s]
 
   fail _ = Fail
+
+instance Alternative P where
+  empty = mzero
+  (<|>) = mplus
 
 instance MonadPlus (P) where
   mzero = Fail
@@ -164,10 +177,18 @@ newtype ReadP a = R (forall b . (a -> P b) -> P b)
 instance Functor (ReadP) where
   fmap h (R f) = R (\k -> f (k . h))
 
+instance Applicative (ReadP) where
+  pure = return
+  (<*>) = ap
+
 instance Monad (ReadP) where
   return x  = R (\k -> k x)
-  fail _    = R (\_ -> Fail)
+  fail _    = R (const Fail)
   R m >>= f = R (\k -> m (\a -> let R m' = f a in m' k))
+
+instance Alternative ReadP where
+  empty = mzero
+  (<|>) = mplus
 
 instance MonadPlus (ReadP) where
   mzero = pfail
@@ -212,7 +233,7 @@ look = R Look
 
 pfail :: ReadP a
 -- ^ Always fails.
-pfail = R (\_ -> Fail)
+pfail = R (const Fail)
 
 (+++) :: ReadP a -> ReadP a -> ReadP a
 -- ^ Symmetric choice.
@@ -254,8 +275,8 @@ countsym (R m) =
   gath 0 _   | False  = Fail
   gath l (Skip n f)   = Skip n (gath (l+n) f)
   gath _ Fail         = Fail
-  gath l (Look f)     = Look (\s -> gath l (f s))
-  gath l (Result k p) = k (l) `mplus` gath l p
+  gath l (Look f)     = Look (gath l . f)
+  gath l (Result k p) = k l `mplus` gath l p
   gath _ (Final _)    = error "do not use readS_to_P in gather or countsym!"
 
 -- ---------------------------------------------------------------------------
@@ -309,12 +330,12 @@ choice (p:ps) = p +++ choice ps
 
 skipSpaces :: ReadP ()
 -- ^ Skips all whitespace.
-skipSpaces = munch isSpaceWord8 >> return ()
+skipSpaces = void (munch isSpaceWord8)
 
 count :: Int -> ReadP a -> ReadP [a]
 -- ^ @count n p@ parses @n@ occurrences of @p@ in sequence. A list of
 --   results is returned.
-count n p = replicateM n p
+count = replicateM
 
 between :: ReadP open -> ReadP close -> ReadP a -> ReadP a
 -- ^ @between open close p@ parses @open@, followed by @p@ and finally
@@ -331,7 +352,7 @@ option x p = p +++ return x
 
 optional :: ReadP a -> ReadP ()
 -- ^ @optional p@ optionally parses @p@ and always returns @()@.
-optional p = (p >> return ()) +++ return ()
+optional p = void p +++ return ()
 
 many :: ReadP a -> ReadP [a]
 -- ^ Parses zero or more occurrences of the given parser.
@@ -343,7 +364,7 @@ many1 p = liftM2 (:) p (many p)
 
 skipMany :: ReadP a -> ReadP ()
 -- ^ Like 'many', but discards the result.
-skipMany p = many p >> return ()
+skipMany p = void (many p)
 
 skipMany1 :: ReadP a -> ReadP ()
 -- ^ Like 'many1', but discards the result.
@@ -359,15 +380,18 @@ sepBy1 :: ReadP a -> ReadP sep -> ReadP [a]
 --   Returns a list of values returned by @p@.
 sepBy1 p sep = liftM2 (:) p (many (sep >> p))
 
+endByDo :: ReadP a -> ReadP sep -> ReadP a
+endByDo p sep = do x <- p ; sep ; return x
+
 endBy :: ReadP a -> ReadP sep -> ReadP [a]
 -- ^ @endBy p sep@ parses zero or more occurrences of @p@, separated and ended
 --   by @sep@.
-endBy p sep = many (do x <- p ; sep ; return x)
+endBy p sep = many (endByDo p sep)
 
 endBy1 :: ReadP a -> ReadP sep -> ReadP [a]
 -- ^ @endBy p sep@ parses one or more occurrences of @p@, separated and ended
 --   by @sep@.
-endBy1 p sep = many1 (do x <- p ; sep ; return x)
+endBy1 p sep = many1 (endByDo p sep)
 
 chainr :: ReadP a -> ReadP (a -> a -> a) -> a -> ReadP a
 -- ^ @chainr p op x@ parses zero or more occurrences of @p@, separated by @op@.
@@ -404,7 +428,7 @@ manyTill :: ReadP a -> ReadP end -> ReadP [a]
 -- ^ @manyTill p end@ parses zero or more occurrences of @p@, until @end@
 --   succeeds. Returns a list of values returned by @p@.
 manyTill p end = scan
-  where scan = (end >> return []) <++ (liftM2 (:) p scan)
+  where scan = (end >> return []) <++ liftM2 (:) p scan
 
 -- ---------------------------------------------------------------------------
 -- Converting between ReadP and Read

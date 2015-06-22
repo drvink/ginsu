@@ -13,11 +13,13 @@ module Atom(
     toPackedString
     ) where
 
+import System.IO.Unsafe (unsafePerformIO)
+
 import Data.Generics
 import Data.Monoid
 import Foreign
 import Data.List(sort)
-import qualified Data.HashTable as HT
+import qualified Data.HashTable.IO as HT
 import Data.Binary
 
 import PackedString
@@ -29,12 +31,12 @@ instance Monoid Atom where
     mconcat xs = toAtom $ concatPS (map fromAtom xs)
 
 {-# NOINLINE table #-}
-table :: HT.HashTable PackedString Atom
-table = unsafePerformIO (HT.new (==) (fromIntegral . hashPS))
+table :: HT.CuckooHashTable PackedString Atom
+table = unsafePerformIO HT.new
 
 {-# NOINLINE reverseTable #-}
-reverseTable :: HT.HashTable Int PackedString
-reverseTable = unsafePerformIO (HT.new (==) (fromIntegral))
+reverseTable :: HT.CuckooHashTable Int PackedString
+reverseTable = unsafePerformIO HT.new
 
 {-# NOINLINE intPtr #-}
 intPtr :: Ptr Int
@@ -51,8 +53,13 @@ instance Read Atom where
     readsPrec _ s = [ (fromString s,"") ]
     --readsPrec p s = [ (fromString x,y) |  (x,y) <- readsPrec p s]
 
-toPackedString atom = atomToPS atom
+toPackedString :: Atom -> PackedString
+toPackedString = atomToPS
+
+toString :: Atom -> String
 toString atom = unpackPS $ toPackedString atom
+
+atomIndex :: Atom -> Int
 atomIndex (Atom x) = x
 
 instance Binary Atom where

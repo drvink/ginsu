@@ -1,4 +1,4 @@
-{-# LANGUAGE ParallelListComp, PatternGuards #-}
+{-# LANGUAGE ParallelListComp, PatternGuards, FlexibleContexts #-}
 module CircularBuffer(
     CircularBuffer,
     new,

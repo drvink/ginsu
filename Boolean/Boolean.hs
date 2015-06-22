@@ -15,6 +15,7 @@ module Boolean.Boolean(
     dropBoolean
 ) where
 
+import qualified GHC.Base as Base
 import Boolean.Algebra
 import Prelude hiding((&&),(||),not,and,or,any,all)
 import qualified Prelude
@@ -43,12 +44,19 @@ instance Functor Boolean where
     fmap f (BoolOr xs) = BoolOr (map (fmap f) xs)
     fmap f (BoolJust x) = BoolJust (f x)
 
+instance Applicative Boolean where
+    pure = return
+    (<*>) = ap
 
 instance Monad Boolean where
     --a >> b = a && b
     a >>= f = dropBoolean (fmap f a)
     return x = BoolJust x
     fail _ = false
+
+instance Base.Alternative Boolean where
+    empty = mzero
+    (<|>) = mplus
 
 instance MonadPlus Boolean where
     a `mplus` b = a || b

@@ -21,6 +21,7 @@
 
 module SimpleParser where
 
+import qualified GHC.Base as Base
 import Data.Char
 import Control.Monad
 import Data.List
@@ -42,9 +43,16 @@ instance Monad (GenParser c) where
     (MkP p) >>= q = MkP $ \s ->  (maybe Nothing (\(v,s') -> app (q v) s') (p s))
     fail _ = MkP $ \_ ->  Nothing
 
+instance Applicative (GenParser c) where
+    pure = return
+    (<*>) = ap
+
 instance Functor (GenParser c) where
     fmap = liftM
 
+instance Base.Alternative (GenParser c) where
+    empty = mzero
+    (<|>) = mplus
 
 instance MonadPlus (GenParser c) where
     mzero = MkP (\_ -> Nothing)

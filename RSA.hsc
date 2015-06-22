@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
+{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls, CPP #-}
 module RSA(
     EvpPkey,
     decryptAll,
@@ -17,6 +17,8 @@ import Control.Exception as E
 import ErrorLog
 import Foreign
 import Numeric(showHex)
+
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS

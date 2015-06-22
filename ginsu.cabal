@@ -14,7 +14,7 @@ Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
 Build-Type:	Custom
 Cabal-Version:	>= 1.6
-tested-with:    GHC == 6.12.3, GHC == 7.6.1
+tested-with:    GHC == 7.10.1
 extra-source-files: 
                 configure
                 ginsu.buildinfo.in
@@ -64,6 +64,7 @@ Executable ginsu
                 KeyHelpTable
                 KeyName
                 MyLocale
+                OldHash
                 Options
                 PackedString
                 Paths_ginsu
@@ -96,5 +97,7 @@ Executable ginsu
                 syb,
                 network,
                 parsec,
-                process
+                process,
+                hashtables,
+                hashable
     Extra-Libraries: ssl crypto

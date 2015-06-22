@@ -170,7 +170,7 @@ fragmentString s fl = case lookup s fl of
     _ -> fail $ "fragment not found: " ++ toString s
 
 mergeFrags :: FragmentList -> FragmentList -> FragmentList
-mergeFrags fla flb = fla ++ [f|f@(s,_) <- flb, s `notElem` fsts fla]
+mergeFrags fla flb = fla ++ [f | f@(s,_) <- flb, s `notElem` fsts fla]
 
 
 {-
@@ -181,7 +181,7 @@ getFragmentString (Puff {fragments = frags}) s = case lookup s frags of
 -}
 
 getFragmentStrings :: HasFragmentList fl => fl -> Atom -> [PackedString]
-getFragmentStrings fl s = [v|(n,FragmentText v) <- getFragmentList fl, n == s]
+getFragmentStrings fl s = [v | (n,FragmentText v) <- getFragmentList fl, n == s]
 
 getFragmentForceStrings :: HasFragmentList fl => fl -> Atom -> [PackedString]
 getFragmentForceStrings fl s = concatMap f [v | (n,v) <- getFragmentList fl, n == s] where

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.PackedString
@@ -55,6 +55,8 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.UTF8 as U
 import qualified Data.String.UTF8 as US
 import Data.Bits
+import GHC.Generics (Generic)
+import Data.Hashable
 import Data.Monoid
 
 instance Monoid PackedString where
@@ -69,12 +71,13 @@ instance Monoid PackedString where
 -- efficient operations.  A 'PackedString' contains full Unicode 'Char's.
 -- much like UTF8 ByteString
 newtype PackedString = PS { unPS :: U.ByteString }
-    deriving(Typeable,Binary,Eq,Ord)
+    deriving(Typeable,Binary,Eq,Ord,Generic)
 
 
 instance Show PackedString where
     showsPrec p (PS ps) = showsPrec p (US.fromRep ps)
 
+instance Hashable PackedString
 
 -- -----------------------------------------------------------------------------
 -- Constructor functions

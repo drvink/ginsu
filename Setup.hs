@@ -20,7 +20,7 @@ genPP = ("hsgen", \_ _ -> PreProcessor True $ mkSimplePreProcessor ppf) where
       info verb $ scs (cmdspec cmd) ++ " > " ++ outf
       (_,_,_,pid) <- createProcess cmd { std_out = UseHandle out }
       r <- waitForProcess pid
-      when (r /= ExitSuccess) $ die $ scs (cmdspec cmd) ++ ": " ++ show r
+      when (r /= ExitSuccess) $ Distribution.Simple.Utils.die $ scs (cmdspec cmd) ++ ": " ++ show r
   scs (ShellCommand s) = s
   scs (RawCommand c a) = unwords (c:a)
 

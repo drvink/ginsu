@@ -2,6 +2,7 @@
 module Doc.DocLike where
 
 -- import Data.Monoid hiding ((<>))
+import Prelude hiding ((<$>))
 import Control.Monad.Reader()
 import Data.List
 import qualified Text.PrettyPrint.HughesPJ as P

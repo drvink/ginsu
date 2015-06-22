@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances, PatternGuards, ScopedTypeVariables #-}
+{-# LANGUAGE OverlappingInstances, PatternGuards, ScopedTypeVariables, FlexibleContexts #-}
 module Main(main) where
 
 import Data.Char
@@ -14,7 +14,7 @@ import Control.Exception
 import Data.Array.IO
 import Data.IORef
 import Data.Unique
-import qualified Data.HashTable as Hash
+import qualified Data.HashTable.IO as Hash
 import qualified System.Posix as Posix
 import qualified System.Posix.IO as PosixIO
 import System.IO
@@ -40,6 +40,7 @@ import GinsuConfig
 import Help
 import KeyName
 import MyLocale
+import qualified OldHash
 import Options
 import PackedString
 import Prelude hiding((&&),(||),not,and,or,any,all)
@@ -241,7 +242,7 @@ presenceView idleHash pl = dynamicWidget $ do
 
 presenceViewUser :: String -> PresenceData -> Widget
 presenceViewUser user pl = widgetText pt where
-    pt = user ++ ":\n" ++ indentLines 2  (unlines $ buildTableLL ([b|(a,b) <- pl, a == user]))
+    pt = user ++ ":\n" ++ indentLines 2  (unlines $ buildTableLL ([b | (a,b) <- pl, a == user]))
 
 
 
@@ -356,8 +357,8 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 
     Status.setF "Gale.Presence" (readVal myPresence)
 
-    idleHash <- Hash.new (==) Hash.hashString
-    puffRRHash <- Hash.new (==) Hash.hashString
+    idleHash <- Hash.new :: IO (Hash.CuckooHashTable String ClockTime) -- (==) OldHash.hashString
+    puffRRHash <- Hash.new :: IO (Hash.CuckooHashTable String [String]) -- (==) OldHash.hashString
 
     presenceWidget <- widgetScroll (newSVarWidget presence_r (presenceView idleHash))
 
@@ -387,7 +388,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
         return  [(x,puffHeight p xs)| x@(_,p) <- ps, f p]
 
 
-    buf_size <- newCacheIO $ cacheIO getFilteredPuffs >>= \ps -> return $ sum [x| (_,x) <- ps]
+    buf_size <- newCacheIO $ cacheIO getFilteredPuffs >>= \ps -> return $ sum [x | (_,x) <- ps]
     let statusHeight = do
             fs <- readVal filter_r
             return $ if length fs == 0 then 1 else 2
@@ -436,7 +437,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
 		Nothing -> return ()
 		Just pn -> do
 		    let np@(a',(b',_)) = (author, (maybe "unknown" unpackPS (getFragmentString p (fromString "id/instance")), unpackPS pn))
-		    mapVal presence_r (\xs -> (np:[x| x@(a,(b,_)) <- xs, a /= a' || b /= b']))
+		    mapVal presence_r (\xs -> (np:[x | x@(a,(b,_)) <- xs, a /= a' || b /= b']))
 	    case getFragmentTime p (fromString "status.idle") of
 		Nothing -> return ()
                 Just pn | pn == epoch -> Hash.delete idleHash author >> getClockTime >>=  Hash.insert idleHash author
@@ -448,7 +449,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                 Just n | [Category (cat,dom)] <- cats p, dom == domain, ("_gale.rr." ++ name) `isPrefixOf` cat -> do
                     mv <- Hash.lookup puffRRHash (drop (10 + length name) cat)
                     Hash.delete puffRRHash (drop (10 + length name) cat)
-                    Hash.insert puffRRHash (drop (10 + length name) cat) (unpackPS n:concat (maybeToMonad mv))
+                    Hash.insert puffRRHash (drop (10 + length name) cat) (unpackPS n:concat (maybeToMonad mv :: [[String]]))
                 _ -> return ()
 
 
@@ -931,7 +932,7 @@ withPrivateFiles action = do
     Posix.setFileCreationMask om
     return v
 
-noBodyWords fl = [x|x@(n,_) <- fl, n /= f_messageBody, n /= f_messageKeyword]
+noBodyWords fl = [x |x@(n,_) <- fl, n /= f_messageBody, n /= f_messageKeyword]
 
 withNBRWorkaround f = do
     System.IO.stdin `seq` return ()
