@@ -68,16 +68,16 @@ ginsuOpts :: IO (Env,[String])
 ginsuOpts = do
     args <- getArgs
     r@(env,_) <- case (getOpt Permute (options ++ privateOptions) args) of
-	   (as,n,[]) -> return (foldr ($) env as ,n)
-    	   (_,_,errs) -> putErrDie (concat errs ++ usage)
+           (as,n,[]) -> return (foldr ($) env as ,n)
+           (_,_,errs) -> putErrDie (concat errs ++ usage)
     case (envVerbose env) of
-	1 -> do
-	    setLogLevel LogInfo
-	    putLog LogNotice $ "Verbosity Level: Info"
-	n | n > 1 -> do
-	    setLogLevel LogDebug
-	    putLog LogNotice $ "Verbosity Level: Debug"
-	_ -> return ()
+        1 -> do
+            setLogLevel LogInfo
+            putLog LogNotice $ "Verbosity Level: Info"
+        n | n > 1 -> do
+            setLogLevel LogDebug
+            putLog LogNotice $ "Verbosity Level: Debug"
+        _ -> return ()
     envAction env
     return r
 

@@ -8,8 +8,8 @@
     Revision:
       ginsu--main--0.6--patch-45
 
-    
-    
+
+
 
     modified files:
      .arch-inventory CWString.hsc Changelog Charset.hs Curses.hsc
@@ -28,8 +28,8 @@
     Revision:
       ginsu--main--0.6--patch-44
 
-    
-    
+
+
 
     modified files:
      Changelog Makefile.am
@@ -42,11 +42,11 @@
     Revision:
       ginsu--main--0.6--patch-43
 
-    Color support 
+    Color support
     major filter changes, based on boolean library now.
-    
-    
-    
+
+
+
 
     new files:
      Boolean/.arch-ids/=id Boolean/Algebra.hs unicode_map.txt
@@ -67,14 +67,14 @@
 2004-08-12 06:06:27 GMT	John Meacham <john@repetae.net>	patch-42
 
     Summary:
-      
+
     Revision:
       ginsu--main--0.6--patch-42
 
     made error messages modal, instead of using status line
     switched to parsec for parsing filters, better error messages
     added general status screen on 'S'
-    added ?encrypted and ?signed 
+    added ?encrypted and ?signed
     added /foo to search everything for foo
     added log buffer on status screen
 
@@ -103,14 +103,14 @@
 2004-07-21 23:50:12 GMT	John Meacham <john@repetae.net>	patch-40
 
     Summary:
-      fix puff parsing bug 
+      fix puff parsing bug
     Revision:
       ginsu--main--0.6--patch-40
 
     parse top level text fragments properly
     create better error messages on malformed puff
     don't try to reconnect to server because of malformed puff
-    
+
 
     modified files:
      Atom.hs Changelog Gale.hs UArrayParser.hs
@@ -135,8 +135,8 @@
     Revision:
       ginsu--main--0.6--patch-38
 
-    
-    
+
+
 
     modified files:
      .arch-inventory Changelog
@@ -149,10 +149,10 @@
     Revision:
       ginsu--main--0.6--patch-37
 
-    no longer cache word-wrapped text. 
+    no longer cache word-wrapped text.
     much more efficient utf8 decoding.
     hash function for atoms better.
-    
+
 
     modified files:
      Atom.hs Changelog Filter.hs Main.hs PackedString.hs
@@ -217,20 +217,20 @@
 2004-07-02 21:12:39 GMT	John Meacham <john@repetae.net>	patch-32
 
     Summary:
-      added azz patches, fix static build 
+      added azz patches, fix static build
     Revision:
       ginsu--main--0.6--patch-32
 
-    
-    
+
+
     Patches applied:
-    
+
      * azz@offog.org--2004/ginsu--azz--0.1--base-0
        tag of john@repetae.net--2004/ginsu--main--0.6--patch-31
-    
+
      * azz@offog.org--2004/ginsu--azz--0.1--patch-1
        don't hide last line when using filters
-    
+
 
     modified files:
      Changelog Main.hs Makefile.am
@@ -303,13 +303,13 @@
 2004-04-23 00:14:58 GMT	John Meacham <john@repetae.net>	patch-26
 
     Summary:
-      AKD wrapup. dates 
+      AKD wrapup. dates
     Revision:
       ginsu--main--0.6--patch-26
 
     PUFF_DATE_FORMAT string similar to 'date' command for how you want the date to
     be displayed in your puff window
-    
+
     participates in AKD semi-properly. populates .gale/auth/cache on its own
 
     modified files:
@@ -328,7 +328,7 @@
     print hash of data fragments
     use ACS macros even if we have wide character support
     made sure it compiles without ncursesw
-    
+
 
     modified files:
      Changelog Curses.hsc KeyCache.hs Puff.hs SHA1.hs configure.in
@@ -346,8 +346,8 @@
     made it use ncursesw if it exists
     uses line drawing characters in display now
     fixed problems with long utf8 lines when ncursesw is installed
-    
-    
+
+
 
     new files:
      ac-macros/.arch-ids/curslib.m4.id
@@ -378,7 +378,7 @@
     Revision:
       ginsu--main--0.6--patch-22
 
-    
+
 
     modified files:
      Changelog GinsuConfig.hs RSA.hsc
@@ -473,7 +473,7 @@
 
     Completly revamped the mark system. now you can set position and filter marks independently
     Workspaces are built on top of the marks.
-    
+
 
     new files:
      DocLike.hs
@@ -490,8 +490,8 @@
     Revision:
       ginsu--main--0.6--patch-14
 
-    
-    
+
+
 
     modified files:
      Changelog ErrorLog.hs
@@ -548,7 +548,7 @@
 2004-03-16 05:31:40 GMT	John Meacham <john@repetae.net>	patch-9
 
     Summary:
-      Key mapping 
+      Key mapping
     Revision:
       ginsu--main--0.6--patch-9
 
@@ -569,7 +569,7 @@
 2004-03-16 00:59:42 GMT	John Meacham <john@repetae.net>	patch-8
 
     Summary:
-      
+
     Revision:
       ginsu--main--0.6--patch-8
 
@@ -642,7 +642,7 @@
 
     goto_match ('v' by default) will extract urls or WikiWords and let you access
     them with a web browser. The mechanism is generic and may extract arbitrary
-    regular expressions and run arbitrary programs on them. 
+    regular expressions and run arbitrary programs on them.
 
     new files:
      Regex.hs
@@ -655,7 +655,7 @@
 2004-03-04 03:49:59 GMT	John Meacham <john@repetae.net>	patch-3
 
     Summary:
-      Cleanups 
+      Cleanups
     Revision:
       ginsu--main--0.6--patch-3
 
@@ -683,8 +683,8 @@
       ginsu--main--0.6--patch-2
 
     fixed filters to use regular expressions. simplified code in several ways.
-    
-    
+
+
 
     modified files:
      Changelog Filter.hs Puff.hs
@@ -709,7 +709,7 @@
     Revision:
       ginsu--main--0.6--base-0
 
-    
+
     (automatically generated log message)
 
     new files:
@@ -731,12 +731,12 @@
 0.5.3
         changed id/class to use '/' convention
         rebindable keys via 'bind' in config file
-        can derive GALE_DOMAIN from GALE_ID if necessary 
+        can derive GALE_DOMAIN from GALE_ID if necessary
         added '?' as extra help key
         fixed problem with generated C code.
 
 0.5.2
-        new pufflog format. 
+        new pufflog format.
         fixed some memory leaks.
         fixed '-e' thanks to Adam Sampson
         builds cleanly with ghc 6.2 now.
@@ -745,7 +745,7 @@
         line editing for entering filters now works. supported are arrow keys,
                 backspace, home,end, ^K to delete to end of line
         added EDITOR_NEWPUFF_OPTION for options to be passed to the editor
-                when puffing to no categories 
+                when puffing to no categories
         added NO_PRESENCE_NOTIFY to stop presence status puffs from being
                 generated.
         changed checkconfig output for GALE_SUBSCRIBE
@@ -767,7 +767,7 @@
         Makefile cleanups
         requires ghc 6.0
         Fixed terminal cooruption caused by nonprintable characters in puffs
-        now uses ISO C90 charset conversion routines. 
+        now uses ISO C90 charset conversion routines.
         fixed some problems with charset detection
         much much improved autoconf/automake setup
         scrolls to bottom of screen on incoming puff when already at bottom only
@@ -788,191 +788,191 @@
 
 
 0.4.6
-	switched to -O2 for performance
-	better locale support.
-	added quit confirmation (shift-Q to quit immediatly)
-	added filter documentation to help screen
-	fixed docs for key notation consistancy
-	added --enable-unopt for unoptimized builds
-	added EDITOR_OPTION to pass arguments to your puff editor
-	added puff sending confirmation screen this lets you
-	    - set return receipts manually
-	    - send anonymous puffs
-	    - reedit puffs 
-	    - abort puffs
-	expanded dialogs
-	
+        switched to -O2 for performance
+        better locale support.
+        added quit confirmation (shift-Q to quit immediatly)
+        added filter documentation to help screen
+        fixed docs for key notation consistancy
+        added --enable-unopt for unoptimized builds
+        added EDITOR_OPTION to pass arguments to your puff editor
+        added puff sending confirmation screen this lets you
+            - set return receipts manually
+            - send anonymous puffs
+            - reedit puffs
+            - abort puffs
+        expanded dialogs
+
 0.4.5
-	changed key notation to angle notation <C-x><space> etc..
-	ON_INCOMING_PUFF works as expected now
-	angle notation can be used in config file.
-	popup informational windows for certain modal actions added
-	scrolling window responds to <PageUp> and <PageDown>
-	cursor handling much more robust/consistant
-	numerous internal changes
-	now compiles via-c for better optimization and profiling
-	'./configure --enable-profile' will enable profiling support.
-	sends \r\n instead of \n because some clients get confused otherwise.
-	ignores SIGPIPE, just in case.
-	fixed space leak on reading pufflog.
+        changed key notation to angle notation <C-x><space> etc..
+        ON_INCOMING_PUFF works as expected now
+        angle notation can be used in config file.
+        popup informational windows for certain modal actions added
+        scrolling window responds to <PageUp> and <PageDown>
+        cursor handling much more robust/consistant
+        numerous internal changes
+        now compiles via-c for better optimization and profiling
+        './configure --enable-profile' will enable profiling support.
+        sends \r\n instead of \n because some clients get confused otherwise.
+        ignores SIGPIPE, just in case.
+        fixed space leak on reading pufflog.
 
 0.4.4
-	implemented full server side of IdleTimeProtocol (by popular request)
-	prettier printing of aliases
-	added --checkconfig to verify configuration. if you are having
-	  trouble, use this.
-	updated man page.
-	doesnt display all whitespace puffs from _gale.* 
+        implemented full server side of IdleTimeProtocol (by popular request)
+        prettier printing of aliases
+        added --checkconfig to verify configuration. if you are having
+          trouble, use this.
+        updated man page.
+        doesnt display all whitespace puffs from _gale.*
 
 0.4.3
-	added presence screen via 'F3', lists all users and their status.
-	answers return reciepts now.
-	notice/presence returns idle time.
-	requests return reciepts on 'private' puffs
-	outgoing 'private' puffs placed in incoming puff queue.
-	'Will' a puff to reset presence when ginsu dies.
-	uses GALE_PRESENCE if set.
-	changed configuration file syntax to match that of .gale/conf
-	added ~i for case insensitive search.
-	updated internal docs
-	outputs error message if it can't parse the MARK_ statements.
-	filter parser now parses () and ; properly.
-	looks for .gpri files
-	uses $GALE_DIR if available.
-	prints out useful preferences to errorlog
-	puff details screen available via 'd'
+        added presence screen via 'F3', lists all users and their status.
+        answers return reciepts now.
+        notice/presence returns idle time.
+        requests return reciepts on 'private' puffs
+        outgoing 'private' puffs placed in incoming puff queue.
+        'Will' a puff to reset presence when ginsu dies.
+        uses GALE_PRESENCE if set.
+        changed configuration file syntax to match that of .gale/conf
+        added ~i for case insensitive search.
+        updated internal docs
+        outputs error message if it can't parse the MARK_ statements.
+        filter parser now parses () and ; properly.
+        looks for .gpri files
+        uses $GALE_DIR if available.
+        prints out useful preferences to errorlog
+        puff details screen available via 'd'
 
 0.4.2
-	handles fragments around security/encryption fragments properly (oops)
-	adds _ginsu.timestamp and _ginsu.spumbuster to incoming puffs now.
-	most errorlog messages supressed unless '-v' (info) or '-vv' (debug)
-	  are specified on the command line.
-	seperated pufflog command line options to allow just not writing to
-	  pufflog (but still read it on startup)
-	tweaked fragment printing in logs to keep them pretty.
-	sanified puff numbering
-	UI much less redraw-crazy. should improve responsiveness.
-	resizing much smarter. still flickers, but not as much.
-	uses $LOGNAME and $USER in preference to getlogin(3)
-	scrollable help screen for small terminals.
-	filters appear on own line when needed.
-	message string used for puff author
-	uses _ginsu.timestamp if no id/time available.
-	added '/' to substring match puffs
-	hides cursor if editor leaves it unhidden.
+        handles fragments around security/encryption fragments properly (oops)
+        adds _ginsu.timestamp and _ginsu.spumbuster to incoming puffs now.
+        most errorlog messages supressed unless '-v' (info) or '-vv' (debug)
+          are specified on the command line.
+        seperated pufflog command line options to allow just not writing to
+          pufflog (but still read it on startup)
+        tweaked fragment printing in logs to keep them pretty.
+        sanified puff numbering
+        UI much less redraw-crazy. should improve responsiveness.
+        resizing much smarter. still flickers, but not as much.
+        uses $LOGNAME and $USER in preference to getlogin(3)
+        scrollable help screen for small terminals.
+        filters appear on own line when needed.
+        message string used for puff author
+        uses _ginsu.timestamp if no id/time available.
+        added '/' to substring match puffs
+        hides cursor if editor leaves it unhidden.
 
 0.4.1
-	SIGWINCH now caught to resize terminal screen (bug 194) 
-	    DISABLE_SIGWINCH is a config option if this is causing trouble
-	now expands to GALE_DOMAIN if no alias matches (bug 200)
-	fix for different versions of OpenSSL (bug 195)
-	.spec file added for building RPMS
-	hsc2hs rebuilds files for all source builds. probably what is wanted.
-	redid Puff deconstruction, now works for more unusual but technically
-	   valid types of puff.
-	added id/instance fragment to satisfy certain loggers
-	made printing of fragment lists cosmetically prettier.
-	added --testCurses to print out some curses debugging info.
-	added --dumpKey to print info about a keyfile.
-	added --errorlog to choose file to output errors too.
-	doesnt get confused by jgaled tracking fragments
-	^L does an endwin >> refresh.
+        SIGWINCH now caught to resize terminal screen (bug 194)
+            DISABLE_SIGWINCH is a config option if this is causing trouble
+        now expands to GALE_DOMAIN if no alias matches (bug 200)
+        fix for different versions of OpenSSL (bug 195)
+        .spec file added for building RPMS
+        hsc2hs rebuilds files for all source builds. probably what is wanted.
+        redid Puff deconstruction, now works for more unusual but technically
+           valid types of puff.
+        added id/instance fragment to satisfy certain loggers
+        made printing of fragment lists cosmetically prettier.
+        added --testCurses to print out some curses debugging info.
+        added --dumpKey to print info about a keyfile.
+        added --errorlog to choose file to output errors too.
+        doesnt get confused by jgaled tracking fragments
+        ^L does an endwin >> refresh.
 
-0.4.0 
-	*** NOW is stand alone. can send signed puffs natively! wing-go! ***
-	reads ~/.gale/aliases/ for aliases
-	uses GALE_DOMAIN, GALE_ID, GALE_NAME as appropriate.
-	simplified Curses interface to take advantage of newer FFI features
-	added simple man page "ginsu (1)"
-	robustified key parsing code. should work with all known styles of key
-	cleaned up location of many routines
-	made it compile when ghc is installed in wierd places
-	added displays to let user know what is happening during delays
-	added -P to stop loading and saving of pufflog.
-	unified private key caching for sending and recieving puffs.
-	key cacheing no longer uses tricky tricks.
-	Sending Puffs is done in background thread in case it takes a while.
-	smarter error handling and retrying. better errorlog format.
-	SIGINT now caught, kills app nicely.
-	added ON_INCOMING_PUFF which is a macro run whenever a puff arrives. *EXP*
+0.4.0
+        *** NOW is stand alone. can send signed puffs natively! wing-go! ***
+        reads ~/.gale/aliases/ for aliases
+        uses GALE_DOMAIN, GALE_ID, GALE_NAME as appropriate.
+        simplified Curses interface to take advantage of newer FFI features
+        added simple man page "ginsu (1)"
+        robustified key parsing code. should work with all known styles of key
+        cleaned up location of many routines
+        made it compile when ghc is installed in wierd places
+        added displays to let user know what is happening during delays
+        added -P to stop loading and saving of pufflog.
+        unified private key caching for sending and recieving puffs.
+        key cacheing no longer uses tricky tricks.
+        Sending Puffs is done in background thread in case it takes a while.
+        smarter error handling and retrying. better errorlog format.
+        SIGINT now caught, kills app nicely.
+        added ON_INCOMING_PUFF which is a macro run whenever a puff arrives. *EXP*
 
 0.3.9
-	added PRESERVED_KEYWORDS which is a list of keywords which should be carried
-	    over when replying to or following up on a puff.
-	BEEP functionality now works when terminal supports it.
-	ON_STARTUP added which is a macro that is run at startup
-	fixed sender vs. author sillyness
-	~t means ~c until category closure code is finished
-	quoting fixed when sending things to the shell.
+        added PRESERVED_KEYWORDS which is a list of keywords which should be carried
+            over when replying to or following up on a puff.
+        BEEP functionality now works when terminal supports it.
+        ON_STARTUP added which is a macro that is run at startup
+        fixed sender vs. author sillyness
+        ~t means ~c until category closure code is finished
+        quoting fixed when sending things to the shell.
 
 0.3.8
-	now utilizes GALE_PROXY if set, otherwise it will only connect to one server
-	all configuration varibles may be set in the enviornment now
-	added locks around errorlog to keep long entries from getting mangled
-	used MVar for reading new config file, potential obscure bug fix.
-	pufflog now atomically replaces pufflog file via renaming, MVars used in BitHandle
-	pufflog is updated every 30 seconds if new puffs have been recieved.
-	** fixed major bug in openssl layer. cleaned up layer and memory usage considerably
-	BitHandle speedups, uses strict fields
+        now utilizes GALE_PROXY if set, otherwise it will only connect to one server
+        all configuration varibles may be set in the enviornment now
+        added locks around errorlog to keep long entries from getting mangled
+        used MVar for reading new config file, potential obscure bug fix.
+        pufflog now atomically replaces pufflog file via renaming, MVars used in BitHandle
+        pufflog is updated every 30 seconds if new puffs have been recieved.
+        ** fixed major bug in openssl layer. cleaned up layer and memory usage considerably
+        BitHandle speedups, uses strict fields
 
 0.3.7
-	fixed some potential problems when compiling with optimization
-	now ~ implicity starts filter addition
-	now compiles with -O -fasm
-	got rid of mySystem wackyness
-	seperated Message out of Puffs (note: add Messages somewhere else)
-	made calling out to external programs more robust
-	pufflog now 'packed'. saves factor of 8
-	code cleanups, moved out Puff and EIO functionality
+        fixed some potential problems when compiling with optimization
+        now ~ implicity starts filter addition
+        now compiles with -O -fasm
+        got rid of mySystem wackyness
+        seperated Message out of Puffs (note: add Messages somewhere else)
+        made calling out to external programs more robust
+        pufflog now 'packed'. saves factor of 8
+        code cleanups, moved out Puff and EIO functionality
 
 0.3.6
-	compose with nothing selected works now
-	added /usr/local as alternate for ghc install
-	added URL's to help screen.
-	changed puff sending keys to p,r,f to match newsreader convention
-	now you add filters with 'c'
-	added PUFFLOG_SIZE config option
-	added EDITOR, GSEND configuration option
-	added -t id/class=ginsu to gsend (doesn't seem to work.)
-	UNICODE support! add a 'CHARSET utf8|latin1|ascii' line to your ginsu.config
-	 make sure your terminal supports the given charset.
+        compose with nothing selected works now
+        added /usr/local as alternate for ghc install
+        added URL's to help screen.
+        changed puff sending keys to p,r,f to match newsreader convention
+        now you add filters with 'c'
+        added PUFFLOG_SIZE config option
+        added EDITOR, GSEND configuration option
+        added -t id/class=ginsu to gsend (doesn't seem to work.)
+        UNICODE support! add a 'CHARSET utf8|latin1|ascii' line to your ginsu.config
+         make sure your terminal supports the given charset.
 
 0.3.5
-	included sample config in binary distribution
-	added ^E ^Y ^F ^B ^U ^D 
-	added 'a' to documentation
-	added emptyPuff thread to help keep gale connections alive. (needs work)
-	added pagedown/pageup with the obvious meaning
-	added 'E' to edit and reload configuration file
-	improved filter parser
-	disposed of unnecisary redraw thread
-	added r,e,c to compose puffs, 'gsend' is needed for sending and $EDITOR
-	   is used for editing the puff.
+        included sample config in binary distribution
+        added ^E ^Y ^F ^B ^U ^D
+        added 'a' to documentation
+        added emptyPuff thread to help keep gale connections alive. (needs work)
+        added pagedown/pageup with the obvious meaning
+        added 'E' to edit and reload configuration file
+        improved filter parser
+        disposed of unnecisary redraw thread
+        added r,e,c to compose puffs, 'gsend' is needed for sending and $EDITOR
+           is used for editing the puff.
 
 0.3.4
-	added '\b' as alias for backspace
-	added '@' and '/' in cat and keyword displays
-	fixed curs_set problem on some terminals
-	added ESC as alternate for help key
-	greatly increased pufflog reading and writing effeciency. (still space inefficient)
-	improved unexpected error handling in some cases.
-	basic cryptography! ginsu will decrypt puffs for which a key can be found in
-	    ~/.gale/auth/private
-	made parsers much more robust against malformed data
-	now writes errors to log file ~/.gale/ginsu.errorlog
+        added '\b' as alias for backspace
+        added '@' and '/' in cat and keyword displays
+        fixed curs_set problem on some terminals
+        added ESC as alternate for help key
+        greatly increased pufflog reading and writing effeciency. (still space inefficient)
+        improved unexpected error handling in some cases.
+        basic cryptography! ginsu will decrypt puffs for which a key can be found in
+            ~/.gale/auth/private
+        made parsers much more robust against malformed data
+        now writes errors to log file ~/.gale/ginsu.errorlog
 
 0.3.3
-	made gale code more robust against network errors
-	finished puff persistance (stored in ~/.gale/ginsu.pufflog)
+        made gale code more robust against network errors
+        finished puff persistance (stored in ~/.gale/ginsu.pufflog)
 
 0.3.2
-	added changelog
-	recenter screen on filter change.
-	added R to reconnect to server
-	added 'f' to add to filter stack
-	started work on s,S
-	add string entry routines (cheezy, needs work)
-	began work on puff persistance
-	
+        added changelog
+        recenter screen on filter change.
+        added R to reconnect to server
+        added 'f' to add to filter stack
+        started work on s,S
+        add string entry routines (cheezy, needs work)
+        began work on puff persistance
+
 0.3.1
-	initial release
+        initial release

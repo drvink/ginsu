@@ -56,14 +56,14 @@ galeDecodeString _ = error "invalid gale string"
 xdrReadUInt :: [Word8] -> ( Word32,[Word8])
 xdrReadUInt (b1:b2:b3:b4:bs) = (x,bs) where
     x = (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
-	    (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
+            (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
 xdrReadUInt bs = error $ "xdrReadUInt " ++ show bs
 
 parseWord32 :: GenParser Word8 Word32
 parseWord32 = do
     [b1,b2,b3,b4] <- parseSome 4
     return $ (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
-	    (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
+            (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
 
 parseLenData = parseWord32 >>= parseSome
 
@@ -86,10 +86,10 @@ getGaleDir :: IO String
 getGaleDir = do
     gd <- GenUtil.lookupEnv "GALE_DIR"
     case gd of
-	Just v -> return $ v ++ "/"
-	Nothing -> do
-	    h <- getEnv "HOME"
-	    return (h ++ "/.gale/")
+        Just v -> return $ v ++ "/"
+        Nothing -> do
+            h <- getEnv "HOME"
+            return (h ++ "/.gale/")
 
 decodeFrags :: Get FragmentList
 decodeFrags = df [] where

@@ -48,8 +48,8 @@ if (!$o{h}) {
 
     while (<$cfd>) {
         next unless /^bind\s+(\S+)\s+(\w+)\s*$/;
-        push @{$cm{$2}}, $1;   
-    } 
+        push @{$cm{$2}}, $1;
+    }
 
 }
 
@@ -58,7 +58,7 @@ if (!$o{h}) {
 print "|| <b>Action Name</b> || <b>Default Key</b> || <b>Description</b> ||\n" unless $o{h};
 
 print "module KeyHelpTable(keyHelpTable) where\n\n" if $o{h};
-print "keyHelpTable gk = [\n" if $o{h};                            
+print "keyHelpTable gk = [\n" if $o{h};
 
 while (<>) {
     next if /^\s*(\#.*)?\s*$/;
@@ -67,6 +67,6 @@ while (<>) {
     key($1, $2),next if /^(\w*)\s*(.+?)?\s*$/;
 }
 
-print "\t ", join("\n\t,", @hs), "\n";
+print "         ", join("\n        ,", @hs), "\n";
 
-print "\t]\n" if $o{h};                            
+print "        ]\n" if $o{h};

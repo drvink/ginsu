@@ -54,20 +54,20 @@ doCheckConfig = do
 
 
     mapM_ putStrLn $ buildTableLL [
-	( "GALE_DIR ",  galeDir),
-	( "GALE_DOMAIN ", galeDomain),
-	( "GALE_ID ", gid),
-	( "GALE_PROXY ", simpleQuote gp),
-	( "GALE_SUBSCRIBE ", unwords (snub galeSubscribe)) ]
+        ( "GALE_DIR ",  galeDir),
+        ( "GALE_DOMAIN ", galeDomain),
+        ( "GALE_ID ", gid),
+        ( "GALE_PROXY ", simpleQuote gp),
+        ( "GALE_SUBSCRIBE ", unwords (snub galeSubscribe)) ]
     when (galeAliases /= []) $ putStrLn $ "GALE_ALIASES \n" ++
-	unlines ( map  (\ (l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
+        unlines ( map  (\ (l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
 
     let p = (galeDir ++ "/auth/private/")
-	knames = [p ++ gid, p ++ gid ++ ".gpri"]
+        knames = [p ++ gid, p ++ gid ++ ".gpri"]
     gn <- (mapM (\fn -> (doesFileExist fn >>= \b -> if b then return (Just fn) else return Nothing)) knames)
     case msum gn of
-	Just fn -> putStrLn $ "Private key found in: " ++ fn
-	Nothing -> putStrLn $ "Private key for '" ++ gid ++ "' not found in " ++ p
+        Just fn -> putStrLn $ "Private key found in: " ++ fn
+        Nothing -> putStrLn $ "Private key for '" ++ gid ++ "' not found in " ++ p
     putStrLn ""
     --putStrLn showKeyInfo
     --kt <- buildKeyTable
@@ -87,12 +87,12 @@ getGaleProxy :: IO [String]
 getGaleProxy = do
     gps <- configLookup "GALE_PROXY"
     case gps of
-	Nothing -> do
-	    v <- configLookup "GALE_DOMAIN"
+        Nothing -> do
+            v <- configLookup "GALE_DOMAIN"
             case v of
                 Just v -> return $ hostStrings v
                 Nothing -> return []
-	(Just x) -> return (words x)
+        (Just x) -> return (words x)
 
 
 getGaleId :: IO String
@@ -118,10 +118,10 @@ getGaleAliases = do
     fs <- handle (\(_ :: IOException) -> return []) $ getDirectoryContents v
     --putLog LogDebug $ "aliases/ " ++ show fs
     let f fn = do
-	--fc <- first [readFile (v ++ fn), readSymbolicLink (v ++ fn)]
+        --fc <- first [readFile (v ++ fn), readSymbolicLink (v ++ fn)]
         fc <- readAlias (v ++ fn)
         --putLog LogDebug $ "readAlias " ++ (v ++ fn) ++ " " ++ fc
-	return (fn, catParseNew fc)
+        return (fn, catParseNew fc)
     tryMapM f fs
 
 

@@ -114,19 +114,19 @@ ff = fa
 fmt :: String -> [F] -> String
 fmt ('%':'%':xs) fs = '%':fmt xs fs
 fmt ('%':xs) (f:fs) =  case xs5 of
-	('\'':cs) -> let (a,b) = gs "" cs in formatString a bp ++ fmt b fs
-	(c:cs) -> f (bp {patternChar = c}) ++ fmt cs fs
-	[] -> []
+        ('\'':cs) -> let (a,b) = gs "" cs in formatString a bp ++ fmt b fs
+        (c:cs) -> f (bp {patternChar = c}) ++ fmt cs fs
+        [] -> []
      where
     bp = pattern {patternSub = ss, patternFlags = flags, patternWidth = w, patternPrecision =  p}
     (flags,xs2) = span (`elem` "# 0-+'") xs
     (w,xs3) = grabNum xs2
     (p,xs4) = case xs3 of
-	('.':xs) -> grabNum xs
-	xs -> (Nothing, xs)
+        ('.':xs) -> grabNum xs
+        xs -> (Nothing, xs)
     (ss,xs5) = case xs4 of
-	('(':xs) -> let (u,v) = span (/= ')') xs in ([u],tail v)
-	xs -> ([],xs)
+        ('(':xs) -> let (u,v) = span (/= ')') xs in ([u],tail v)
+        xs -> ([],xs)
     grabNum xs = let (u,v) = span isDigit xs in if null u then (Nothing,v) else (Just (read u),v)
     gs x ('\'':'\'':cs) = gs ('\'':x) cs
     gs x ('\'':cs) = (reverse x,cs)
@@ -154,7 +154,7 @@ putBase base x = if null v then "0" else v where
     hex = "0123456789abcdef"
     foo 0 = ""
     foo x = let (u,v) = x `divMod` (toInteger base) in
-	(hex !! fromIntegral v) : foo u
+        (hex !! fromIntegral v) : foo u
 
 
 childFmt :: Pattern -> [F] -> String

@@ -24,29 +24,29 @@ hGetRawContents :: Handle -> IO [Word8]
 hGetRawContents h = do
     a <- newArray_ (1,bufSize)
     getall a where
-	getall a = do
-	    sz <- hGetArray h a bufSize
-	    av <- getElems a
-	    if sz == 0 then return [] else do
-		r <- getall a
-		return (take sz av ++ r)
+        getall a = do
+            sz <- hGetArray h a bufSize
+            av <- getElems a
+            if sz == 0 then return [] else do
+                r <- getall a
+                return (take sz av ++ r)
 
 hPutRawContents :: Handle -> [Word8] -> IO ()
 hPutRawContents h xs = do
     a <- newArray_ (1,bufSize)
     prc a h xs where
-	prc _ _ [] = return ()
-	prc a h xs@(_:_) = do
-	    let (ys,zs) = splitAt bufSize xs
-	    if null zs
-	      then do -- work around a ghc bug in hPutArray
-	        let lys = length ys
-		a' <- newListArray (1,lys) ys
-		hPutArray h a' lys
-	      else do
-		zipWithM_ (writeArray a) [1..] ys
-		hPutArray h a bufSize
-		prc a h zs
+        prc _ _ [] = return ()
+        prc a h xs@(_:_) = do
+            let (ys,zs) = splitAt bufSize xs
+            if null zs
+              then do -- work around a ghc bug in hPutArray
+                let lys = length ys
+                a' <- newListArray (1,lys) ys
+                hPutArray h a' lys
+              else do
+                zipWithM_ (writeArray a) [1..] ys
+                hPutArray h a bufSize
+                prc a h zs
 
 
 putRaw :: Handle -> [Word8] -> IO ()
@@ -93,14 +93,14 @@ memoIO :: IO a -> IO a
 memoIO ioa = do
     v <- readIORef var
     case v of
-	Just x -> return x
-	Nothing -> do
-	    x <- ioa
-	    writeIORef var (Just x)
-	    return x
+        Just x -> return x
+        Nothing -> do
+            x <- ioa
+            writeIORef var (Just x)
+            return x
      where
         {-# NOTINLINE var #-}
-	var = unsafePerformIO $ newIORef Nothing
+        var = unsafePerformIO $ newIORef Nothing
 
 getTempFileName :: IO String
 getTempFileName = do

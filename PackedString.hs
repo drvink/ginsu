@@ -20,29 +20,29 @@
 -- changed to a trivial wrapper for Data.ByteString.UTF8 by Dylan Simon
 
 module PackedString (
-	-- * The @PackedString@ type
+        -- * The @PackedString@ type
         PackedString,      -- abstract, instances: Eq, Ord, Show, Typeable
 
          -- * Converting to and from @PackedString@s
-	packString,  -- :: String -> PackedString
-	unpackPS,    -- :: PackedString -> String
+        packString,  -- :: String -> PackedString
+        unpackPS,    -- :: PackedString -> String
         showsPS,
         -- toString,
 --        lengthPS,
 --        utfLengthPS,
 
-	joinPS,      -- :: PackedString -> [PackedString] -> PackedString
-	-- * List-like manipulation functions
-	nilPS,       -- :: PackedString
-	consPS,      -- :: Char -> PackedString -> PackedString
-	nullPS,      -- :: PackedString -> Bool
-	appendPS,    -- :: PackedString -> PackedString -> PackedString
+        joinPS,      -- :: PackedString -> [PackedString] -> PackedString
+        -- * List-like manipulation functions
+        nilPS,       -- :: PackedString
+        consPS,      -- :: Char -> PackedString -> PackedString
+        nullPS,      -- :: PackedString -> Bool
+        appendPS,    -- :: PackedString -> PackedString -> PackedString
 --        foldrPS,
         hashPS,
 --        filterPS,
 --        foldlPS,
 --        headPS,
-	concatPS    -- :: [PackedString] -> PackedString
+        concatPS    -- :: [PackedString] -> PackedString
 
 
 

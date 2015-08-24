@@ -59,7 +59,7 @@ parseBasic = parseMark <|> parseFlag <|> parseSlash <|> parseTwiddle <|> parseAl
     parseTwiddle = do
         char '~'
         f <- satisfy isAlpha
-	option ':' (char ':')
+        option ':' (char ':')
         s <- string
         spaces
         z f s
@@ -94,43 +94,43 @@ parseFilter s = case parse (between spaces eof pb)  "" s  of
 parseFilter :: Monad m => String -> m Filter
 parseFilter = parser (between spaces eof rmp) where
     rmp = do
-	fa <- mp
-	r <- rmp'
-	case r of
-	    [] -> return fa
-	    _ -> return $ FilterOr (fa:r)
+        fa <- mp
+        r <- rmp'
+        case r of
+            [] -> return fa
+            _ -> return $ FilterOr (fa:r)
     rmp' = (do
-	char ';'
-	spaces
-	v <- mp
-	r <- rmp'
-	return (v:r)) <|> return []
+        char ';'
+        spaces
+        v <- mp
+        r <- rmp'
+        return (v:r)) <|> return []
     mp = many1 fp >>= \v -> case v of
-	    [x] -> return x
-	    xs -> return $ FilterAnd xs
+            [x] -> return x
+            xs -> return $ FilterAnd xs
     fp = nf <|> flt <|> pr <|> bool <|> do s <- (token string); liftM (FilterRegex f_messageBody) (compileRx s)
     pr = do
-	char '('
-	spaces
-	v <- rmp
-	char ')'
-	spaces
-	return v
+        char '('
+        spaces
+        v <- rmp
+        char ')'
+        spaces
+        return v
     nf = char '!' >> liftM FilterNot fp
     string = qstring <|> many1 (noneOf " \t\n~'!();%")
     qstring = between (char '\'') (char '\'') $ many ((char '\'' >> char '\'' >> return '\'') <|> noneOf "'")
     bool = do
-	char '%'
-	c <- sat isAlpha
-	spaces
-	return $ b c
+        char '%'
+        c <- sat isAlpha
+        spaces
+        return $ b c
     flt = do
-	char '~'
-	c <- sat isAlpha
-	option ':' (char ':')
-	s <- string
-	spaces
-	z c s
+        char '~'
+        c <- sat isAlpha
+        option ':' (char ':')
+        s <- string
+        spaces
+        z c s
     z 'a' s = return $ FilterAuthor s
     z 'c' s = return $ FilterCategory (catParseNew s)
     z 't' s = return $ FilterCategory (catParseNew s) -- TODO

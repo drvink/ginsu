@@ -51,7 +51,7 @@ withData xs f = BS.unsafeUseAsCStringLen xs (\ (cp,cl) -> f (castPtr cp) (fromIn
 
 returnData :: Int -> (Ptr CUChar -> Ptr CInt -> IO z) -> IO BS.ByteString
 returnData sz f = do
-	alloca $ \bp ->
+        alloca $ \bp ->
             allocaArray sz $ \m -> do
                 f m bp
                 s <- peek bp
@@ -133,9 +133,9 @@ foreign import ccall unsafe "EVP_CIPHER_CTX_cleanup" evpCipherCtxCleanup :: Ptr 
 
 withCipherCtx :: (Ptr EVP_CIPHER_CTX -> IO a) -> IO a
 withCipherCtx action = allocaBytes (#const sizeof(EVP_CIPHER_CTX)) $ \cctx ->
-	    E.bracket_ (evpCipherCtxInit cctx)
-		(evpCipherCtxCleanup cctx)
-		    (action cctx)
+            E.bracket_ (evpCipherCtxInit cctx)
+                (evpCipherCtxCleanup cctx)
+                    (action cctx)
 
 withMdCtx :: (Ptr EVP_MD_CTX -> IO a) -> IO a
 withMdCtx = allocaBytes (#const sizeof(EVP_MD_CTX))
@@ -229,10 +229,10 @@ encryptAll  keys xs = doit' where
 
 foreign import ccall unsafe "BN_bin2bn" bnBin2Bn :: Ptr CUChar -> CInt -> Ptr BIGNUM -> IO (Ptr BIGNUM)
 
-newtype SHA_CTX = SHA_CTX (Ptr SHA_CTX)   
+newtype SHA_CTX = SHA_CTX (Ptr SHA_CTX)
 
-foreign import ccall unsafe "SHA1_Init" sha1Init :: SHA_CTX -> IO () 
-foreign import ccall unsafe "SHA1_Update" sha1Update :: SHA_CTX -> Ptr a -> CULong -> IO () 
+foreign import ccall unsafe "SHA1_Init" sha1Init :: SHA_CTX -> IO ()
+foreign import ccall unsafe "SHA1_Update" sha1Update :: SHA_CTX -> Ptr a -> CULong -> IO ()
 foreign import ccall unsafe "SHA1_Final" sha1Final :: Ptr CChar -> SHA_CTX -> IO ()
 
 
@@ -248,7 +248,7 @@ bsToHex :: BS.ByteString -> String
 bsToHex bs = BS.foldr f [] bs where
     f w = showHex x . showHex y where
         (x,y) = divMod w 16
-        
+
 
 withSHA_CTX :: (SHA_CTX -> IO a) -> IO a
 withSHA_CTX action = allocaBytes (#const sizeof(SHA_CTX)) $ \cctx ->

@@ -2,9 +2,9 @@
 Name:		ginsu
 Version:	0.8.1.1
 Copyright:	2002-2009 John Meacham <john@repetae.net>
-		2011-2012 Dylan Simon <dylan@dylex.net>
+                2011-2012 Dylan Simon <dylan@dylex.net>
 Author:		John Meacham <john@foo.net>
-		Dylan Simon <dylan@dylex.net>
+                Dylan Simon <dylan@dylex.net>
 Maintainer:     dylan@dylex.net
 License:	MIT
 License-File:	LICENSE
@@ -15,21 +15,21 @@ Category:	Network,Console
 Build-Type:	Custom
 Cabal-Version:	>= 1.6
 tested-with:    GHC == 7.8.4, GHC == 7.10.1
-extra-source-files: 
+extra-source-files:
                 configure
                 ginsu.buildinfo.in
                 config.h.in
-		gen_keyhelp.prl
-		actions.def
-		ginsu-mdk 
-		my_curses.h
-		my_rsa.h
-		Boolean/README
-		docs/Changelog.old
-		docs/ginsu-manual.html
-		docs/wiki.css
-		docs/ginsu-manual.txt
-		docs/ginsu.1
+                gen_keyhelp.prl
+                actions.def
+                ginsu-mdk
+                my_curses.h
+                my_rsa.h
+                Boolean/README
+                docs/Changelog.old
+                docs/ginsu-manual.html
+                docs/wiki.css
+                docs/ginsu-manual.txt
+                docs/ginsu.1
 data-files:     ginsu.config.sample
 
 Source-Repository head
@@ -79,7 +79,7 @@ Executable ginsu
                 my_curses.c
                 my_rsa.c
     Include-Dirs: .
-    Build-Depends:	
+    Build-Depends:
                 base >= 4 && < 5,
                 bytestring,
                 old-locale,

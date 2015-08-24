@@ -62,12 +62,12 @@ filters = "\nFilter Reference:\n" ++ indentLines 2 (unlines (buildTableRL [
 
 filterExamples = "Filter Examples:\n"  ++ indentLines 4 (unlines es) where
     es = [
-	"(~a:john@ugcs.caltech.edu)\n  all puffs by john@ugcs",
-	"(~c:pub.tv.buffy ~a:jtr@ofb.net)\n  puffs from jtr and to pub.tv.buffy",
-	"(/ginsu ; ~c:pub.gale.ginsu)\n  puffs containing the word ginsu or directed to pub.comp.ginsu",
-	"(!~k:spoil)\n  no spoilers",
-	"(~c:pub.tv.buffy !~c:pub.meow)\n  puffs to buffy which are not about cats"
-	]
+        "(~a:john@ugcs.caltech.edu)\n  all puffs by john@ugcs",
+        "(~c:pub.tv.buffy ~a:jtr@ofb.net)\n  puffs from jtr and to pub.tv.buffy",
+        "(/ginsu ; ~c:pub.gale.ginsu)\n  puffs containing the word ginsu or directed to pub.comp.ginsu",
+        "(!~k:spoil)\n  no spoilers",
+        "(~c:pub.tv.buffy !~c:pub.meow)\n  puffs to buffy which are not about cats"
+        ]
 
 {-
 

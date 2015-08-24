@@ -51,7 +51,7 @@ PUFF_DATE_FORMAT %a %H:%M:%S
 # MARK_[123..] sets the initial filter for a given marked screen. use the
 # number keys to quickly switch to a mark.
 #
-# the default has '7' show puffs to or from you, 
+# the default has '7' show puffs to or from you,
 # '8' shows traffic about gale and '9' filters spoilers away.
 
 MARK_7 ~c:$GALE_ID ; ~a:$GALE_ID
@@ -60,7 +60,7 @@ MARK_9 !~k:spoil
 
 
 # beep on any puffs matching the following filters
-BEEP ~c:$GALE_ID   
+BEEP ~c:$GALE_ID
 
 
 # number of puffs to store in pufflog on exit.
@@ -70,7 +70,7 @@ PUFFLOG_SIZE 500
 SCROLLBACK_SIZE 0
 
 # charset, one of utf8, latin1, or ascii. if not set, will try to determine it from $LANG
-# this only affects what format it assumes you are editing puffs in. locale settings are 
+# this only affects what format it assumes you are editing puffs in. locale settings are
 # always used for the UI
 #CHARSET latin1
 
@@ -88,8 +88,8 @@ TRIM_BLANKLINES true
 
 BROWSER links
 
-apphook WikiWord 
-        '([[:space:]]|^)(([[:upper:]][[:lower:]]+){2,})([[:space:]]|$)' 
+apphook WikiWord
+        '([[:space:]]|^)(([[:upper:]][[:lower:]]+){2,})([[:space:]]|$)'
         '$BROWSER http://wiki.ofb.net/?$2'
         '$2'
 
@@ -99,10 +99,10 @@ apphook Url
 
 #default key bindings
 
-bind <F1> show_help_screen 
+bind <F1> show_help_screen
 bind ? show_help_screen
-#bind <F2> show_main_index 
-bind <F3> show_presence_status 
+#bind <F2> show_main_index
+bind <F3> show_presence_status
 
 bind j next_puff
 bind k previous_puff
@@ -165,4 +165,4 @@ bind Q fast_quit
 bind <C-l> redraw_screen
 bind v goto_match
 bind S show_status_screen
- 
+

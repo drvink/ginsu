@@ -75,19 +75,19 @@ main = do
     withErrorMessage bugMsg $ do
 
     logname <- case envErrorLog flags of
-	Just x -> return x
-	Nothing -> galeFile "ginsu.errorlog"
+        Just x -> return x
+        Nothing -> galeFile "ginsu.errorlog"
 
     withErrorLog logname $ withStartEndEntrys "Ginsu" $ do
 
     case (envVerbose flags) of
-	1 -> do
-	    setLogLevel LogInfo
-	    putLog LogNotice $ "Verbosity level: Info"
-	n | n > 1 -> do
-	    setLogLevel LogDebug
-	    putLog LogNotice $ "Verbosity level: Debug"
-	_ -> return ()
+        1 -> do
+            setLogLevel LogInfo
+            putLog LogNotice $ "Verbosity level: Info"
+        n | n > 1 -> do
+            setLogLevel LogDebug
+            putLog LogNotice $ "Verbosity level: Debug"
+        _ -> return ()
 
     cs <- configLookup "CHARSET"
 
@@ -119,7 +119,7 @@ main = do
     putLog LogInfo $ "GALE_ID " ++ gid
     putLog LogInfo $ "GALE_PROXY " ++ simpleQuote gp
     putLog LogInfo $ "GALE_ALIASES \n" ++
-	unlines ( map  (\(l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
+        unlines ( map  (\(l,cat) -> "  " ++ l ++ " -> " ++ show cat)  galeAliases)
 
 
     Control.Exception.bracket_ initCurses endWin $ do
@@ -136,8 +136,8 @@ main = do
     Posix.installHandler Posix.sigINT Posix.Ignore Nothing
     Posix.installHandler Posix.sigPIPE Posix.Ignore Nothing
     case (b,cursesSigWinch) of
-	(False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (writeChan ic (MainEventKey KeyResize)))) Nothing >> return ()
-	_ -> return ()
+        (False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (writeChan ic (MainEventKey KeyResize)))) Nothing >> return ()
+        _ -> return ()
 
     gs <- fmap (concat . map words) $ configLookupList "GALE_SUBSCRIBE"
     gps <- getGaleProxy
@@ -182,9 +182,9 @@ pufflogLoop ps_r pcount_r n = do
     n' <- readVal pcount_r
     if n' /= n
         then do
-	    ps <- liftM (map snd) $ readVal ps_r
-	    writePufflog ps
-	    pufflogLoop ps_r pcount_r n'
+            ps <- liftM (map snd) $ readVal ps_r
+            writePufflog ps
+            pufflogLoop ps_r pcount_r n'
         else pufflogLoop ps_r pcount_r n
 
 writePufflog ps = do
@@ -208,9 +208,9 @@ expandAliases cats = do
     as <- getGaleAliases
     gd <- getGaleDomain
     let ec x@(Category (c,"")) = de $ head $ [Category (tc ++ drop (length f) c,td) | (f,Category (tc,td)) <- as, f `isPrefixOf` c] ++ [x]
-	ec x = x
-	de (Category (c,"")) = Category (c,gd)
-	de x = x
+        ec x = x
+        de (Category (c,"")) = Category (c,gd)
+        de x = x
     return $ map ec cats
 
 {-
@@ -268,15 +268,15 @@ puffTemplate = do
     u <- newUnique
     gn <- configLookup "GALE_NAME"
     n <- case gn of
-	Just n -> return ((f_messageSender,FragmentText (packString n)):)
-	Nothing -> return id
+        Just n -> return ((f_messageSender,FragmentText (packString n)):)
+        Nothing -> return id
     let mid = sha1 . LBS.pack $ map (fromIntegral . ord) (show t ++ " " ++ idText ++ " " ++ show (hashUnique u))
     let sig = [Signed (Key gi [])]
     let ef = n [
-	    (f_messageId, FragmentText $ packString $ bsToHex mid),
-	    (fromString "id/class",FragmentText $ packString (package ++ "/" ++ version) ),
-	    (fromString "id/instance", FragmentText $ packString idText),
-	    (f_idTime,FragmentTime t)]
+            (f_messageId, FragmentText $ packString $ bsToHex mid),
+            (fromString "id/class",FragmentText $ packString (package ++ "/" ++ version) ),
+            (fromString "id/instance", FragmentText $ packString idText),
+            (f_idTime,FragmentTime t)]
     return emptyPuff {fragments = ef, signature = sig}
 
 
@@ -371,7 +371,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
     icmain <- newChan
 
     let fsw = newSVarWidget filter_r $ \fs ->
-	    widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (map showFilter fs))
+            widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (map showFilter fs))
 
     selPuff <- newCacheIO $ do
         ps <-  readVal psr
@@ -406,9 +406,9 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                 Right _ -> id
                 Left s -> \w -> widgetVerticalBox False [ne w, (NoExpand,widgetAttr [AttrReverse] (widgetText $ "*** " ++ s ++ " ***"))]
         return $ f $ widgetHorizontalBox False [ne m, (Expand, widgetEmpty), wt "Workspace:", ne ws ,wt " ", ne s, wt " (", ne nf , wt "/", ne pc , wt ") " ]
-    let	keyError s k = messageBox rc fw (s ++ ": " ++ keysToString [k] ++ " -- " ++ helpText) >> return ()
+    let keyError s k = messageBox rc fw (s ++ ": " ++ keysToString [k] ++ " -- " ++ helpText) >> return ()
         setMessage m = messageBox rc fw m >> return ()
-	scrollPuffs x = mapVal yor (+ x)
+        scrollPuffs x = mapVal yor (+ x)
         autoSaveMark = do
             n <- readVal (gsWorkspace gs)
             s <- readVal selected_r
@@ -423,25 +423,25 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
             maybe (return ()) (writeVal selected_r) s
             select_perhaps select_next
             center_puff
-	filter_thread = do
-	    p <-  selPuff
-	    case p of
-		Just (Puff {cats = [c]}) -> modifyFilter (BoolJust (FilterCategory c):)
-		Just (Puff {cats = cs}) -> modifyFilter (or (map (BoolJust . FilterCategory) cs):)
-		_ -> return ()
+        filter_thread = do
+            p <-  selPuff
+            case p of
+                Just (Puff {cats = [c]}) -> modifyFilter (BoolJust (FilterCategory c):)
+                Just (Puff {cats = cs}) -> modifyFilter (or (map (BoolJust . FilterCategory) cs):)
+                _ -> return ()
 
-	addPuff p = do
+        addPuff p = do
             let author = getAuthor p
             Category (name,domain) <- fmap catParseNew getGaleId
-	    case getFragmentString p (f_noticePresence') of
-		Nothing -> return ()
-		Just pn -> do
-		    let np@(a',(b',_)) = (author, (maybe "unknown" unpackPS (getFragmentString p (fromString "id/instance")), unpackPS pn))
-		    mapVal presence_r (\xs -> (np:[x | x@(a,(b,_)) <- xs, a /= a' || b /= b']))
-	    case getFragmentTime p (fromString "status.idle") of
-		Nothing -> return ()
+            case getFragmentString p (f_noticePresence') of
+                Nothing -> return ()
+                Just pn -> do
+                    let np@(a',(b',_)) = (author, (maybe "unknown" unpackPS (getFragmentString p (fromString "id/instance")), unpackPS pn))
+                    mapVal presence_r (\xs -> (np:[x | x@(a,(b,_)) <- xs, a /= a' || b /= b']))
+            case getFragmentTime p (fromString "status.idle") of
+                Nothing -> return ()
                 Just pn | pn == epoch -> Hash.delete idleHash author >> getClockTime >>=  Hash.insert idleHash author
-		Just pn -> do
+                Just pn -> do
                     mt <- Hash.lookup idleHash author
                     Hash.delete idleHash author
                     Hash.insert idleHash author $ fromJust $ max mt (Just pn)
@@ -453,136 +453,136 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                 _ -> return ()
 
 
-	    case getFragmentString p (f_questionReceipt) of
-		Nothing -> return ()
-		Just _ -> buildReciept p >>= \p -> forkIO (galeSendPuff gc p) >> return ()
-	    case fmap unpackPS $ getFragmentString p f_messageBody of
-		Nothing -> return ()
-		Just n -> when (not $ (all isSpace n) && (all (("_gale" `isPrefixOf`) . categoryHead) (cats p))) $ do
+            case getFragmentString p (f_questionReceipt) of
+                Nothing -> return ()
+                Just _ -> buildReciept p >>= \p -> forkIO (galeSendPuff gc p) >> return ()
+            case fmap unpackPS $ getFragmentString p f_messageBody of
+                Nothing -> return ()
+                Just n -> when (not $ (all isSpace n) && (all (("_gale" `isPrefixOf`) . categoryHead) (cats p))) $ do
                     mt <- Hash.lookup idleHash author
                     pn <- getClockTime
                     Hash.insert idleHash author $ fromJust $ max mt (Just pn)
-		    v <- configLookupList "BEEP"
-		    let f = or (rights (map parseFilter v))
-		    when (filterAp f p) Curses.beep
-		    n <- readVal next_r
-		    mapVal next_r (+1)
-		    mapVal pcount_r (+1)
-		    mapVal psr (\ps -> ((n,p):ps))
+                    v <- configLookupList "BEEP"
+                    let f = or (rights (map parseFilter v))
+                    when (filterAp f p) Curses.beep
+                    n <- readVal next_r
+                    mapVal next_r (+1)
+                    mapVal pcount_r (+1)
+                    mapVal psr (\ps -> ((n,p):ps))
                     sbsize <- fmap (read . fromJust) $ configLookup "SCROLLBACK_SIZE"
-		    case sbsize of
-		        0 -> return ()
+                    case sbsize of
+                        0 -> return ()
                         _ -> do
                             let keep = min n sbsize
                             mapVal psr (\ps -> zip [keep, (keep - 1) .. 1] (snds $ take keep ps))
                             mapVal selected_r (\s -> s - (n - keep))
                             mapVal next_r (\s -> s - (n - keep))
-		    select_perhaps select_next
-		    --touchRenderContext rc
-	composePuff :: IO () -> [Category] -> [PackedString] -> IO ()
-	composePuff done cs kwds = do
-	    p <- puffTemplate
-	    editPuff (p {cats = cs, fragments = fragments p ++ [ (f_messageKeyword,FragmentText k) | k <- kwds]}) ic done
-	getPresenceFrags = do
-	    mp <- readVal myPresence
-	    (TOD ct _) <- getClockTime
-	    uaT@(TOD uat _) <- readVal userActionTime
-	    (it,is,notIdle) <- return $ case ct - uat of
-		n | n < idleThreshold -> (epoch," (not idle)",True)
-		n -> (uaT," (" ++ (showDuration n) ++ " idle)",False)
-	    return ([
-		    (f_noticePresence',FragmentText (packString (mp ++ is))),
-		    (fromString "status.presence", FragmentText $ packString mp),
-		    (fromString "status.idle", FragmentTime it)],notIdle)
-	buildReciept p = do
-	    np <- puffTemplate
-	    r <- getFragmentString p (fromString "question.receipt")
-	    gid <- getGaleId
-	    let rid = maybe [] (\x -> [(fromString "receipt.id",FragmentText x)]) $ getFragmentString p (f_messageId)
-	    (pf,_) <- getPresenceFrags
-	    return $ np { cats = [catParseNew (unpackPS r)], fragments = fragments np ++ pf ++ rid ++ [(fromString "answer.receipt",FragmentText $ packString gid)]}
-	presenceLoop = do
-	    let loopIsIdle ct = do
+                    select_perhaps select_next
+                    --touchRenderContext rc
+        composePuff :: IO () -> [Category] -> [PackedString] -> IO ()
+        composePuff done cs kwds = do
+            p <- puffTemplate
+            editPuff (p {cats = cs, fragments = fragments p ++ [ (f_messageKeyword,FragmentText k) | k <- kwds]}) ic done
+        getPresenceFrags = do
+            mp <- readVal myPresence
+            (TOD ct _) <- getClockTime
+            uaT@(TOD uat _) <- readVal userActionTime
+            (it,is,notIdle) <- return $ case ct - uat of
+                n | n < idleThreshold -> (epoch," (not idle)",True)
+                n -> (uaT," (" ++ (showDuration n) ++ " idle)",False)
+            return ([
+                    (f_noticePresence',FragmentText (packString (mp ++ is))),
+                    (fromString "status.presence", FragmentText $ packString mp),
+                    (fromString "status.idle", FragmentTime it)],notIdle)
+        buildReciept p = do
+            np <- puffTemplate
+            r <- getFragmentString p (fromString "question.receipt")
+            gid <- getGaleId
+            let rid = maybe [] (\x -> [(fromString "receipt.id",FragmentText x)]) $ getFragmentString p (f_messageId)
+            (pf,_) <- getPresenceFrags
+            return $ np { cats = [catParseNew (unpackPS r)], fragments = fragments np ++ pf ++ rid ++ [(fromString "answer.receipt",FragmentText $ packString gid)]}
+        presenceLoop = do
+            let loopIsIdle ct = do
                     ct' <- waitJVarEq userActionTime ct
                     notIdle <- sendPresence True
                     if notIdle then loopNotIdle else loopIsIdle ct'
-		loopNotIdle = do
-		    notIdle <- sendPresence False
-		    threadDelay $ (fromIntegral idleThreshold) * 1000000
-		    if notIdle then loopNotIdle else readVal userActionTime >>= loopIsIdle
-	    sendPresence True
-	    loopNotIdle
-	sendPresence sendIfNotIdle = do
+                loopNotIdle = do
+                    notIdle <- sendPresence False
+                    threadDelay $ (fromIntegral idleThreshold) * 1000000
+                    if notIdle then loopNotIdle else readVal userActionTime >>= loopIsIdle
+            sendPresence True
+            loopNotIdle
+        sendPresence sendIfNotIdle = do
             notifyCategory <- getMyNotifyCategory
-	    (pf,notIdle) <- getPresenceFrags
-	    when (sendIfNotIdle || not notIdle) $ do
-		p <- puffTemplate
-		galeSendPuff gc $ p {cats = [notifyCategory], fragments = fragments p ++ pf}
-	    return notIdle
-	gonePresencePuff = do
+            (pf,notIdle) <- getPresenceFrags
+            when (sendIfNotIdle || not notIdle) $ do
+                p <- puffTemplate
+                galeSendPuff gc $ p {cats = [notifyCategory], fragments = fragments p ++ pf}
+            return notIdle
+        gonePresencePuff = do
             notifyCategory <- getMyNotifyCategory
-	    p <- puffTemplate
-	    let ef = [(f_noticePresence' ,FragmentText (toPackedString f_outGone)), (f_noticePresence, FragmentText (toPackedString f_outGone))]
-	    return $ p {cats = [notifyCategory], fragments = fragments p ++ ef }
-	modifyFilter f = do
-	    mapVal filter_r f
-	    select_perhaps select_next >> select_perhaps select_prev
-	    center_puff
-	center_puff = do
-	    (ys,_) <- scrSize
-	    selected <- readVal selected_r
-	    ps <- liftM reverse getFilteredPuffs
-	    let f t (((n,_),h):_) | n == selected = (t,t+h)
-		f t ((_,h):rest) = f (t + h) rest
-		f _ [] = (1000000,0)
-	    let (mn,mx) = (f 0) ps
-	    mapVal yor (min mn)
-	    sh <- statusHeight
-	    mapVal yor (max (mx - (ys - sh) ))
-	is_at_end = do
-	    (ys,_) <- scrSize
-	    bs <- buf_size
-	    sh <- statusHeight
-	    fmap ((max (bs - (ys - sh)) 0) ==) $ readVal yor
+            p <- puffTemplate
+            let ef = [(f_noticePresence' ,FragmentText (toPackedString f_outGone)), (f_noticePresence, FragmentText (toPackedString f_outGone))]
+            return $ p {cats = [notifyCategory], fragments = fragments p ++ ef }
+        modifyFilter f = do
+            mapVal filter_r f
+            select_perhaps select_next >> select_perhaps select_prev
+            center_puff
+        center_puff = do
+            (ys,_) <- scrSize
+            selected <- readVal selected_r
+            ps <- liftM reverse getFilteredPuffs
+            let f t (((n,_),h):_) | n == selected = (t,t+h)
+                f t ((_,h):rest) = f (t + h) rest
+                f _ [] = (1000000,0)
+            let (mn,mx) = (f 0) ps
+            mapVal yor (min mn)
+            sh <- statusHeight
+            mapVal yor (max (mx - (ys - sh) ))
+        is_at_end = do
+            (ys,_) <- scrSize
+            bs <- buf_size
+            sh <- statusHeight
+            fmap ((max (bs - (ys - sh)) 0) ==) $ readVal yor
         scroll_end = do
-	    (ys,_) <- scrSize
-	    bs <- buf_size
-	    sh <- statusHeight
-	    writeVal yor (max (bs - (ys - sh)) 0)
-	doRedraw _ (xs,ys) = do
-	    bs <- buf_size
-	    sh <- statusHeight
-	    mapVal yor (min (max 0 (bs - (ys - sh))))
-	    selected <- readVal selected_r
-	    ps <- getFilteredPuffs
-	    yo <- readVal yor
-	    isRot13 <- readVal rot13_r
-	    let rp _ [] =  return ()
-		rp y (((i,p),n):rest) = do
-		    when ((0,ys) `overlaps` (y - yo, y - yo + n)) $ renderPuff p xs stdScr (y - yo) (xs,ys) (i == selected) (if isRot13 then rot13 else id)
-		    rp (y + n) rest
-	    attemptIO (rp 0 (reverse ps))
-	select_perhaps a = do
-	    ps <- getFilteredPuffs
-	    n <- readVal selected_r
-	    unless (maybe False (const True) $ lookup n (fsts ps)) a
-	select_prev = do
-	    ps <- liftM fsts getFilteredPuffs
-	    let f sel ((n,_):_) | n < sel = n
-		f sel (_:ps) = f sel ps
-		f sel [] = sel
-	    mapVal selected_r (\s ->(f s ps))
-	select_next = do
-	    ps <- liftM fsts getFilteredPuffs
-	    let f sel _ ((n,_):ps) | n > sel = f sel n ps
-		f sel bg ((n,_):ps) | n > sel = f sel bg ps
-		f _ bg _ = bg
-	    mapVal selected_r (\s ->(f s s ps))
+            (ys,_) <- scrSize
+            bs <- buf_size
+            sh <- statusHeight
+            writeVal yor (max (bs - (ys - sh)) 0)
+        doRedraw _ (xs,ys) = do
+            bs <- buf_size
+            sh <- statusHeight
+            mapVal yor (min (max 0 (bs - (ys - sh))))
+            selected <- readVal selected_r
+            ps <- getFilteredPuffs
+            yo <- readVal yor
+            isRot13 <- readVal rot13_r
+            let rp _ [] =  return ()
+                rp y (((i,p),n):rest) = do
+                    when ((0,ys) `overlaps` (y - yo, y - yo + n)) $ renderPuff p xs stdScr (y - yo) (xs,ys) (i == selected) (if isRot13 then rot13 else id)
+                    rp (y + n) rest
+            attemptIO (rp 0 (reverse ps))
+        select_perhaps a = do
+            ps <- getFilteredPuffs
+            n <- readVal selected_r
+            unless (maybe False (const True) $ lookup n (fsts ps)) a
+        select_prev = do
+            ps <- liftM fsts getFilteredPuffs
+            let f sel ((n,_):_) | n < sel = n
+                f sel (_:ps) = f sel ps
+                f sel [] = sel
+            mapVal selected_r (\s ->(f s ps))
+        select_next = do
+            ps <- liftM fsts getFilteredPuffs
+            let f sel _ ((n,_):ps) | n > sel = f sel n ps
+                f sel bg ((n,_):ps) | n > sel = f sel bg ps
+                f _ bg _ = bg
+            mapVal selected_r (\s ->(f s s ps))
 
         fw = widgetVerticalBox False [(ExpandFill, mwidget), (NoExpand, widgetAttr [AttrBold] sb), (NoExpand, fsw)]
-	mwidget = widgetEmpty { render = rnd,  processKey = pk}
-	rnd canvas = doRedraw (origin canvas) (bounds canvas)
-	continue = return True
+        mwidget = widgetEmpty { render = rnd,  processKey = pk}
+        rnd canvas = doRedraw (origin canvas) (bounds canvas)
+        continue = return True
         keyTable' = (map (\(a,b) -> (a, perform_action b)) keyTable)
         pk x = case lookup x keyTable' of
             Nothing -> case x of
@@ -762,53 +762,53 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                             pcw <- puffConfirm gc (setRenderWidget rc fw) p ic
                             setRenderWidget rc pcw
                     continue
-		"redraw_screen" -> attemptIO (touchWin stdScr)  >> resizeRenderContext rc (return ()) >> continue
-		"show_help_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) hw) >> continue
-		"show_status_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) statusWidget) >> continue
-		"show_presence_status" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) presenceWidget) >> continue
+                "redraw_screen" -> attemptIO (touchWin stdScr)  >> resizeRenderContext rc (return ()) >> continue
+                "show_help_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) hw) >> continue
+                "show_status_screen" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) statusWidget) >> continue
+                "show_presence_status" -> setRenderWidget rc (keyCatcherWidget (\_ -> setRenderWidget rc fw >> return True) presenceWidget) >> continue
                 act -> setMessage ("Unknown action: " ++ act ++ " -- " ++ helpText) >> continue
-	puffDetailsWidget p = do
-	    (_,xs) <- scrSize
-	    let pv = newSVarWidget presence_r (presenceViewUser (getAuthor p))
+        puffDetailsWidget p = do
+            (_,xs) <- scrSize
+            let pv = newSVarWidget presence_r (presenceViewUser (getAuthor p))
             wr <- case fmap unpackPS (getFragmentString p (f_messageId)) of
                     Nothing -> return ""
                     Just mid ->  Hash.lookup puffRRHash mid >>= \ml -> case ml of
                         Nothing -> return ""
                         Just ml -> return $ "\nReceieved by:\n" ++ unlines (snub ml)
-	    v <- widgetScroll (widgetVerticalBox False [(NoExpand,widgetText $ chunkText (xs - 1) ((showPuff p) ++ wr)), (NoExpand, widgetText "\n\n\n"), (NoExpand, pv)])
-	    return v
-	justGetKey = readChan ic >>= \v -> case v of
-	    (MainEventPuff p) -> addPuff p >> justGetKey
-	    (MainEventKey k) -> do
-		    getClockTime >>= writeVal userActionTime
-		    return $ keyCanon k
-	    _ -> writeChan icmain v >> justGetKey
-	nextKey = do
-	    ce <- isEmptyChan ic
-	    when ce $ tryDrawRenderContext rc
-	    cemain <- isEmptyChan icmain
-	    v <- if cemain then readChan ic else readChan icmain
-	    case v of
-		(MainEventPuff p) -> do
+            v <- widgetScroll (widgetVerticalBox False [(NoExpand,widgetText $ chunkText (xs - 1) ((showPuff p) ++ wr)), (NoExpand, widgetText "\n\n\n"), (NoExpand, pv)])
+            return v
+        justGetKey = readChan ic >>= \v -> case v of
+            (MainEventPuff p) -> addPuff p >> justGetKey
+            (MainEventKey k) -> do
+                    getClockTime >>= writeVal userActionTime
+                    return $ keyCanon k
+            _ -> writeChan icmain v >> justGetKey
+        nextKey = do
+            ce <- isEmptyChan ic
+            when ce $ tryDrawRenderContext rc
+            cemain <- isEmptyChan icmain
+            v <- if cemain then readChan ic else readChan icmain
+            case v of
+                (MainEventPuff p) -> do
                     v <- is_at_end
-		    addPuff p
+                    addPuff p
                     when v scroll_end
-		    s <- configLookupElse "ON_INCOMING_PUFF" ""
-		    mapM_ (processKey mwidget) (stringToKeys s)
-		    nextKey
-		(MainEventKey KeyResize) ->  nextKey
-		(MainEventKey k) -> do
-		    getClockTime >>= writeVal userActionTime
-		    b <- keyRenderContext rc $ keyCanon k
-		    if b then nextKey else return ()
-		(MainEventComposed ep done) -> do
-		    case ep of
-			Nothing -> setMessage "Puff cancelled"
-			Just p -> do
-			    pcw <- puffConfirm gc done p ic
-			    setRenderWidget rc pcw
-		    writeVal editing_r False
-		    nextKey
+                    s <- configLookupElse "ON_INCOMING_PUFF" ""
+                    mapM_ (processKey mwidget) (stringToKeys s)
+                    nextKey
+                (MainEventKey KeyResize) ->  nextKey
+                (MainEventKey k) -> do
+                    getClockTime >>= writeVal userActionTime
+                    b <- keyRenderContext rc $ keyCanon k
+                    if b then nextKey else return ()
+                (MainEventComposed ep done) -> do
+                    case ep of
+                        Nothing -> setMessage "Puff cancelled"
+                        Just p -> do
+                            pcw <- puffConfirm gc done p ic
+                            setRenderWidget rc pcw
+                    writeVal editing_r False
+                    nextKey
     np <- configLookupBool "NO_PRESENCE_NOTIFY"
 
     done <- if np then return (return ()) else do
@@ -855,13 +855,13 @@ renderPuff p@(Puff {cats =cats, fragments = frags}) mw w y (_,ys) selected textF
         c = fromIntegral $ hashPS (packString (x ++ "@" ++ y))
     doit = do
         let ac = fromIntegral $ hashPS $ packString (getAuthor p)
-	when (y >= 0 && y < ys) $ do
-	    wmove w y 0
-	    when selected $ standout >> return ()
-	    sequence (intersperse (space w) $ map (addCat w) cats)
-	    when selected $ standend >> return ()
-	    space w >> space w
-	    when selected $ standout >> return ()
+        when (y >= 0 && y < ys) $ do
+            wmove w y 0
+            when selected $ standout >> return ()
+            sequence (intersperse (space w) $ map (addCat w) cats)
+            when selected $ standend >> return ()
+            space w >> space w
+            when selected $ standout >> return ()
             waddstr w (unwords (map (('/':) . unpackPS)  kwds))
             Just fmt <- configLookup "PUFF_DATE_FORMAT"
             st <-  fmap (formatCalendarTime defaultTimeLocale fmt) $ toCalendarTime time
@@ -1084,28 +1084,28 @@ commandRead ic win yloc prompt init = withCursor CursorVisible  $ cr (length ini
     where
     l n v = min (max n 0) (length v)
     cr cloc v = pc cloc v >> ic >>= \x -> case x of
-	(KeyChar '\n') -> return $ return (reverse v)
-	(KeyChar '\r') -> return $ return (reverse v)
-	(KeyEnter) -> return $ return (reverse v)
-	(KeyChar '\b') -> let z = (let (a,b) = splitAt (length v - cloc) v in a ++ drop 1 b) in  cr (l (cloc - 1) z) z
-	(KeyBackspace) -> let z = (let (a,b) = splitAt (length v - cloc) v in a ++ drop 1 b) in  cr (l (cloc - 1) z) z
+        (KeyChar '\n') -> return $ return (reverse v)
+        (KeyChar '\r') -> return $ return (reverse v)
+        (KeyEnter) -> return $ return (reverse v)
+        (KeyChar '\b') -> let z = (let (a,b) = splitAt (length v - cloc) v in a ++ drop 1 b) in  cr (l (cloc - 1) z) z
+        (KeyBackspace) -> let z = (let (a,b) = splitAt (length v - cloc) v in a ++ drop 1 b) in  cr (l (cloc - 1) z) z
         (KeyHome) -> cr 0 v
         (KeyEnd) -> cr (length v) v
         (KeyLeft) -> cr (l (cloc - 1) v) v
         (KeyRight) -> cr (l (cloc + 1) v) v
         (KeyChar '\x0B') -> cr cloc (drop (length v - cloc) v)
         (KeyChar '\BEL') -> return (fail "")
-	(KeyChar c) -> cr (cloc + 1) (let (a,b) = splitAt (length v - cloc) v in a ++ [c] ++ b)
+        (KeyChar c) -> cr (cloc + 1) (let (a,b) = splitAt (length v - cloc) v in a ++ [c] ++ b)
 
-	_ -> return (fail "unknown key")
+        _ -> return (fail "unknown key")
     pc cloc v = do
-	wmove win yloc 0
-	wClrToEol win
-	wAttrOn win attrBold
-	waddstr win prompt
-	wAttrOff win attrBold
-	waddstr win (reverse v)
-	wmove win yloc (cloc + length prompt)
-	refresh
+        wmove win yloc 0
+        wClrToEol win
+        wAttrOn win attrBold
+        waddstr win prompt
+        wAttrOff win attrBold
+        waddstr win (reverse v)
+        wmove win yloc (cloc + length prompt)
+        refresh
 
 

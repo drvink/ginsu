@@ -117,10 +117,10 @@ resizeRenderContext rc action = swapMVar (needsResize rc) True >>= \x -> unless 
 tryDrawRenderContext rc = do
     y <- swapMVar (needsResize rc) False
     withMVar (drawingStuff rc) $ \(z,_,_) -> do
-	erase
-	when y (attemptIO endWin >> refresh)
-	z
-	refresh
+        erase
+        when y (attemptIO endWin >> refresh)
+        z
+        refresh
 
 setRenderContext rc dr = do
     modifyMVar_ (drawingStuff rc)  $ \(_,_,final) -> do
@@ -133,9 +133,9 @@ setRenderWidget rc w = do
     final
     --touchRenderContext rc
     return (wdr, processKey w, return (){-, nf-}) where
-	wdr = do
-	    c <- newCanvas
-	    {- eannM ("doRender " ++ show c) $ -}
+        wdr = do
+            c <- newCanvas
+            {- eannM ("doRender " ++ show c) $ -}
             render w c
 
 keyRenderContext :: RenderContext -> Key -> IO Bool
@@ -178,15 +178,15 @@ withAttr canvas attr action = E.bracket (wAttrGet w) (wAttrSet w) f where
 
 drawString :: Canvas -> String -> IO ()
 drawString canvas s = {- eannM (fmtSs "drawString %s %s" [(show canvas), s]) $ -} ds ml yb (origin canvas) where
-	ds (s:ls) yb (x,y) | yb > 0 = tryIO (mvWAddStr (window canvas) y x (take xb s)) >> ds ls (yb - 1) (x,y + 1)
-	ds _ _ _ = return ()
-	(xb,yb) = bounds canvas
-	ls = lines s
-	(wx,wy) = widgetOrigin canvas
-	ml = map (mv ' ' wx) (mv "" wy ls)
-	mv _ 0 ss = ss
-	mv _ n ss | n > 0 = drop n ss
-	mv ec n ss = replicate (0 - n) ec ++ ss
+        ds (s:ls) yb (x,y) | yb > 0 = tryIO (mvWAddStr (window canvas) y x (take xb s)) >> ds ls (yb - 1) (x,y + 1)
+        ds _ _ _ = return ()
+        (xb,yb) = bounds canvas
+        ls = lines s
+        (wx,wy) = widgetOrigin canvas
+        ml = map (mv ' ' wx) (mv "" wy ls)
+        mv _ 0 ss = ss
+        mv _ n ss | n > 0 = drop n ss
+        mv ec n ss = replicate (0 - n) ec ++ ss
 
 
 boundCanvas :: Maybe Int -> Maybe Int -> Canvas -> Canvas
@@ -200,12 +200,12 @@ boundCanvas mx my canvas = (canvas {bounds = (nx,ny)}) where
 
 renderCentered :: Widget -> Canvas -> IO ()
 renderCentered w canvas = do
-	(xs,ys) <- getBounds w
-	let (xs',ys') =  bounds canvas
-	    f cs ws | ws >= cs = 0
-	    f cs ws = (cs - ws) `div` 2
-	    nc = (canvasTranslate canvas (f xs' xs,f ys' ys))
-	renderChild w nc {bounds=(min xs $ fst $ bounds nc ,min ys $ snd $ bounds nc)}
+        (xs,ys) <- getBounds w
+        let (xs',ys') =  bounds canvas
+            f cs ws | ws >= cs = 0
+            f cs ws = (cs - ws) `div` 2
+            nc = (canvasTranslate canvas (f xs' xs,f ys' ys))
+        renderChild w nc {bounds=(min xs $ fst $ bounds nc ,min ys $ snd $ bounds nc)}
 
 
 renderChild :: Widget -> Canvas -> IO ()
@@ -229,19 +229,19 @@ childrenWidget ws = emptyWidget {processKey = pk} where
     pk k = tk ws k
     tk [] _ = return False
     tk (w:ws) k = do
-	b <- processKey w k
-	if b then return True else tk ws k
+        b <- processKey w k
+        if b then return True else tk ws k
 -- layout widgets
 
 -- | centers child widget, causes child to not use any extra space.
 centerWidget :: Widget -> Widget
 centerWidget w = w {render = rst} where
     rst canvas = do
-	(xs,ys) <- getBounds w
-	let (xs',ys') =  bounds canvas
-	renderChild w (canvasTranslate canvas (f xs' xs,f ys' ys)) {bounds=(min xs $ fst $ bounds canvas ,min ys $ snd $ bounds canvas)} where
-	    f cs ws | ws >= cs = 0
-	    f cs ws = (cs - ws) `div` 2
+        (xs,ys) <- getBounds w
+        let (xs',ys') =  bounds canvas
+        renderChild w (canvasTranslate canvas (f xs' xs,f ys' ys)) {bounds=(min xs $ fst $ bounds canvas ,min ys $ snd $ bounds canvas)} where
+            f cs ws | ws >= cs = 0
+            f cs ws = (cs - ws) `div` 2
 
 
 -- General Widgets
@@ -251,18 +251,18 @@ newScrollWidget :: Widget -> IO Widget
 newScrollWidget w = do
     yr <- newMVar 0
     let rst canvas = do
-	    y <- readMVar yr
-	    renderChild w (canvasWTranslate canvas (0,y))
-	pk (KeyChar 'j') = modifyMVar_ yr (\x -> return $ x + 1) >> keyDone
-	pk KeyDown = modifyMVar_ yr (\x -> return $ x + 1) >> keyDone
-	pk (KeyChar 'k') = modifyMVar_ yr (\x -> return $ x - 1) >> keyDone
-	pk KeyUp = modifyMVar_ yr (\x -> return $ x - 1) >> keyDone
-	pk KeyHome = swapMVar yr 0 >> keyDone
-	pk (KeyChar 'g') = swapMVar yr 0 >> keyDone
-	pk KeyNPage = modifyMVar_ yr (\x -> return $ x + 25) >> keyDone
-	pk KeyPPage = modifyMVar_ yr (\x -> return $ x - 25) >> keyDone
-	pk k = processKey w k
-	keyDone = modifyMVar_ yr (\x -> return  (max 0 x)) >> return True
+            y <- readMVar yr
+            renderChild w (canvasWTranslate canvas (0,y))
+        pk (KeyChar 'j') = modifyMVar_ yr (\x -> return $ x + 1) >> keyDone
+        pk KeyDown = modifyMVar_ yr (\x -> return $ x + 1) >> keyDone
+        pk (KeyChar 'k') = modifyMVar_ yr (\x -> return $ x - 1) >> keyDone
+        pk KeyUp = modifyMVar_ yr (\x -> return $ x - 1) >> keyDone
+        pk KeyHome = swapMVar yr 0 >> keyDone
+        pk (KeyChar 'g') = swapMVar yr 0 >> keyDone
+        pk KeyNPage = modifyMVar_ yr (\x -> return $ x + 25) >> keyDone
+        pk KeyPPage = modifyMVar_ yr (\x -> return $ x - 25) >> keyDone
+        pk k = processKey w k
+        keyDone = modifyMVar_ yr (\x -> return  (max 0 x)) >> return True
     return w {processKey = pk, render = rst}
 
 
@@ -271,14 +271,14 @@ boxWidget :: Widget -> Widget
 boxWidget w = w {render = rst, getBounds = gb} where
     gb = getBounds w >>= \(x,y) -> return (x + 2, y + 2)
     rst canvas@(Canvas {bounds = (xb,yb)}) = do
-	-- let tb = '+' : (replicate (xb - 2) '-' ++ "+")
-	let tb = ulCorner ++ (replicate (xb - 2) hLine ++ urCorner)
-	    bb = llCorner ++ (replicate (xb - 2) hLine ++ lrCorner)
-	    bc c@(Canvas {bounds = (xb,yb)}) = c {bounds = (max (xb - 1) 0, max (yb - 1) 0)}
-	renderChild w (canvasTranslate (bc canvas) (1,1))	
-	drawString canvas tb
-	drawString (canvasTranslate canvas (0,yb - 1)) bb
-	sequence_ [drawString (canvasTranslate canvas (xt,yt)) (vLine :: String) | yt <- [1..yb - 2], xt <- [0,xb - 1]]
+        -- let tb = '+' : (replicate (xb - 2) '-' ++ "+")
+        let tb = ulCorner ++ (replicate (xb - 2) hLine ++ urCorner)
+            bb = llCorner ++ (replicate (xb - 2) hLine ++ lrCorner)
+            bc c@(Canvas {bounds = (xb,yb)}) = c {bounds = (max (xb - 1) 0, max (yb - 1) 0)}
+        renderChild w (canvasTranslate (bc canvas) (1,1))
+        drawString canvas tb
+        drawString (canvasTranslate canvas (0,yb - 1)) bb
+        sequence_ [drawString (canvasTranslate canvas (xt,yt)) (vLine :: String) | yt <- [1..yb - 2], xt <- [0,xb - 1]]
 
 
 {-
@@ -293,7 +293,7 @@ staticText s = emptyWidget {render = rst, getBounds = return bounds } where
     rst canvas = drawString canvas s
 
 
-	
+
 
 
 verticalBox :: [(Packing,Widget)] -> [(Packing,Widget)] -> Widget
@@ -302,26 +302,26 @@ verticalBox starts ends = (childrenWidget aw) {render = rd, getBounds = gb} wher
     awp = if any isExpand $ fsts awpb then awpb else starts ++ [(Expand,emptyWidget)] ++ ends
     aw = snds awp
     gb = do
-	(xs,ys) <- fmap unzip $ mapM getBounds aw
-	return (maximum xs, sum ys)
+        (xs,ys) <- fmap unzip $ mapM getBounds aw
+        return (maximum xs, sum ys)
     rd canvas = do
-	let (_,yb) = bounds canvas
+        let (_,yb) = bounds canvas
         --let ywo = snd $ widgetOrigin $ canvas
-	(_,ys) <- gb
-	let ne = length (filter isExpand $ fsts awp)
-	    el = if yb > ys then splitSpace (yb - ys) ne else replicate ne 0
-	    f ((e:es),canvas) (ps,w) | isExpand ps = do
-		(_,wby) <- getBounds w
-		if isFill ps then
-		    renderChild w (boundCanvas Nothing (Just (wby + e)) canvas)
-			else renderCentered w (boundCanvas Nothing (Just (wby + e)) canvas)
-		return (es,canvasTranslate canvas (0,wby + e))
-	    f (es,canvas) (_,w) = do
-		(_,wby) <- getBounds w
-		--renderCentered w (boundCanvas Nothing (Just wby) canvas)
-		renderChild w (boundCanvas Nothing (Just wby) canvas)
-		return (es,canvasTranslate canvas (0,wby))
-	foldlM_ f (el,canvas) awp
+        (_,ys) <- gb
+        let ne = length (filter isExpand $ fsts awp)
+            el = if yb > ys then splitSpace (yb - ys) ne else replicate ne 0
+            f ((e:es),canvas) (ps,w) | isExpand ps = do
+                (_,wby) <- getBounds w
+                if isFill ps then
+                    renderChild w (boundCanvas Nothing (Just (wby + e)) canvas)
+                        else renderCentered w (boundCanvas Nothing (Just (wby + e)) canvas)
+                return (es,canvasTranslate canvas (0,wby + e))
+            f (es,canvas) (_,w) = do
+                (_,wby) <- getBounds w
+                --renderCentered w (boundCanvas Nothing (Just wby) canvas)
+                renderChild w (boundCanvas Nothing (Just wby) canvas)
+                return (es,canvasTranslate canvas (0,wby))
+        foldlM_ f (el,canvas) awp
 
 
 horizontalBox :: [(Packing,Widget)] -> [(Packing,Widget)] -> Widget
@@ -330,60 +330,60 @@ horizontalBox starts ends = (childrenWidget aw) {render = rd, getBounds = gb } w
     awp = if any isExpand $ fsts awpb then awpb else starts ++ [(Expand,emptyWidget)] ++ ends
     aw = snds awp
     gb = do
-	(xs,ys) <- fmap unzip $ mapM getBounds aw
-	return (sum xs, maximum ys)
+        (xs,ys) <- fmap unzip $ mapM getBounds aw
+        return (sum xs, maximum ys)
     rd canvas = do
-	let (xb,_) = bounds canvas
-	(xs,_) <- gb
-	let ne = length (filter isExpand $ fsts awp)
-	    el = if xb > xs then splitSpace (xb - xs) ne else replicate ne 0
-	    f ((e:es),canvas) (ps,w) | isExpand ps = do
-		(wbx,_) <- getBounds w
-		if isFill ps then
-		    renderChild w (boundCanvas (Just (wbx + e)) Nothing canvas)
-			else renderCentered w (boundCanvas (Just (wbx + e)) Nothing canvas)
-		return (es,canvasTranslate canvas (wbx + e,0))
-	    f (es,canvas) (_,w) = do
-		(wbx,_) <- getBounds w
-		--renderCentered w (boundCanvas (Just wbx) Nothing canvas)
-		renderChild w (boundCanvas (Just wbx) Nothing canvas)
-		return (es,canvasTranslate canvas (wbx,0))
-	foldlM_ f (el,canvas) awp
+        let (xb,_) = bounds canvas
+        (xs,_) <- gb
+        let ne = length (filter isExpand $ fsts awp)
+            el = if xb > xs then splitSpace (xb - xs) ne else replicate ne 0
+            f ((e:es),canvas) (ps,w) | isExpand ps = do
+                (wbx,_) <- getBounds w
+                if isFill ps then
+                    renderChild w (boundCanvas (Just (wbx + e)) Nothing canvas)
+                        else renderCentered w (boundCanvas (Just (wbx + e)) Nothing canvas)
+                return (es,canvasTranslate canvas (wbx + e,0))
+            f (es,canvas) (_,w) = do
+                (wbx,_) <- getBounds w
+                --renderCentered w (boundCanvas (Just wbx) Nothing canvas)
+                renderChild w (boundCanvas (Just wbx) Nothing canvas)
+                return (es,canvasTranslate canvas (wbx,0))
+        foldlM_ f (el,canvas) awp
 
 homVerticalBox :: [(Packing,Widget)] -> Widget
 homVerticalBox awp = (childrenWidget aw) {render = rd, getBounds = gb } where
     aw = snds awp
     gb = do
-	(xs,ys) <- fmap unzip $ mapM getBounds aw
-	return (maximum xs, (maximum ys) * length aw)
+        (xs,ys) <- fmap unzip $ mapM getBounds aw
+        return (maximum xs, (maximum ys) * length aw)
     rd canvas = do
-	let (_,yb) = bounds canvas
-	    el = splitSpace yb (length aw)
-	    f ([],_) _ = error "no space to split"
-	    f ((e:es),canvas) (ps,w)  = do
-		if isFill ps then
-		    renderChild w (boundCanvas Nothing (Just e) canvas)
-			else renderCentered w (boundCanvas Nothing (Just e) canvas)
-		return (es,canvasTranslate canvas (0,e))
-	foldlM_ f (el,canvas) awp
+        let (_,yb) = bounds canvas
+            el = splitSpace yb (length aw)
+            f ([],_) _ = error "no space to split"
+            f ((e:es),canvas) (ps,w)  = do
+                if isFill ps then
+                    renderChild w (boundCanvas Nothing (Just e) canvas)
+                        else renderCentered w (boundCanvas Nothing (Just e) canvas)
+                return (es,canvasTranslate canvas (0,e))
+        foldlM_ f (el,canvas) awp
 
 
 homHorizontalBox :: [(Packing,Widget)] -> Widget
 homHorizontalBox awp = (childrenWidget aw) {render = rd, getBounds = gb } where
     aw = snds awp
     gb = do
-	(xs,ys) <- fmap unzip $ mapM getBounds aw
-	return (maximum xs * length aw, maximum ys)
+        (xs,ys) <- fmap unzip $ mapM getBounds aw
+        return (maximum xs * length aw, maximum ys)
     rd canvas = do
-	let (xb,_) = bounds canvas
-	    el = splitSpace xb (length aw)
-	    f ([],_) _ = error "no space to split"
-	    f ((e:es),canvas) (ps,w)  = do
-		if isFill ps then
-		    renderChild w (boundCanvas (Just e) Nothing canvas)
-			else renderCentered w (boundCanvas (Just e) Nothing canvas)
-		return (es,canvasTranslate canvas (e,0))
-	foldlM_ f (el,canvas) awp
+        let (xb,_) = bounds canvas
+            el = splitSpace xb (length aw)
+            f ([],_) _ = error "no space to split"
+            f ((e:es),canvas) (ps,w)  = do
+                if isFill ps then
+                    renderChild w (boundCanvas (Just e) Nothing canvas)
+                        else renderCentered w (boundCanvas (Just e) Nothing canvas)
+                return (es,canvasTranslate canvas (e,0))
+        foldlM_ f (el,canvas) awp
 
 splitSpace m n = f (m `mod` n) $ replicate n (m `div` n) where
     f 0 xs = xs
@@ -391,21 +391,21 @@ splitSpace m n = f (m `mod` n) $ replicate n (m `div` n) where
     f n' [] = errorf "splitSpace %i %i (f %i []): this can't happen." [fi m, fi n, fi n']
 
 
-	
+
 newSVarWidget :: (Readable c ) => c a -> (a -> Widget) -> Widget
 newSVarWidget sv f = emptyWidget {render = rw, getBounds = gb} where
     rw canvas = do
-	v <- readVal sv
-	render (f v) canvas
+        v <- readVal sv
+        render (f v) canvas
     gb = do
-	v <- readVal sv
-	getBounds (f v)
+        v <- readVal sv
+        getBounds (f v)
 
 dynamicWidget :: IO Widget -> Widget
 dynamicWidget w = emptyWidget {render = rw, getBounds = gb, processKey = pk {- , processEvent = pe -} } where
     rw canvas = do
-	v <- w
-	render v canvas
+        v <- w
+        render v canvas
     gb = w >>= getBounds
     pk k = w >>= \x -> processKey x k
 --    pe a b = w >>= \x -> processEvent x a b
@@ -417,8 +417,8 @@ stackedWidgets [] = widgetEmpty
 stackedWidgets ws@(w:_) = widgetEmpty { render = rnd, processKey = \k -> processKey w k, getBounds = gb  } where
     rnd canvas = mapM_ (flip render canvas) (reverse ws)
     gb = do
-	bs <- mapM getBounds ws
-	return $ (liftT2 (maximum, maximum)) (unzip bs)
+        bs <- mapM getBounds ws
+        return $ (liftT2 (maximum, maximum)) (unzip bs)
 
 {-
 newAlternate :: Widget -> IO (Widget, Alternate)
@@ -427,29 +427,29 @@ newAlternate w = do
     final <- connect (changedSignal w) (\() -> signal sig ())
     r <- newMVar (w,final)
     let w = emptyWidget {render = rw, getBounds = gb, processKey = pk }
-	rw canvas = do
-	    (w,_) <- readMVar r
-	    renderChild w canvas
-	gb = do
-	    (w,_) <- readMVar r
-	    getBounds w
-	pk k = do
-	    (w,_) <- readMVar r
-	    processKey w k
+        rw canvas = do
+            (w,_) <- readMVar r
+            renderChild w canvas
+        gb = do
+            (w,_) <- readMVar r
+            getBounds w
+        pk k = do
+            (w,_) <- readMVar r
+            processKey w k
     return (w,Alternate r sig)
 
 
 switchAlternate :: Alternate -> Widget -> IO ()
 switchAlternate (Alternate mv sig) w = (modifyMVar_ mv $ \(_,final) ->
-	(final >> connect (changedSignal w) (\() -> signal sig ()) >>= \nf -> return (w,nf)))
-	    >> signal sig ()
+        (final >> connect (changedSignal w) (\() -> signal sig ()) >>= \nf -> return (w,nf)))
+            >> signal sig ()
 -}
 
 keyCatcherWidget :: (Curses.Key -> IO Bool) -> Widget -> Widget
 keyCatcherWidget kr w = w {processKey = kr'} where
     kr' k = do
-	b <- processKey w k
-	if b then return True else (kr k)
+        b <- processKey w k
+        if b then return True else (kr k)
 
 attrWidget :: Attr -> Widget -> Widget
 attrWidget a w = w {render = nr} where

@@ -82,12 +82,12 @@ hPutStr_v = unsafePerformIO $ newMVar hPutStr
 -- to stderr. note, that while the errorlog will function properly with concurrent
 -- applications, a single errorlog is shared by all threads.
 withErrorLog :: String    -- ^ filename of log
-		-> IO a      -- ^ action to execute with logging to file
-		-> IO a
+                -> IO a      -- ^ action to execute with logging to file
+                -> IO a
 withErrorLog "-" action = bracket (swapMVar ior stderr) (swapMVar ior) (\_ -> action)
 withErrorLog fn action = E.bracket (openFile fn WriteMode) hClose $ \h -> do
-	hSetBuffering h LineBuffering
-	bracket (swapMVar ior h) (swapMVar ior) (\_ -> action)
+        hSetBuffering h LineBuffering
+        bracket (swapMVar ior h) (swapMVar ior) (\_ -> action)
 
 -- | sets log level to new value, returns old log level.
 setLogLevel :: LogLevel -> IO LogLevel
@@ -97,14 +97,14 @@ setLogLevel ll = swapMVar log_level ll
 -- If the action throws an exception, it will be logged along with the
 -- exit entry.
 withStartEndEntrys :: String  -- ^ title to use in log entries
-		      -> IO a    -- ^ action to execute
-		      -> IO a
+                      -> IO a    -- ^ action to execute
+                      -> IO a
 withStartEndEntrys n action = do
     gct >>= \ct -> putLogLn (ct ++ " " ++ n ++ " Starting")
     handle
-	(\(e :: SomeException) -> gct >>= \ct -> putLogException (ct ++ " " ++ n ++ " Ending due to Exception:" ) e >> throw e)
-	(action >>= \r -> gct >>= \ct -> putLogLn (ct ++ " " ++ n ++ " Ending") >> return r) where
-	    gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
+        (\(e :: SomeException) -> gct >>= \ct -> putLogException (ct ++ " " ++ n ++ " Ending due to Exception:" ) e >> throw e)
+        (action >>= \r -> gct >>= \ct -> putLogLn (ct ++ " " ++ n ++ " Ending") >> return r) where
+            gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
 
 
 -- | run an action, printing an error message to the log if it ends with an exception.
@@ -112,9 +112,9 @@ withStartEndEntrys n action = do
 withErrorMessage :: String -> IO a -> IO a
 withErrorMessage n action = do
     handle
-	(\(e :: SomeException) -> gct >>= \ct -> putLogLn (normalize n ++ ct ++ " Ending due to Exception:\n" ++ indent 4 (show e) ) >> throw e )
-	action  where
-	    gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
+        (\(e :: SomeException) -> gct >>= \ct -> putLogLn (normalize n ++ ct ++ " Ending due to Exception:\n" ++ indent 4 (show e) ) >> throw e )
+        action  where
+            gct = getClockTime >>= \ct -> return $ "[" ++ show ct ++ "]"
 
 
 -- | set routine with same signature as 'hPutStr' to use for writing to log.
@@ -171,7 +171,7 @@ eannM s action = emapM f action where
 -- | attempt an action, add a log entry with the exception if it
 -- fails
 attemptIO :: IO a -> IO ()
-attemptIO action = E.catch (action >> return ()) 
+attemptIO action = E.catch (action >> return ())
   (\(e :: IOException) -> putLogException "attempt ExceptionCaught" e)
 
 tryMapM :: (a -> IO b) -> [a] -> IO [b]
@@ -194,9 +194,9 @@ indent n s = unlines $ map (replicate n ' ' ++)$ lines s
 
 -- | Retry an action until it succeeds.
 retryIO :: Float      -- ^ number of seconds to pause between trys
-	 -> String  -- ^ string to annotate log entries with when retrying
-	 -> IO a    -- ^ action to retry
-	 -> IO a
+         -> String  -- ^ string to annotate log entries with when retrying
+         -> IO a    -- ^ action to retry
+         -> IO a
 retryIO delay n action = do
     handle (\(e :: IOException) -> putLogException (n ++ " (retrying in " ++ show delay ++ "s):") e >> threadDelay (floor $ 1000000 * delay) >> retryIO delay n action) action
 
@@ -213,15 +213,15 @@ trySeveral arms = do
     v <- newEmptyMVar
     ts <- mapM (forkIO . f v) arms
     g v ts where
-	f v arm = do
-	    t <- myThreadId
-	    r <- tryIO arm
-	    putMVar v (t,r)
-	g v ts = do
-	    (t,r) <- takeMVar v
-	    let ts' = delete t ts
-	    case r of
-		Left e -> if null ts' then throw e else g v ts'
-		Right x -> do
-		    mapM_ killThread ts'
-		    return x
+        f v arm = do
+            t <- myThreadId
+            r <- tryIO arm
+            putMVar v (t,r)
+        g v ts = do
+            (t,r) <- takeMVar v
+            let ts' = delete t ts
+            case r of
+                Left e -> if null ts' then throw e else g v ts'
+                Right x -> do
+                    mapM_ killThread ts'
+                    return x

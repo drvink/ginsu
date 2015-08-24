@@ -136,13 +136,13 @@ destroyGaleContext gc = killThread $ gThread gc
 connectTo hostname port = do
     --proto <- getProtocolNumber "tcp"
     bracketOnError
-	(socket AF_INET Stream 6)
-	(sClose)  -- only done if there's an error
+        (socket AF_INET Stream 6)
+        (sClose)  -- only done if there's an error
         (\sock -> do
-      	  he <- getHostByName hostname
-      	  connect sock (SockAddrInet port (hostAddress he))
-      	  socketToHandle sock ReadWriteMode
-	)
+                he <- getHostByName hostname
+                connect sock (SockAddrInet port (hostAddress he))
+                socketToHandle sock ReadWriteMode
+        )
 
 
 
@@ -157,12 +157,12 @@ spc s = v : spc (drop 1 r) where
 
 emptyPuffer :: MVar Handle -> IO ()
 emptyPuffer hv = repeatM_ (threadDelay 30000000 >> sendEmptyPuff) where
-	sendEmptyPuff = withMVar hv $ \h -> do
-		putWord32 h 0
-		putWord32 h 8
-		putWord32 h 0
-		putWord32 h 0
-		hFlush h
+        sendEmptyPuff = withMVar hv $ \h -> do
+                putWord32 h 0
+                putWord32 h 8
+                putWord32 h 0
+                putWord32 h 0
+                hFlush h
 
 connectThread :: GaleContext ->  [String] -> MVar Handle -> IO ()
 connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
@@ -171,16 +171,16 @@ connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
         swapMVar (connectionStatus gc)  $ Left $ "Attempting to connect to: " ++ unwords ds
         trySeveral (map attemptConnect ds)
     doit = bracket openHandle (hClose . fst) $ \(h,hn) -> do
-	putWord32 h 1
-	_ <- readWord32 h  -- version
+        putWord32 h 1
+        _ <- readWord32 h  -- version
         sendGimme gc
         swapMVar (connectionStatus gc) $ Right hn
-	bracket_ (putMVar hv h) (takeMVar hv) $
-	  bracket (forkIO (emptyPuffer hv)) killThread $ \_ -> repeatM_ $ do
-	    w <- readWord32 h
-	    l <- readWord32 h
+        bracket_ (putMVar hv h) (takeMVar hv) $
+          bracket (forkIO (emptyPuffer hv)) killThread $ \_ -> repeatM_ $ do
+            w <- readWord32 h
+            l <- readWord32 h
             bs <- LBS.hGet h (fromIntegral l)
-	    when (w == 0) $ do
+            when (w == 0) $ do
                 let hash = sha1 bs
                     (catl,puff) = runGet decodePuff bs
                     cat = mapMaybe parseCategoryOld (spc catl)
@@ -273,14 +273,14 @@ createPuff _ will puff | [] <- signature puff = do
     evaluate $ runPut pd
 createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
     getPrivateKey (keyCache gc) kn >>= \v -> case v of
-	Nothing -> createPuff gc will $ p {signature = []}
-	Just (Key _ kfl,pkey) -> do
-	    sfl <- case fragmentString f_keyOwner kfl of
-		Just o -> return [(f_messageSender, FragmentText o)]
-		Nothing -> return []
-	    let fl = runPutBS $ tagWord 0 (putFragments (fragments p `mergeFrags` sfl))
-	    sig <- signAll pkey fl
-	    let sd = runPutBS $ do
+        Nothing -> createPuff gc will $ p {signature = []}
+        Just (Key _ kfl,pkey) -> do
+            sfl <- case fragmentString f_keyOwner kfl of
+                Just o -> return [(f_messageSender, FragmentText o)]
+                Nothing -> return []
+            let fl = runPutBS $ tagWord 0 (putFragments (fragments p `mergeFrags` sfl))
+            sig <- signAll pkey fl
+            let sd = runPutBS $ do
                     putByteString bs_signature_magic1
                     tagWord (BS.length sig) (putByteString sig)
                     putByteString (BS.pack pubkey_magic3)
@@ -288,7 +288,7 @@ createPuff gc will p | (kn:_,es) <-  collectSigs (signature p) = do
                 fd = tagWord (BS.length sd) (putByteString sd) >> putByteString fl
                 fragments = [(f_securitySignature,FragmentData (runPutBS fd))]
             nfragments <- cryptFragments gc es fragments
-	    createPuff gc will $ p {signature = [], fragments = nfragments }
+            createPuff gc will $ p {signature = [], fragments = nfragments }
 createPuff _ _ _ = error "createPuff: invalid arguments"
 
 cryptFragments :: GaleContext -> [String] -> FragmentList -> IO FragmentList
@@ -329,8 +329,8 @@ putFragments :: FragmentList -> Put
 putFragments fl = mapM_ f fl where
     f (s',f) = putWord32be t >> putWord32be (fromIntegral $ LBS.length nxs) >> putLazyByteString nxs  where
         nxs = runPut (n >> xs)
-	(t, xs) = g f
-	n = putWord32be (fromIntegral $ length s) >> (putGaleString s)
+        (t, xs) = g f
+        n = putWord32be (fromIntegral $ length s) >> (putGaleString s)
         s = toString s'
     g (FragmentData ws) = (1, putByteString ws)
     g (FragmentText s) = (0, putGaleString (unpackPS s))
@@ -351,11 +351,11 @@ parseCategoryOld = parser p where
     bl [_] = []
     bl (x:xs) = x:bl xs
     p = do
-	char '@'
-	d <- many (noneOf "/")
-	parseExact "/user/"
-	c <- parseRest
-	return (Category (con (bl c),d))
+        char '@'
+        d <- many (noneOf "/")
+        parseExact "/user/"
+        c <- parseRest
+        return (Category (con (bl c),d))
 
 catShowOld :: Category -> String
 catShowOld (Category (c,d)) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
@@ -372,8 +372,8 @@ galeDecryptPuff :: GaleContext -> Puff -> IO Puff
 galeDecryptPuff gc p = handle (\(_ :: IOException) -> return p) $ galeDecryptPuff' gc p
 galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securitySignature = do
     let (l,xs') = xdrReadUInt (BS.unpack xs)
-	(sb,xs'') = xdrReadUInt (drop 4 xs')
-	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
+        (sb,xs'') = xdrReadUInt (drop 4 xs')
+        fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
         sigoff = 12 -- skip length hdr (4), sig magic (4), sig len (4)
         siglen = fromIntegral sb
         keylen = fromIntegral l - (8 + siglen)
@@ -394,22 +394,22 @@ galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securityEncryption = do
     dfl <- firstIO (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
     let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff' gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
-	pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
-	pk pkname iv = do
-	    kname <- pkname
-	    keydata <- parseLenData
-	    return $ (iv,kname,keydata)
-	pr pkname = do
-	    iv <- parseSome 8
-	    keycount <-  parseIntegral32
-	    ks <- replicateM keycount (pk pkname iv)
-	    xs <- parseRest
-	    return (xs,ks)
-	td' cd (iv,kname,keydata) = do
-	    Just (_,pkey) <- getPrivateKey (keyCache gc) kname
-	    dd <- decryptAll keydata iv pkey cd
-	    --let dfl = decodeFragments (drop 4 (BS.unpack dd))
-	    return $ runGet decodeFrags (LBS.fromChunks [BS.drop 4 dd])
+        pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
+        pk pkname iv = do
+            kname <- pkname
+            keydata <- parseLenData
+            return $ (iv,kname,keydata)
+        pr pkname = do
+            iv <- parseSome 8
+            keycount <-  parseIntegral32
+            ks <- replicateM keycount (pk pkname iv)
+            xs <- parseRest
+            return (xs,ks)
+        td' cd (iv,kname,keydata) = do
+            Just (_,pkey) <- getPrivateKey (keyCache gc) kname
+            dd <- decryptAll keydata iv pkey cd
+            --let dfl = decodeFragments (drop 4 (BS.unpack dd))
+            return $ runGet decodeFrags (LBS.fromChunks [BS.drop 4 dd])
 galeDecryptPuff' _ x = return x
 
 
@@ -590,13 +590,13 @@ readWord32 h = do
     when (n /= 4) $ fail "short read."
     [b1,b2,b3,b4] <- getElems a
     return $ (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
-	     (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
+             (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
 
 galeEncodeString :: String -> [Word8]
 galeEncodeString cs = concatMap (f . ord) (concat $ map (\c -> if c == '\n' then "\r\n" else [c]) cs) where
     f x = (b1:b2:[]) where
-	b1 = fromIntegral $ (x `shiftR` 8) .&. 0xFF
-	b2 = fromIntegral $ x .&. 0xFF
+        b1 = fromIntegral $ (x `shiftR` 8) .&. 0xFF
+        b2 = fromIntegral $ x .&. 0xFF
 
 
 --------------

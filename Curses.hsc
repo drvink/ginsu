@@ -251,10 +251,10 @@ initColorPairs bg = do
     i l = zipWithM_ f [1 .. n] l >> return n where n = length l
     -- the full intensity colors of a w*w*w rgb box
     rgbbox w = [ b+o |
-	  b <- [0, w*w .. (w-2)*w*w ],
-	  o <- [w-1, 2*w-1 .. (w-1)*w-1] -- blue
-	    ++ [(w-1)*w .. w*w-1] ] -- green
-	++ [(w-1)*w*w .. w*w*w-1] -- red
+          b <- [0, w*w .. (w-2)*w*w ],
+          o <- [w-1, 2*w-1 .. (w-1)*w-1] -- blue
+            ++ [(w-1)*w .. w*w-1] ] -- green
+        ++ [(w-1)*w*w .. w*w*w-1] -- red
     icp _ n
       | n < 2 = return 0
       | n < 8 = initPair (Pair 1) defaultForeground bg >> return 1
@@ -268,7 +268,7 @@ initCurses = do
     b <- hasColors
     when b $ do
         startColor
-	initColorPairs (Color 0)
+        initColorPairs (Color 0)
     --when b useDefaultColors
     --cBreak True
     cbreak
@@ -440,7 +440,7 @@ withColor win np action = do
 withColorId :: Window -> Int -> IO a -> IO a
 withColorId win c action = do
     ncp <- readIORef nColorPairs
-    if ncp == 0 
+    if ncp == 0
       then action
       else withColor win (Pair $ 1 + c `mod` ncp) action
 
@@ -694,8 +694,8 @@ cursSet n = leaveOk False >> curs_set n
 
 withCursor :: CursorVisibility -> IO a -> IO a
 withCursor nv action = Control.Exception.bracket (cursSet (vis_c nv)) (\v -> case v of
-		(#const ERR) -> return 0
-		x -> cursSet x) (\_ -> action)
+                (#const ERR) -> return 0
+                x -> cursSet x) (\_ -> action)
 
 
 
@@ -967,7 +967,7 @@ data MouseEvent = MouseEvent {
 
 data ButtonEvent = ButtonPressed Int | ButtonReleased Int | ButtonClicked Int |
     ButtonDoubleClicked Int | ButtonTripleClicked Int | ButtonShift | ButtonControl | ButtonAlt
-	deriving(Eq,Show)
+        deriving(Eq,Show)
 
 withMouseEventMask :: [ButtonEvent] -> IO a -> IO a
 

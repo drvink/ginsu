@@ -24,8 +24,8 @@ stringToKeys ('\\':'x':a:b:cs) = (dh [a,b]) : stringToKeys cs  where
 --stringToKeys ('<':c:'-':x:'>':cs) | c `elem` "cC" = KeyChar (ord (toLower x) - 0x40) : stringToKeys cs
 stringToKeys ('<':cs) = let (n,r) = span (/= '>') cs in
      case lookup ((map toLower $ filter (not . isSpace) n)) ftl of
-	Just k -> k
-	Nothing -> KeyUnknown 0
+        Just k -> k
+        Nothing -> KeyUnknown 0
       : stringToKeys (drop 1 r)
 stringToKeys (c:cs) = KeyChar c : stringToKeys cs
 
@@ -79,7 +79,7 @@ ftl = map (\(x,y) -> (map toLower x,y)) ft
 
 kg :: [[Key]]
 kg = transitiveGroup $ map (snub . map snd) (groupBy (\(x,_) (y,_) -> x == y)
-	(sort ftl))
+        (sort ftl))
 
 lkg :: Key -> [Key]
 lkg k = case lookup k kgm of

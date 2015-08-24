@@ -26,7 +26,7 @@ img.smiley {
     margin:0;
     background:#fff;
     color:#000;
-}    
+}
 
 div.header img, div.footer img { border:0; padding:0; margin:0; }
 
@@ -65,7 +65,7 @@ p a.definition {
     margin-top: 5px;
     border-bottom: 2px solid #000000;
     text-decoration:none;
-    display:block; 
+    display:block;
 }
 
 p a.definition:hover {
@@ -88,7 +88,7 @@ hr {
     border:none;
     color:black;
     background-color:#000;
-    height:2px; 
+    height:2px;
     margin-top:2ex;
 }
 div.footer hr { height:4px; }

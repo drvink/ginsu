@@ -148,10 +148,10 @@ catShowNew (Category (x,y)) = x ++ "@" ++ y
 getAuthor p = maybe "unknown" id (getSigner p)
 
 getSigner p = ss (signature p) where
-	    ss (Signed (Key n _):_) = Just n
-	    ss (Unverifyable (Key n _):_) = Just n
-	    ss (_:sig) = ss sig
-	    ss [] = Nothing
+            ss (Signed (Key n _):_) = Just n
+            ss (Unverifyable (Key n _):_) = Just n
+            ss (_:sig) = ss sig
+            ss [] = Nothing
 
 showSignature (Signed (Key n _)) = "Signed by " ++ n
 showSignature (Unverifyable (Key n _)) = "Signed by " ++ n ++ " (unverified)"
@@ -288,9 +288,9 @@ categoryCell (Category (_,c)) = c
 
 instance Data.Binary.Binary Puff where
     put (Puff aa ab ac) = do
-	    Data.Binary.put aa
-	    Data.Binary.put ab
-	    Data.Binary.put ac
+            Data.Binary.put aa
+            Data.Binary.put ab
+            Data.Binary.put ac
     get = do
     aa <- get
     ab <- get
@@ -299,68 +299,68 @@ instance Data.Binary.Binary Puff where
 
 instance Data.Binary.Binary Fragment where
     put (FragmentText aa) = do
-	    Data.Binary.putWord8 0
-	    Data.Binary.put aa
+            Data.Binary.putWord8 0
+            Data.Binary.put aa
     put (FragmentData ab) = do
-	    Data.Binary.putWord8 1
-	    Data.Binary.put ab
+            Data.Binary.putWord8 1
+            Data.Binary.put ab
     put (FragmentTime ac) = do
-	    Data.Binary.putWord8 2
-	    Data.Binary.put ac
+            Data.Binary.putWord8 2
+            Data.Binary.put ac
     put (FragmentInt ad) = do
-	    Data.Binary.putWord8 3
-	    Data.Binary.put ad
+            Data.Binary.putWord8 3
+            Data.Binary.put ad
     put (FragmentNest ae) = do
-	    Data.Binary.putWord8 4
-	    Data.Binary.put ae
+            Data.Binary.putWord8 4
+            Data.Binary.put ae
     get = do
-	    h <- Data.Binary.getWord8
-	    case h of
-	      0 -> do
-		    aa <- Data.Binary.get
-		    return (FragmentText aa)
-	      1 -> do
-		    ab <- Data.Binary.get
-		    return (FragmentData ab)
-	      2 -> do
-		    ac <- Data.Binary.get
-		    return (FragmentTime ac)
-	      3 -> do
-		    ad <- Data.Binary.get
-		    return (FragmentInt ad)
-	      4 -> do
-		    ae <- Data.Binary.get
-		    return (FragmentNest ae)
-	      _ -> fail "invalid binary data found"
+            h <- Data.Binary.getWord8
+            case h of
+              0 -> do
+                    aa <- Data.Binary.get
+                    return (FragmentText aa)
+              1 -> do
+                    ab <- Data.Binary.get
+                    return (FragmentData ab)
+              2 -> do
+                    ac <- Data.Binary.get
+                    return (FragmentTime ac)
+              3 -> do
+                    ad <- Data.Binary.get
+                    return (FragmentInt ad)
+              4 -> do
+                    ae <- Data.Binary.get
+                    return (FragmentNest ae)
+              _ -> fail "invalid binary data found"
 
 instance Data.Binary.Binary Signature where
     put (Unverifyable aa) = do
-	    Data.Binary.putWord8 0
-	    Data.Binary.put aa
+            Data.Binary.putWord8 0
+            Data.Binary.put aa
     put (Signed ab) = do
-	    Data.Binary.putWord8 1
-	    Data.Binary.put ab
+            Data.Binary.putWord8 1
+            Data.Binary.put ab
     put (Encrypted ac) = do
-	    Data.Binary.putWord8 2
-	    Data.Binary.put ac
+            Data.Binary.putWord8 2
+            Data.Binary.put ac
     get = do
-	    h <- Data.Binary.getWord8
-	    case h of
-	      0 -> do
-		    aa <- Data.Binary.get
-		    return (Unverifyable aa)
-	      1 -> do
-		    ab <- Data.Binary.get
-		    return (Signed ab)
-	      2 -> do
-		    ac <- Data.Binary.get
-		    return (Encrypted ac)
-	      _ -> fail "invalid binary data found"
+            h <- Data.Binary.getWord8
+            case h of
+              0 -> do
+                    aa <- Data.Binary.get
+                    return (Unverifyable aa)
+              1 -> do
+                    ab <- Data.Binary.get
+                    return (Signed ab)
+              2 -> do
+                    ac <- Data.Binary.get
+                    return (Encrypted ac)
+              _ -> fail "invalid binary data found"
 
 instance Data.Binary.Binary Key where
     put (Key aa ab) = do
-	    Data.Binary.put aa
-	    Data.Binary.put ab
+            Data.Binary.put aa
+            Data.Binary.put ab
     get = do
     aa <- get
     ab <- get

@@ -152,8 +152,8 @@ instance Readable ArbitraryReader where
 combineVal :: (Readable c1,Readable c2) => c1 a -> c2 b -> IO (ArbitraryReader (a,b))
 combineVal sva svb = do
     let lsv = do
-	av <- readVal sva
-	bv <- readVal svb
+        av <- readVal sva
+        bv <- readVal svb
         return (av,bv)
     return $ ArbitraryReader lsv
 

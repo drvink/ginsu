@@ -89,11 +89,11 @@ configFile :: String -> Config
 configFile fn = Config $ \k -> do
     cf <- readVal config_files_var
     case lookup fn cf of
-	Just cl -> basicLookup fn cl k
-	Nothing -> do
-	    cl <- E.catch (fmap parseConfigFile $ readFile fn) (\(_ :: E.IOException) -> return [])
-	    mapVal config_files_var ((fn,cl):)
-	    basicLookup fn cl k
+        Just cl -> basicLookup fn cl k
+        Nothing -> do
+            cl <- E.catch (fmap parseConfigFile $ readFile fn) (\(_ :: E.IOException) -> return [])
+            mapVal config_files_var ((fn,cl):)
+            basicLookup fn cl k
 
 configEnv :: Config
 configEnv = Config $ \k -> do
@@ -106,17 +106,17 @@ mapConfig f (Config c) = Config $ \s -> c (f s)
 instance Monoid Config where
     mempty =  Config $ \_ -> return []
     mappend (Config c1) (Config c2) = Config $ \s -> do
-	x <- c1 s
-	y <- c2 s
-	return (x ++ y)
+        x <- c1 s
+        y <- c2 s
+        return (x ++ y)
 
 configShow :: [String] -> Config -> IO String
 configShow ss (Config c) = do
     v <- mapM c ss
     return $ unlines $ map p $ zip ss v where
-	p (k,((w,(k',v))):_) = k ++ " " ++ v ++ "\n#  in " ++ w ++
-	    if k' /= k then " as " ++ k' else ""
-	p (k,[]) = "#" ++ k ++ " Not Found."
+        p (k,((w,(k',v))):_) = k ++ " " ++ v ++ "\n#  in " ++ w ++
+            if k' /= k then " as " ++ k' else ""
+        p (k,[]) = "#" ++ k ++ " Not Found."
 
 
 -- types of config sources:
@@ -141,7 +141,7 @@ parseConfigFile s = concatMap bl (fixup $ lines (uncomment s)) where
     fixup (x:xs) = x: fixup xs
     fixup [] = []
     bl s = let (n,r) = span isPropName (dropWhile isSpace s) in
-	if null n then [] else [(n,dropWhile isSpace r)]
+        if null n then [] else [(n,dropWhile isSpace r)]
 
 {-
 
@@ -166,9 +166,9 @@ getConfiguration s = do
 configLookupBool k = do
     x <- configLookup k
     case x of
-	Just s | cond -> return True where
-	    cond = (map toLower s) `elem` ["true", "yes", "on", "y", "t"]
-	_ -> return False
+        Just s | cond -> return True where
+            cond = (map toLower s) `elem` ["true", "yes", "on", "y", "t"]
+        _ -> return False
 
 
 configLookup k = do

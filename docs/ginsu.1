@@ -26,9 +26,9 @@ The homepage is at: <http://repetae.net/john/computer/ginsu/>
 
 .SH DESCRIPTION
 .BR "ginsu"
-is a client for the 
+is a client for the
 .BR "gale chat system"
-which can be learned about at 
+which can be learned about at
 .BR "<http://gale.org/>"
 
 To get started, generate a configuration file using the following command:
@@ -41,11 +41,11 @@ If you have problems, ginsu --checkconfig will print out ginsu's current configu
 .SH USING GINSU
 
 
-            Keys:    
+            Keys:
              <F1>    Help Screen
              <F2>    Main Screen
              <F3>    Presence Status Screen
-                     
+
                 j    next puff
                 k    previous puff
            <Home>    first puff
@@ -56,9 +56,9 @@ If you have problems, ginsu --checkconfig will print out ginsu's current configu
      <C-B> <PgUp>    back one page
             <C-D>    forward one half-page
             <C-U>    back one half-page
-                     
+
                 d    Show puff details
-                     
+
               c ~    add new filter
                 u    pop one filter
                 U    pop all filters
@@ -70,15 +70,15 @@ If you have problems, ginsu --checkconfig will print out ginsu's current configu
            m[1-9]    set mark - save current filter stack at given key
             [1-9]    recall filter stack saved here with 'm'
            C[1-9]    recall filter stack and add it to current filter stack
-                     
+
             <C-O>    toggle Rot13 body filter
-                     
+
                 f    follow-up to category
                 p    compose new puff
                 r    reply to author
                 g    group reply, sends to recipients and author of puff
                 N    modify public presence string
-                     
+
             <C-R>    reconnect to all servers
                 E    edit and reload configuration file
               q Q    quit program
@@ -93,7 +93,7 @@ Filters:
     the filters on the stack are conjoined together to determine which
     puffs are visible
 
-Primitive Filters:    
+Primitive Filters:
                 ~a    author
                 ~c    category
                 ~i    case insensitive substring search
@@ -115,7 +115,7 @@ configuration variable FOO, the following places will be checked in order:
  GINSU_FOO in the environment
  FOO in the config file
  FOO in the environment
- 
+
 .SH FILES
 .TP
 .BR "~/.gale/ginsu.config"
@@ -130,16 +130,16 @@ errors are logged here, useful when submitting a bug report
 .BR "~/.gale/auth/private/*"
 this is where ginsu looks for your private key for decoding incoming encrypted messages.
 .SH BUGS
-To report a bug go to 
+To report a bug go to
 .BR "<http://bugs.ofb.net/cgi-bin/bugzilla/enter_bug.cgi?product=Ginsu>"
-When reporting a bug, include the last few lines of 
+When reporting a bug, include the last few lines of
 .BR "~/.gale/ginsu.errorlog"
 if it seems appropriate as well as the output from
 .BR "ginsu --checkconfig"
 
 .SH AUTHOR
-ginsu was written by John Meacham. 
-The homepage is at 
+ginsu was written by John Meacham.
+The homepage is at
 .BR "<http://repetae.net/john/computer/ginsu/>"
 
 

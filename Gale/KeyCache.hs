@@ -196,7 +196,7 @@ getKey kc kn = modifyMVar (kkeyCache kc) f where
             Nothing -> g kkeyCache
     f kkeyCache = g kkeyCache
     g kkeyCache = do
-	    v <- tryIO getFromDisk
+            v <- tryIO getFromDisk
             case v of
                 Left _ -> return (kkeyCache, Nothing)
                 Right v' -> do
@@ -213,9 +213,9 @@ getKey kc kn = modifyMVar (kkeyCache kc) f where
         let ks = [ k | (_,Just k@(Key n _)) <- xs, kn == n]
         let nk = foldr (\(Key _ fl) (Key n fl') -> Key n (fl `mergeFrags` fl')) (Key kn []) ks
         --(key_c, fn) <- (first  gn)
-	--key <- parseKey key_c
-	--rsa <- pubKeyToRSA key
-	--pkey <- pkeyNewRSA rsa
+        --key <- parseKey key_c
+        --rsa <- pubKeyToRSA key
+        --pkey <- pkeyNewRSA rsa
         if null (getFragmentList nk) then ioError $ userError "bad key" else return nk
 
 flipLocalPart :: String -> String
@@ -242,7 +242,7 @@ parseWord32 = do
     b3 <- get
     b4 <- get
     return $ (fromIntegral b4) .|. (fromIntegral b3 `shiftL` 8) .|.
-	    (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
+            (fromIntegral b2 `shiftL` 16) .|. (fromIntegral b1 `shiftL` 24)
 
 parseWord16 :: ReadP Word16
 parseWord16 = do
@@ -262,13 +262,13 @@ keyDecode12 = do
     privatePrimeExponentD <- splitRLE (galeRSAPrimeLen * 2)
     privateCoefficientD <- splitRLE galeRSAPrimeLen
     let fl = [("rsa.modulus",FragmentData  modulusD),
-	  ("rsa.exponent",FragmentData exponentD),
-	  ("rsa.private.exponent",FragmentData  privateExponentD),
-	  ("rsa.private.prime",FragmentData  privatePrimeD),
-	  ("rsa.private.prime.exponent",FragmentData privatePrimeExponentD),
-	  ("rsa.private.coefficient",FragmentData  privateCoefficientD),
-	  ("rsa.bits", FragmentInt (fromIntegral bits))
-	 ]
+          ("rsa.exponent",FragmentData exponentD),
+          ("rsa.private.exponent",FragmentData  privateExponentD),
+          ("rsa.private.prime",FragmentData  privatePrimeD),
+          ("rsa.private.prime.exponent",FragmentData privatePrimeExponentD),
+          ("rsa.private.coefficient",FragmentData  privateCoefficientD),
+          ("rsa.bits", FragmentInt (fromIntegral bits))
+         ]
     return [ (fromString x,y) | (x,y) <- fl]
     {-
     (bits,ys) = xdrReadUInt xs
@@ -299,55 +299,55 @@ parseLenString = do
 keyParse :: ReadP Key
 keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
     ppk1 = do
-	string private_magic1
-	kn <- fmap flipLocalPart parseNullString
-	fl <- keyDecode12
-	return $ Key kn fl
+        string private_magic1
+        kn <- fmap flipLocalPart parseNullString
+        fl <- keyDecode12
+        return $ Key kn fl
     ppk2 = do
-	string private_magic2
-	kn <- fmap flipLocalPart parseLenString
-	fl <- keyDecode12
-	return $ Key kn fl
+        string private_magic2
+        kn <- fmap flipLocalPart parseLenString
+        fl <- keyDecode12
+        return $ Key kn fl
     ppk3 = do
-	string private_magic3
-	kn <- fmap flipLocalPart parseLenString
-	fl <- toParser decodeFrags
-	return $ Key kn fl
+        string private_magic3
+        kn <- fmap flipLocalPart parseLenString
+        fl <- toParser decodeFrags
+        return $ Key kn fl
     pk1 = do
-	string pubkey_magic1
-	kn <- fmap flipLocalPart parseNullString
-	(eof >> return (Key kn [])) +++ do
-	comment <- parseNullString
-	fl <- parsePublic12
-	skipMany get -- the signature
-	return $ Key kn ([(f_keyOwner, FragmentText (packString comment))] ++ fl)
+        string pubkey_magic1
+        kn <- fmap flipLocalPart parseNullString
+        (eof >> return (Key kn [])) +++ do
+        comment <- parseNullString
+        fl <- parsePublic12
+        skipMany get -- the signature
+        return $ Key kn ([(f_keyOwner, FragmentText (packString comment))] ++ fl)
     pk2 = do
-	string pubkey_magic2
-	kn <- fmap flipLocalPart parseLenString
-	(eof >> return (Key kn [])) +++ do
-	comment <- parseLenString
-	fl' <- parsePublic12
-	let fl = ((f_keyOwner, FragmentText (packString comment)):fl')
-	(eof >> return (Key kn fl)) +++ do
-	ts <- replicateM 16 get
-	te <- replicateM 16 get
+        string pubkey_magic2
+        kn <- fmap flipLocalPart parseLenString
+        (eof >> return (Key kn [])) +++ do
+        comment <- parseLenString
+        fl' <- parsePublic12
+        let fl = ((f_keyOwner, FragmentText (packString comment)):fl')
+        (eof >> return (Key kn fl)) +++ do
+        ts <- replicateM 16 get
+        te <- replicateM 16 get
         skipMany get
-	--_signature <- parseRest
-	return $ Key kn $ fl ++ [(f_keySigned,FragmentTime (decodeTime ts)), (f_keyExpires,FragmentTime (decodeTime te))]
+        --_signature <- parseRest
+        return $ Key kn $ fl ++ [(f_keySigned,FragmentTime (decodeTime ts)), (f_keyExpires,FragmentTime (decodeTime te))]
     pk3 = do
-	string pubkey_magic3
-	kn <- fmap flipLocalPart parseLenString
-	fl <- toParser decodeFrags
-	return $ Key kn fl
+        string pubkey_magic3
+        kn <- fmap flipLocalPart parseLenString
+        fl <- toParser decodeFrags
+        return $ Key kn fl
     parsePublic12 = do
-	bits <- parseIntegral32
-	--modulus <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
-	--exponent <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
-	modulus <- splitRLE galeRSAModulusLen
-	exponent <- splitRLE galeRSAModulusLen
-	return [(f_rsaModulus, FragmentData modulus),
-		(f_rsaExponent, FragmentData exponent),
-		(f_rsaBits, FragmentInt $ fromIntegral bits)]
+        bits <- parseIntegral32
+        --modulus <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
+        --exponent <- (MkP (\x -> Just (splitRLE galeRSAModulusLen x)))
+        modulus <- splitRLE galeRSAModulusLen
+        exponent <- splitRLE galeRSAModulusLen
+        return [(f_rsaModulus, FragmentData modulus),
+                (f_rsaExponent, FragmentData exponent),
+                (f_rsaBits, FragmentInt $ fromIntegral bits)]
 
 
 parser :: Show a => ReadP a -> BS.ByteString -> Maybe a
@@ -419,9 +419,9 @@ unsignData :: [Word8] -> Maybe (FragmentList,Key)
 unsignData xs = do
     key <- parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
     return (fl,key) where
-	(l,xs') = xdrReadUInt xs
-	(sb,xs'') = xdrReadUInt (drop 4 xs')
-	fl = (decodeFragments $ drop (fromIntegral l + 4) xs')
+        (l,xs') = xdrReadUInt xs
+        (sb,xs'') = xdrReadUInt (drop 4 xs')
+        fl = (decodeFragments $ drop (fromIntegral l + 4) xs')
 
 unsignFragments :: FragmentList -> Maybe FragmentList
 unsignFragments tfl | (xs:_) <- [xs | (n,FragmentData xs) <- tfl, n == f_securitySignature] = do
@@ -453,21 +453,21 @@ dumpKey arg = do
 getPrivateKey :: KeyCache -> String -> IO (Maybe (Key,EvpPkey))
 getPrivateKey gc kn = modifyMVar (keyCache gc) f where
     f kc = case [x|x@(Key kn' _,_) <- kc, kn == kn'] of
-	(v:_) -> return (kc,Just v)
-	[] -> do
-	    v <- ioMp getFromDisk
-	    return ((maybeToList v ++ kc),v)
+        (v:_) -> return (kc,Just v)
+        [] -> do
+            v <- ioMp getFromDisk
+            return ((maybeToList v ++ kc),v)
     getFromDisk = do
-	let gd = galeDir gc
-	let p = (gd ++ "/auth/private/")
-	    knames = [p ++ kn, p ++ kn ++ ".gpri"]
-	    gn = (map (\fn -> (readRawFile fn >>= \c -> return (c,fn))) knames)
-	(key_c, fn) <- (first  gn)
-	key <- parseKey key_c
-	rsa <- privkeyToRSA key
-	pkey <- pkeyNewRSA rsa
-	putLog LogNotice $ "Retrieved private key from disk: " ++ fn
-	return (key,pkey)
+        let gd = galeDir gc
+        let p = (gd ++ "/auth/private/")
+            knames = [p ++ kn, p ++ kn ++ ".gpri"]
+            gn = (map (\fn -> (readRawFile fn >>= \c -> return (c,fn))) knames)
+        (key_c, fn) <- (first  gn)
+        key <- parseKey key_c
+        rsa <- privkeyToRSA key
+        pkey <- pkeyNewRSA rsa
+        putLog LogNotice $ "Retrieved private key from disk: " ++ fn
+        return (key,pkey)
 
 
 
@@ -475,7 +475,7 @@ getPublicKey :: KeyCache -> String -> IO (Maybe (Key,EvpPkey))
 getPublicKey gc kn = modifyMVar (publicKeyCache gc) f where
     f keyCache | Just v <- lookupFM keyCache kn = return (keyCache, Just v)
     f keyCache = do
-	    v <- ioM getFromDisk
+            v <- ioM getFromDisk
             return $ case v of
                 Nothing -> (keyCache, Nothing)
                 Just v' -> (addToFM keyCache kn v', Just v')
@@ -487,9 +487,9 @@ getPublicKey gc kn = modifyMVar (publicKeyCache gc) f where
             gn = (map (\fn -> (readRawFile fn >>= \c -> return (c,fn))) knames)
         putLog LogDebug $ "Looking for: " ++ show  knames
         (key_c, fn) <- (first  gn)
-	key <- parseKey key_c
-	rsa <- pubKeyToRSA key
-	pkey <- pkeyNewRSA rsa
+        key <- parseKey key_c
+        rsa <- pubKeyToRSA key
+        pkey <- pkeyNewRSA rsa
         return (key,pkey)
 -}
 

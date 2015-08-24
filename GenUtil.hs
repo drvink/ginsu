@@ -121,8 +121,8 @@ import Control.Exception
 import Control.Monad
 import qualified System.IO as IO
 import qualified System.IO.Error as IO
-import qualified System.Exit as System 
-import qualified System.Environment as System 
+import qualified System.Exit as System
+import qualified System.Environment as System
 import System.Random(StdGen, newStdGen, Random(randomR))
 import System.Time
 import System.CPUTime
