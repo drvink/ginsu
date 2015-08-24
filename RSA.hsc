@@ -7,7 +7,8 @@ module RSA(
     createPkey,
     sha1,
     bsToHex,
-    RSAElems(..)
+    RSAElems(..),
+    verifyAll
     ) where
 
 #include "my_rsa.h"
@@ -103,6 +104,9 @@ foreign import ccall unsafe "openssl/evp.h EVP_SealFinal" evpSealFinal :: Ptr EV
 foreign import ccall unsafe "openssl/evp.h EVP_des_ede3_cbc" evpDesEde3Cbc :: IO (Ptr EVP_CIPHER)
 foreign import ccall unsafe "openssl/evp.h EVP_md5" evpMD5 :: IO (Ptr EVP_MD)
 
+foreign import ccall unsafe "openssl/evp.h EVP_DigestInit" evpDigestInit :: Ptr EVP_MD_CTX -> Ptr EVP_MD -> IO CInt
+foreign import ccall unsafe "openssl/evp.h EVP_DigestUpdate" evpDigestUpdate :: Ptr EVP_MD_CTX -> Ptr a -> CInt -> IO CInt
+foreign import ccall unsafe "openssl/evp.h EVP_VerifyFinal" evpVerifyFinal :: Ptr EVP_MD_CTX -> Ptr CUChar -> CInt -> Ptr EVP_PKEY -> IO CInt
 
 foreign import ccall unsafe evpCipherContextBlockSize :: Ptr EVP_CIPHER_CTX -> IO Int
 
@@ -149,6 +153,17 @@ decryptAll keydata iv pkey xs = withCipherCtx $ \cctx -> do
 cipher = unsafePerformIO evpDesEde3Cbc
 md5 = unsafePerformIO evpMD5
 
+verifyAll :: EvpPkey -> BS.ByteString -> BS.ByteString -> IO Bool
+verifyAll pkey data_ sig = do
+    withMdCtx $ \mdctx -> do
+    evpDigestInit mdctx md5
+    withData data_ $ \a b -> evpDigestUpdate mdctx a b
+    withForeignPtr pkey $ \pk -> do
+    withData sig $ \a b -> do
+    rv <- evpVerifyFinal mdctx a b pk
+    return $ case rv of
+      1 -> True
+      _ -> False
 
 signAll :: EvpPkey -> BS.ByteString -> IO BS.ByteString
 signAll  pkey xs = withMdCtx $ \cctx -> do
@@ -239,14 +254,12 @@ withSHA_CTX :: (SHA_CTX -> IO a) -> IO a
 withSHA_CTX action = allocaBytes (#const sizeof(SHA_CTX)) $ \cctx ->
     sha1Init (SHA_CTX cctx) >> action (SHA_CTX cctx)
 
-type NEvpPkey = ForeignPtr EVP_PKEY
-
 foreign import ccall unsafe pkeyNewRSA :: RSA -> IO (Ptr EVP_PKEY)
 
 -- foreign import ccall "&EVP_PKEY_free" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 foreign import ccall "get_KEY" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 
-createPkey :: RSAElems BS.ByteString -> IO NEvpPkey
+createPkey :: RSAElems BS.ByteString -> IO EvpPkey
 createPkey re =  create_rsa re >>= create_pkey where
     setBn pb d = do
         np <- peek pb

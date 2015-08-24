@@ -12,7 +12,8 @@ module Gale.KeyCache(
     putKey,
     noKey,
     numberKeys,
-    keyRequestPuff
+    keyRequestPuff,
+    keyToPkey
 
     ) where
 
@@ -349,9 +350,11 @@ keyParse = choice [ppk1,ppk2,ppk3,pk1,pk2,pk3] where
 		(f_rsaBits, FragmentInt $ fromIntegral bits)]
 
 
-parser :: ReadP a -> BS.ByteString -> Maybe a
+parser :: Show a => ReadP a -> BS.ByteString -> Maybe a
 parser p bs = case readP_to_S p bs of
-    [(a,bs)] | BS.null bs -> Just a
+    x:xs ->
+        let (a,bs) = if null xs then x else last xs in
+        if BS.null bs then Just a else Nothing
     _ -> Nothing
 
 parseKey :: [Word8] -> Maybe Key

@@ -374,8 +374,21 @@ galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securitySignature = do
     let (l,xs') = xdrReadUInt (BS.unpack xs)
 	(sb,xs'') = xdrReadUInt (drop 4 xs')
 	fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
-    key <- maybe (fail "parseKey") return $ parseKey $ take (fromIntegral (l - (8 + sb))) (drop (fromIntegral sb) xs'')
-    galeDecryptPuff' gc $ p {signature = (Unverifyable key): signature p, fragments = fl}
+        sigoff = 12 -- skip length hdr (4), sig magic (4), sig len (4)
+        siglen = fromIntegral sb
+        keylen = fromIntegral l - (8 + siglen)
+        keyoff = sigoff + siglen -- key directly follows sig
+        sig = BS.take siglen $ BS.drop sigoff xs
+        data_ = BS.drop (keyoff + keylen) xs
+    key <- maybe (fail "parseKey") return $ parseKey $ take keylen (drop siglen xs'')
+    kgc <- let (Key kn _) = key in getKey (keyCache gc) kn
+    mkey <- case kgc of
+      Nothing -> return $ Unverifyable key
+      Just k -> do
+        pkey <- keyToPkey k
+        rv <- verifyAll pkey data_ sig
+        return $ if rv then Signed k else Unverifyable k
+    galeDecryptPuff' gc $ p {signature = mkey: signature p, fragments = fl}
 galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securityEncryption = do
     (cd,ks) <- maybe (fail "parseKey") return $ parser pe (BS.unpack xs)
     dfl <- firstIO (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
