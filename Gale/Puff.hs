@@ -47,8 +47,9 @@ module Gale.Puff(
     ) where
 
 import Atom
-import Data.Binary
 import qualified Control.Exception as E
+import Data.Binary
+import Data.Monoid
 import EIO
 import ErrorLog
 import GenUtil
