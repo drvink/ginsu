@@ -7,6 +7,7 @@ module Gale.Puff(
     FragmentList,
     HasFragmentList(..),
     Category(Category),
+    Dest(..),
     readPuffs, writePuffs, emptyPuff,
     categoryHead, categoryCell,
     catParseNew, catShowNew,
@@ -55,6 +56,7 @@ import Data.Int(Int32)
 import Data.List
 import Data.Maybe(isJust)
 import PackedString
+import Control.Concurrent.Async (Async)
 import System.IO
 import System.Time
 import RSA
@@ -82,8 +84,21 @@ data Fragment =
     | FragmentInt !Int32
     | FragmentNest FragmentList
 
+data Dest = DestPublic | DestUnknown [String] | DestEncrypted [Key]
+    deriving(Eq,Show)
+
+instance Monoid Dest where
+    mempty = DestEncrypted []
+    DestUnknown a `mappend` DestUnknown b = DestUnknown (a ++ b)
+    DestUnknown a `mappend` _ = DestUnknown a
+    _ `mappend` DestUnknown a  = DestUnknown a
+    DestPublic `mappend` _ = DestPublic
+    _ `mappend` DestPublic = DestPublic
+    DestEncrypted a `mappend` DestEncrypted b = DestEncrypted (a ++ b)
+
 data Signature =
-    Unverifyable Key
+    RequestingKey (Async Dest) Key BS.ByteString BS.ByteString
+    | Unverifyable Key
     | Signed Key
     | Encrypted [String]
 
@@ -148,14 +163,21 @@ catShowNew (Category (x,y)) = x ++ "@" ++ y
 getAuthor p = maybe "unknown" id (getSigner p)
 
 getSigner p = ss (signature p) where
+            ss (RequestingKey _ (Key n _) _ _:_) = Just n
             ss (Signed (Key n _):_) = Just n
             ss (Unverifyable (Key n _):_) = Just n
             ss (_:sig) = ss sig
             ss [] = Nothing
 
-showSignature (Signed (Key n _)) = "Signed by " ++ n
-showSignature (Unverifyable (Key n _)) = "Signed by " ++ n ++ " (unverified)"
-showSignature (Encrypted xs) = "Encrypted to " ++ concatInter ", " xs
+unverifiableStr :: Key -> String
+unverifiableStr (Key n _) = "Signed by " ++ n ++ " (unverified)"
+
+showSignature :: Signature -> String
+showSignature s = case s of
+  Signed (Key n _) -> "Signed by " ++ n
+  RequestingKey _ k _ _ -> unverifiableStr k
+  Unverifyable k -> unverifiableStr k
+  Encrypted xs -> "Encrypted to " ++ concatInter ", " xs
 
 emptyPuff = Puff {cats = [], signature = [], fragments = []}
 
@@ -334,6 +356,11 @@ instance Data.Binary.Binary Fragment where
               _ -> fail "invalid binary data found"
 
 instance Data.Binary.Binary Signature where
+    -- we do not differentiate between signatures that were in mid-flight fetch
+    -- and signatures that could not be verified
+    put (RequestingKey _ aa _ _) = do
+            Data.Binary.putWord8 0
+            Data.Binary.put aa
     put (Unverifyable aa) = do
             Data.Binary.putWord8 0
             Data.Binary.put aa

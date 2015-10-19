@@ -21,8 +21,10 @@ import System.IO
 import Data.List
 import Data.Maybe
 import System.Time
+import System.Timeout (timeout)
 
 import Control.Concurrent
+import Control.Concurrent.Async (async, wait)
 import Control.Exception as E
 import Data.Bits
 import Network.BSD
@@ -187,11 +189,24 @@ connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
                 ct <- getClockTime
                 let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (bsToHex hash))):xs)
                 p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
-                writeChan (channel gc) $ p'
-                case getFragmentData p' f_answerKey' of
+                np <- case [(kh, k, data_, sig)
+                           | RequestingKey kh k data_ sig <- signature p'] of
+                      [] -> return p'
+                      (kh, k, data_, sig):_ -> do
+                        res <- timeout 4000000 $ wait kh
+                        let unver = p' { signature = [Unverifyable k] }
+                        case res of
+                          Just x -> case x of
+                            DestEncrypted (k':_) -> do
+                              mkey <- verifySignature k' data_ sig
+                              return $ p' { signature = [mkey] }
+                            _ -> return unver
+                          Nothing -> return unver
+                writeChan (channel gc) $ np
+                case getFragmentData np f_answerKey' of
                     Just d -> putKey (keyCache gc) d
                     Nothing -> return ()
-                case (cats p',getFragmentString p' f_answerKeyError') of
+                case (cats np,getFragmentString np f_answerKeyError') of
                     ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
                     (_,_) -> return ()
 
@@ -242,11 +257,13 @@ getPrivateKey kc kn = getPKey kc kn >>= \n -> case n of
 
 collectSigs :: [Signature] -> ([String],[String])
 collectSigs ss = liftT2 (snub, snub) $ cs ss ([],[]) where
-    cs ((Unverifyable _):_) _ = error "attempt to create unverifyable puff"
-    cs (Signed (Key k _):ss) (ks,es) = cs ss (k:ks,es)
-    cs (Encrypted es':ss) (ks,es) = cs ss (ks,es' ++ es)
-    cs [] x = x
-
+    cs sig x@(ks,es) = case sig of
+      (RequestingKey _ _ _ _):_ -> lose
+      (Unverifyable _):_ -> lose
+      (Signed (Key k _)):ss -> cs ss (k:ks,es)
+      (Encrypted es':ss) -> cs ss (ks,es' ++ es)
+      [] -> x
+    lose = error "attempt to create unverifiable puff"
 
 tagWord :: Int -> Put -> Put
 tagWord i p = putWord32be (fromIntegral i) >> p
@@ -368,12 +385,18 @@ catShowOld (Category (c,d)) = "@" ++ d ++ "/user/" ++ con c ++ "/" where
 -- Security routines
 --------------------
 
+verifySignature :: Key -> BS.ByteString -> BS.ByteString -> IO Signature
+verifySignature k data_ sig = do
+  pkey <- keyToPkey k
+  rv <- verifyAll pkey data_ sig
+  return $ (if rv then Signed else Unverifyable) k
+
 galeDecryptPuff :: GaleContext -> Puff -> IO Puff
 galeDecryptPuff gc p = handle (\(_ :: IOException) -> return p) $ galeDecryptPuff' gc p
 galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securitySignature = do
     let (l,xs') = xdrReadUInt (BS.unpack xs)
         (sb,xs'') = xdrReadUInt (drop 4 xs')
-        fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f|f <- fragments p, fst f /= f_securitySignature]
+        fl = (decodeFragments $ drop (fromIntegral l + 4) xs') ++ [f | f <- fragments p, fst f /= f_securitySignature]
         sigoff = 12 -- skip length hdr (4), sig magic (4), sig len (4)
         siglen = fromIntegral sb
         keylen = fromIntegral l - (8 + siglen)
@@ -381,18 +404,19 @@ galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securitySignature = do
         sig = BS.take siglen $ BS.drop sigoff xs
         data_ = BS.drop (keyoff + keylen) xs
     key <- maybe (fail "parseKey") return $ parseKey $ take keylen (drop siglen xs'')
-    kgc <- let (Key kn _) = key in getKey (keyCache gc) kn
+    let (Key kn _) = key
+    kgc <- getKey (keyCache gc) kn
     mkey <- case kgc of
-      Nothing -> return $ Unverifyable key
-      Just k -> do
-        pkey <- keyToPkey k
-        rv <- verifyAll pkey data_ sig
-        return $ if rv then Signed k else Unverifyable k
+      Nothing -> do
+        let senderc = catParseNew kn
+        h <- async (findDest gc senderc)
+        return $ RequestingKey h key data_ sig
+      Just k -> verifySignature k data_ sig
     galeDecryptPuff' gc $ p {signature = mkey: signature p, fragments = fl}
 galeDecryptPuff' gc p | (Just xs) <- getFragmentData p f_securityEncryption = do
     (cd,ks) <- maybe (fail "parseKey") return $ parser pe (BS.unpack xs)
     dfl <- firstIO (map (td' (BS.pack cd)) [ (BS.pack x,y,BS.pack z) | (x,y,z) <- ks])
-    let dfl' = dfl ++ [f|f <- fragments p, fst f /= f_securityEncryption]
+    let dfl' = dfl ++ [f | f <- fragments p, fst f /= f_securityEncryption]
     galeDecryptPuff' gc $ p {signature = (Encrypted (map (\(_,n,_) -> n) ks)): signature p, fragments = dfl'}  where
         pe = (parseExact cipher_magic1 >> pr parseNullString) <|> (parseExact cipher_magic2 >> pr parseLenString)
         pk pkname iv = do
@@ -477,18 +501,6 @@ fetchKeymembers gc s = do
         r :: Key -> IO [(String,Maybe Key)]
         r k = fk (map unpackPS (getFragmentStrings k f_keyMember) ++ ss) ((s,Just k):xs)
 -}
-
-data Dest = DestPublic | DestUnknown [String] | DestEncrypted [Key]
-    deriving(Eq,Show)
-
-instance Monoid Dest where
-    mempty = DestEncrypted []
-    DestUnknown a `mappend` DestUnknown b = DestUnknown (a ++ b)
-    DestUnknown a `mappend` _ = DestUnknown a
-    _ `mappend` DestUnknown a  = DestUnknown a
-    DestPublic `mappend` _ = DestPublic
-    _ `mappend` DestPublic = DestPublic
-    DestEncrypted a `mappend` DestEncrypted b = DestEncrypted (a ++ b)
 
 normalizeDest DestPublic = DestPublic
 normalizeDest (DestUnknown xs) = DestUnknown $ snub xs

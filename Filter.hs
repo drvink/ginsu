@@ -173,6 +173,7 @@ applyFilterStack fs = concatMap f where
     f _ = []
 -}
 
+siglookup c (RequestingKey _ (Key n _) _ _:_) | c == n = True
 siglookup c (Unverifyable (Key n _):_) | c == n = True
 siglookup c (Signed (Key n _):_) | c == n = True
 siglookup c (_:xs) = siglookup c xs
