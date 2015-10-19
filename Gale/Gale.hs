@@ -202,14 +202,23 @@ connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
                               return $ p' { signature = [mkey] }
                             _ -> return unver
                           Nothing -> return unver
-                writeChan (channel gc) $ np
+                writeChan (channel gc) np
                 case getFragmentData np f_answerKey' of
                     Just d -> putKey (keyCache gc) d
                     Nothing -> return ()
                 case (cats np,getFragmentString np f_answerKeyError') of
                     ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
                     (_,_) -> return ()
+                maybeReplyToKeyQuery gc np
 
+maybeReplyToKeyQuery :: GaleContext -> Puff -> IO ()
+maybeReplyToKeyQuery gc p | Just kn <- getFragmentString p f_questionKey = do
+  let kn' = unpackPS kn
+  mkb <- getPubKeyBytes (keyCache gc) kn'
+  d <- createPuff gc False $ keyResponsePuff mkb kn'
+  putLog LogDebug $ "sending reply for: " ++ kn'
+  retryIO 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
+maybeReplyToKeyQuery _ _ = return ()
 
 decodePuff :: Get (String,FragmentList)
 decodePuff = do

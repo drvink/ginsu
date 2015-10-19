@@ -154,6 +154,7 @@ main = do
     galeAddCategories gc $ map catParseNew (snub $ c ++ nc)
     Category (name,domain) <- fmap catParseNew getGaleId
     galeAddCategories gc $ [Category ("_gale.rr." ++ name ,domain)]
+    galeAddCategories gc $ [Category ("_gale.query." ++ name, domain)]
     doRender widgetEmpty
     pl <- forkIO $ puffLoop ic gc
     gl <- forkIO $ getchLoop ic

@@ -13,7 +13,9 @@ module Gale.KeyCache(
     noKey,
     numberKeys,
     keyRequestPuff,
-    keyToPkey
+    keyToPkey,
+    getPubKeyBytes,
+    keyResponsePuff
 
     ) where
 
@@ -64,23 +66,29 @@ galeRSAPrimeLen = (galeRSAPrimeBits + 7) `div` 8
 data KeyCache = KeyCache {
     pkeyCache :: !(MVar (Map.Map String (Weak (Key,EvpPkey)))),
     kkeyCache :: !(MVar (Map.Map String (Weak Key))),
+    pubkeyCache :: !(MVar (Map.Map String (Weak BS.ByteString))),
     galeDir :: String
     }
 
 numberKeys kc = fmap Map.size $ readMVar (kkeyCache kc)
 
-keyIsPubKey k =  (hasFragment k f_rsaExponent)
+keyIsPubKey :: HasFragmentList a => a -> Bool
+keyIsPubKey k = not (hasFragment k f_rsaPrivateExponent)
+                && hasFragment k f_rsaExponent
+keyIsPrivKey :: HasFragmentList a => a -> Bool
 keyIsPrivKey k =  (hasFragment k f_rsaPrivateExponent)
+keyIsPublic :: HasFragmentList a => a -> Bool
 keyIsPublic k = any nullPS $ getFragmentStrings k f_keyMember
 
 newKeyCache galeDir = do
     pk <- newMVar Map.empty
     kk <- newMVar Map.empty
-    return KeyCache { {- keyCache = kc, publicKeyCache = pkc,-} galeDir = galeDir, pkeyCache = pk, kkeyCache = kk }
+    pbk <- newMVar Map.empty
+    return KeyCache { {- keyCache = kc, publicKeyCache = pkc,-} galeDir = galeDir, pkeyCache = pk, kkeyCache = kk, pubkeyCache = pbk }
 
 keyToRSAElems :: Monad m => Key -> m (RSAElems BS.ByteString)
 keyToRSAElems fl = do
-    if not (keyIsPubKey fl) then fail "key does not have bits" else do
+    if not (keyIsPrivKey fl) then fail "key does not have bits" else do
     n <- getFragmentData fl f_rsaModulus
     e <- getFragmentData fl f_rsaExponent
     if not (keyIsPrivKey fl) then
@@ -186,6 +194,37 @@ putKey kc xs = do
                     v' <- mkWeakPtr v' Nothing
                     return (Map.insert kn v' kkeyCache, ())
 
+-- XXX duplication; the key cache should store a ByteString of the pubkey too so
+-- that we don't need this separate function
+getPubKeyBytes :: KeyCache -> String -> IO (Maybe BS.ByteString)
+getPubKeyBytes kc kn = modifyMVar (pubkeyCache kc) f where
+    f pkc | Just v <- Map.lookup kn pkc = do
+      v' <- deRefWeak v
+      case v' of
+        Just _ -> return (pkc, v')
+        Nothing -> g pkc
+    f pkc = g pkc
+    g pkc = do
+      v <- tryIO getFromDisk
+      case v of
+        Left _ -> return (pkc, Nothing)
+        Right v' -> do
+          v'' <- mkWeakPtr v' Nothing
+          return (Map.insert kn v'' pkc, Just v')
+    getFromDisk = do
+        let pp = galeDir kc ++ "/auth/private/"
+            knames = pp ++ kn ++ ".gpub"
+            gf fn = readRawFile fn >>= \xs -> do
+              let pk = BS.pack xs
+                  k = parseKey xs
+              return (fn, pk, k)
+        xs <- tryIO $ gf knames
+        case xs of
+          Left _ -> lose
+          Right (_,bs,mk) | Just _ <- mk -> return bs
+          Right _ -> lose
+      where
+        lose = ioError $ userError "bad key"
 
 getKey :: KeyCache -> String -> IO (Maybe Key)
 getKey kc kn = modifyMVar (kkeyCache kc) f where
@@ -230,6 +269,13 @@ flipLocalPart s = nbp ++ ep where
 keyRequestPuff :: String -> Puff
 keyRequestPuff s = emptyPuff { cats = [Category ("_gale.query." ++ n, d)], fragments = [(f_questionKey, FragmentText $ packString s), (f_questionKey',FragmentText $ packString s')]} where
     s' = flipLocalPart s
+    Category (n,d) = catParseNew s
+
+keyResponsePuff :: Maybe BS.ByteString -> String -> Puff
+keyResponsePuff kb s = emptyPuff { cats = [Category ("_gale.key." ++ n, d)], fragments = [resp]} where
+    resp = case kb of
+      Just x -> (f_answerKey', FragmentData x)
+      Nothing -> (f_answerKeyError', FragmentText $ packString $ "cannot find " ++ s)
     Category (n,d) = catParseNew s
 
 --la xs = listArray (0, length xs - 1) xs
