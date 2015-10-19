@@ -1,6 +1,6 @@
 -- vim:et
 Name:		ginsu
-Version:	0.8.1.1
+Version:	0.8.2
 Copyright:	2002-2009 John Meacham <john@repetae.net>
                 2011-2012 Dylan Simon <dylan@dylex.net>
 Author:		John Meacham <john@foo.net>
@@ -14,7 +14,7 @@ Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
 Build-Type:	Custom
 Cabal-Version:	>= 1.6
-tested-with:    GHC == 7.8.4, GHC == 7.10.1
+tested-with:    GHC == 7.8.4, GHC == 7.10.2
 extra-source-files:
                 configure
                 ginsu.buildinfo.in
