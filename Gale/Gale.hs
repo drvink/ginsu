@@ -21,7 +21,6 @@ import System.IO
 import Data.List
 import Data.Maybe
 import System.Time
-import System.Timeout (timeout)
 
 import Control.Concurrent
 import Control.Concurrent.Async (async, wait)
@@ -189,27 +188,29 @@ connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
                 ct <- getClockTime
                 let ef = \xs -> ((fromString "_ginsu.timestamp",FragmentTime ct):(fromString "_ginsu.spumbuster", FragmentText (packString (bsToHex hash))):xs)
                 p' <- galeDecryptPuff gc Puff { signature = [], cats = cat, fragments = ef puff}
-                np <- case [(kh, k, data_, sig)
-                           | RequestingKey kh k data_ sig <- signature p'] of
-                      [] -> return p'
-                      (kh, k, data_, sig):_ -> do
-                        res <- timeout 4000000 $ wait kh
-                        let unver = p' { signature = [Unverifyable k] }
-                        case res of
-                          Just x -> case x of
-                            DestEncrypted (k':_) -> do
-                              mkey <- verifySignature k' data_ sig
-                              return $ p' { signature = [mkey] }
-                            _ -> return unver
-                          Nothing -> return unver
-                writeChan (channel gc) np
-                case getFragmentData np f_answerKey' of
-                    Just d -> putKey (keyCache gc) d
-                    Nothing -> return ()
-                case (cats np,getFragmentString np f_answerKeyError') of
-                    ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
-                    (_,_) -> return ()
-                maybeReplyToKeyQuery gc np
+                case [(kh, k, data_, sig)
+                     | RequestingKey kh k data_ sig <- signature p'] of
+                  [] -> finishPuff p'
+                  (kh, k, data_, sig):_ -> void $ forkIO $ do
+                    let encs = [s | s@(Encrypted _) <- signature p']
+                        unver = p' { signature = Unverifyable k:encs }
+                    dest <- wait kh
+                    np <- case dest of
+                      DestEncrypted (k':_) -> do
+                        mkey <- verifySignature k' data_ sig
+                        return $ p' { signature = mkey:encs }
+                      _ -> return unver
+                    finishPuff np
+              where
+                finishPuff np = do
+                  writeChan (channel gc) np
+                  case getFragmentData np f_answerKey' of
+                      Just d -> putKey (keyCache gc) d
+                      Nothing -> return ()
+                  case (cats np,getFragmentString np f_answerKeyError') of
+                      ([Category (n,d)],Just _) | "_gale.key." `isPrefixOf` n -> noKey (keyCache gc) (catShowNew $ Category (drop 10 n,d))
+                      (_,_) -> return ()
+                  maybeReplyToKeyQuery gc np
 
 maybeReplyToKeyQuery :: GaleContext -> Puff -> IO ()
 maybeReplyToKeyQuery gc p | Just kn <- getFragmentString p f_questionKey = do
