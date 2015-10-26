@@ -73,8 +73,7 @@ data KeyCache = KeyCache {
 numberKeys kc = fmap Map.size $ readMVar (kkeyCache kc)
 
 keyIsPubKey :: HasFragmentList a => a -> Bool
-keyIsPubKey k = not (hasFragment k f_rsaPrivateExponent)
-                && hasFragment k f_rsaExponent
+keyIsPubKey k = hasFragment k f_rsaExponent
 keyIsPrivKey :: HasFragmentList a => a -> Bool
 keyIsPrivKey k =  (hasFragment k f_rsaPrivateExponent)
 keyIsPublic :: HasFragmentList a => a -> Bool
@@ -88,7 +87,7 @@ newKeyCache galeDir = do
 
 keyToRSAElems :: Monad m => Key -> m (RSAElems BS.ByteString)
 keyToRSAElems fl = do
-    if not (keyIsPrivKey fl) then fail "key does not have bits" else do
+    if not (keyIsPubKey fl) then fail "key does not have bits" else do
     n <- getFragmentData fl f_rsaModulus
     e <- getFragmentData fl f_rsaExponent
     if not (keyIsPrivKey fl) then
