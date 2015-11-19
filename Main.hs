@@ -1095,10 +1095,10 @@ commandRead ic win yloc prompt init = withCursor CursorVisible  $ cr (length ini
         (KeyLeft) -> cr (l (cloc - 1) v) v
         (KeyRight) -> cr (l (cloc + 1) v) v
         (KeyChar '\x0B') -> cr cloc (drop (length v - cloc) v)
-        (KeyChar '\BEL') -> return (fail "")
+        (KeyChar '\BEL') -> cr cloc v
         (KeyChar c) -> cr (cloc + 1) (let (a,b) = splitAt (length v - cloc) v in a ++ [c] ++ b)
 
-        _ -> return (fail "unknown key")
+        _ -> cr cloc v
     pc cloc v = do
         wmove win yloc 0
         wClrToEol win
