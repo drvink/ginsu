@@ -4,6 +4,7 @@ import Data.Bits (shiftR)
 import Data.Char (ord)
 import Data.Int (Int32, Int64)
 import Data.List (foldl')
+import Data.Word (Word32)
 
 golden :: Int32
 golden = 1013904242 -- = round ((sqrt 5 - 1) * 2^32) :: Int32
@@ -55,4 +56,4 @@ mulHi a b = fromIntegral (r `shiftR` 32)
 hashString :: String -> Int32
 hashString = foldl' f golden
    where f m c = fromIntegral (ord c) * magic + hashInt32 m
-         magic = 0xdeadbeef
+         magic = fromIntegral (0xdeadbeef :: Word32)
