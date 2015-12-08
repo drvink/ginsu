@@ -5,7 +5,7 @@ import Data.Char
 import System.Directory
 import Data.List hiding(or,and,any,all)
 import Data.Maybe
-import System.Cmd
+import System.Process
 import System.Time
 import System.Random
 
@@ -18,6 +18,7 @@ import qualified Data.HashTable.IO as Hash
 import qualified System.Posix as Posix
 import qualified System.Posix.IO as PosixIO
 import System.IO
+import System.IO.Error (catchIOError, ioeGetErrorString, ioeGetFileName)
 
 import Atom
 import Boolean.Algebra
@@ -62,7 +63,7 @@ getTmpFile = do
     u <- newUnique
     return ("/tmp/ginsu.puff." ++ show pid ++ "." ++ show (hashUnique u))
 
-data MainEvent = MainEventKey Curses.Key | MainEventPuff Puff | MainEventComposed (Maybe Puff) (IO ())
+data MainEvent = MainEventKey Curses.Key | MainEventPuff Puff | MainEventComposed (Either String Puff) (IO ())
 insertKeys ic s = mapM_ (\c -> writeChan ic (MainEventKey c)) (stringToKeys s)
 
 {-# NOTINLINE main #-}
@@ -612,8 +613,10 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     gc <- galeFile "ginsu.config"
                     e <- getEditor
                     --mySystem (e ++ " " ++ gc)
-                    myRawSystem e [gc]
-                    reloadConfigFiles
+                    hadError <- callEditor e [gc]
+                    case hadError of
+                      Left msg -> setMessage msg
+                      Right _ -> reloadConfigFiles
                     --touchRenderContext rc
                     return True
                 "first_puff" -> writeVal selected_r 0 >> select_perhaps select_next >> writeVal yor 0 >> continue
@@ -804,8 +807,8 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                     if b then nextKey else return ()
                 (MainEventComposed ep done) -> do
                     case ep of
-                        Nothing -> setMessage "Puff cancelled"
-                        Just p -> do
+                        Left s -> setMessage s
+                        Right p -> do
                             pcw <- puffConfirm gc done p ic
                             setRenderWidget rc pcw
                     writeVal editing_r False
@@ -943,10 +946,20 @@ withNBRWorkaround f = do
 
 mySystem s = do
     putLog LogInfo $ "system " ++ show s
-    withNBRWorkaround $ withProgram $ System.Cmd.system s
+    withNBRWorkaround $ withProgram $ system s
 
 myRawSystem e s = do
-    withNBRWorkaround $ withProgram $ System.Cmd.rawSystem e s
+    withNBRWorkaround $ withProgram $ rawSystem e s
+
+showCallEditorExn :: IOError -> String
+showCallEditorExn e = "Couldn't run editor: " ++ fn ++ ": " ++ err
+  where
+    fn = fromMaybe "" $ ioeGetFileName e
+    err = ioeGetErrorString e
+
+callEditor :: String -> [String] -> IO (Either String ())
+callEditor prog argv =
+  catchIOError (liftM Right (myRawSystem prog argv)) (return . Left . showCallEditorExn)
 
 editPuff :: Puff -> Chan MainEvent -> IO () -> IO ()
 editPuff puff ic done = do
@@ -964,29 +977,41 @@ editPuff puff ic done = do
     bgedit <- configLookupBool "BACKGROUND_EDIT"
     bgcmd <- if bgedit then configLookupList "BACKGROUND_COMMAND" else return []
     let (cmd:args) = (concatMap words bgcmd) ++ [e] ++ (concatMap words eo) ++ [fn]
-    let after = editPuffDone fn ic done it puff
-    let handle = do st <- tryIO $ Posix.getAnyProcessStatus False False
-                    case st of Right (Just _) -> handle
-                               _ -> after
+    let after = editPuffDone fn ic done it
     if bgedit then do
-            Posix.installHandler Posix.sigCHLD (Posix.CatchOnce handle) Nothing >> return ()
-            Posix.forkProcess (Posix.executeFile cmd True args Nothing) >> return ()
+            let sc = Posix.addSignal Posix.sigCHLD Posix.emptySignalSet
+            Posix.blockSignals sc
+            st <- tryIO $ spawnProcess cmd args
+            let c = do
+                  res <- case st of
+                    Left exn -> return $ Left (showCallEditorExn exn)
+                    Right ph -> waitForProcess ph >> return (Right puff)
+                  after res
+            _ <- Posix.setStoppedChildFlag True
+            _ <- Posix.installHandler Posix.sigCHLD (Posix.CatchOnce c) Nothing
+            Posix.unblockSignals sc
         else do
-            myRawSystem cmd args
-            after
+            st <- callEditor cmd args
+            after $ case st of
+              Left err -> Left err
+              Right _ -> Right puff
 
-editPuffDone :: String -> Chan MainEvent -> IO () -> [String] -> Puff -> IO ()
-editPuffDone fn ic done it puff = do
+editPuffDone :: String -> Chan MainEvent -> IO () -> [String] -> Either String Puff -> IO ()
+editPuffDone fn ic done it epuff = do
     pn <- fmap (lines . bytesToString)$ readRawFile fn
     handle (\(_ :: IOException) -> return ()) (removeFile fn)
-    ep <- if not (length pn > 1 && pn /= it) then return Nothing else do
-        let (cs',kwds') = readDestination (drop 4 (head pn))
-        ncats <- expandAliases (cs')
-        tw <- configLookupBool "TRIM_BLANKLINES"
-        body <- return $ if not tw then (unlines $ (drop 2 pn)) else
-            trimBlankLines (unlines $ (drop 2 pn))
-        return $ if body == "" then Nothing else
-                Just puff { cats = ncats, fragments = noBodyWords (fragments puff) ++ [(f_messageBody,FragmentText (packString body))] ++ [ (f_messageKeyword,FragmentText (packString k)) | k <- kwds']}
+    let cancelled = Left "Puff cancelled"
+    ep <- case epuff of
+      _ | not (length pn > 1 && pn /= it) -> return cancelled
+      Left err -> return $ Left err
+      Right puff -> do
+             let (cs',kwds') = readDestination (drop 4 (head pn))
+             ncats <- expandAliases (cs')
+             tw <- configLookupBool "TRIM_BLANKLINES"
+             let body = if not tw then unlines (drop 2 pn) else
+                        trimBlankLines (unlines $ (drop 2 pn))
+             return $ if body == "" then cancelled else
+                     Right puff { cats = ncats, fragments = noBodyWords (fragments puff) ++ [(f_messageBody,FragmentText (packString body))] ++ [ (f_messageKeyword,FragmentText (packString k)) | k <- kwds']}
     writeChan ic $ MainEventComposed ep done
 
 showDestination cs kwds = (map catShowNew cs ++ map ('/':) kwds)
