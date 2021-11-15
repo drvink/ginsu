@@ -14,7 +14,7 @@ module GinsuConfig(
 import ConfigFile
 import Control.Exception
 import Data.Monoid
-import System.Directory
+import System.Directory hiding (isSymbolicLink)
 import ErrorLog
 import ExampleConf
 import Gale.Gale

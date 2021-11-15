@@ -10,6 +10,7 @@
 #include "config.h"
 #endif
 
+#include <openssl/opensslv.h>
 #include <openssl/rsa.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>

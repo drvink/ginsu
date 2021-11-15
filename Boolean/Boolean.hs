@@ -20,6 +20,7 @@ import Prelude hiding((&&),(||),not,and,or,any,all)
 import qualified Prelude
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Fail
 import Data.List hiding(and,or)
 import Text.ParserCombinators.Parsec hiding ((<|>))
 
@@ -52,6 +53,8 @@ instance Monad Boolean where
     --a >> b = a && b
     a >>= f = dropBoolean (fmap f a)
     return x = BoolJust x
+
+instance MonadFail Boolean where
     fail _ = false
 
 instance Alternative Boolean where

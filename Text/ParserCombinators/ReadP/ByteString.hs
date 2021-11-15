@@ -72,7 +72,7 @@ module Text.ParserCombinators.ReadP.ByteString
  where
 
 import Control.Applicative (Alternative(empty, (<|>)), Applicative(pure, (<*>)))
-import Control.Monad ( MonadPlus(..), liftM2, Monad, (>>), (>>=),
+import Control.Monad ( MonadFail(..), MonadPlus(..), liftM2, Monad, (>>), (>>=),
                        return, fail, Functor, fmap, replicateM, void, ap )
 import Prelude ( (+), (-), (++), Int, Bool(..), (==), error,
                  (.), (>=), compare, Ordering(..), const )
@@ -127,6 +127,7 @@ instance Monad (P) where
   (Result x p) >>= k = k x `mplus` (p >>= k)
   (Final r)    >>= k = final [ys' | (x,s) <- r, ys' <- run (k x) s]
 
+instance MonadFail P where
   fail _ = Fail
 
 instance Alternative P where
@@ -182,8 +183,10 @@ instance Applicative (ReadP) where
 
 instance Monad (ReadP) where
   return x  = R (\k -> k x)
-  fail _    = R (const Fail)
   R m >>= f = R (\k -> m (\a -> let R m' = f a in m' k))
+
+instance MonadFail ReadP where
+  fail _    = R (const Fail)
 
 instance Alternative ReadP where
   empty = mzero

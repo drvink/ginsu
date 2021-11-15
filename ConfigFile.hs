@@ -103,12 +103,14 @@ configEnv = Config $ \k -> do
 mapConfig :: (String -> String) -> Config -> Config
 mapConfig f (Config c) = Config $ \s -> c (f s)
 
+instance Semigroup Config where
+  (Config a) <> (Config b) = Config $ \s -> do
+    x <- a s
+    y <- b s
+    return (x ++ y)
+
 instance Monoid Config where
     mempty =  Config $ \_ -> return []
-    mappend (Config c1) (Config c2) = Config $ \s -> do
-        x <- c1 s
-        y <- c2 s
-        return (x ++ y)
 
 configShow :: [String] -> Config -> IO String
 configShow ss (Config c) = do

@@ -59,9 +59,11 @@ import GHC.Generics (Generic)
 import Data.Hashable
 import Data.Monoid
 
+instance Semigroup PackedString where
+    a <> b = appendPS a b
+
 instance Monoid PackedString where
     mempty = nilPS
-    mappend x y = appendPS x y
     mconcat xs = concatPS xs
 
 -- -----------------------------------------------------------------------------

@@ -39,6 +39,8 @@ type Parser a = GenParser Char a
 instance Monad (GenParser c) where
     return a = MkP (\s -> (Just (a,s)))
     (MkP p) >>= q = MkP $ \s ->  (maybe Nothing (\(v,s') -> app (q v) s') (p s))
+
+instance MonadFail (GenParser c) where
     fail _ = MkP $ \_ ->  Nothing
 
 instance Applicative (GenParser c) where

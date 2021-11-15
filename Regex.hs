@@ -47,7 +47,7 @@ buildMatchTable = do
 
 data Rx = Rx { rxString :: String, rxRegex :: Regex }
 
-compileRx :: Monad m => String -> m Rx
+compileRx :: (Monad m, MonadFail m) => String -> m Rx
 compileRx re = either (fail . snd) return $ liftM (Rx re) $ unsafePerformIO $ compile flags execBlank re' where
     flags = compExtended + ci + ml
     ci = if 'i' `elem` fl then compIgnoreCase else 0

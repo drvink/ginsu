@@ -10,7 +10,9 @@ import System.Time
 import System.Random
 
 import Control.Concurrent
+import Control.Concurrent.STM.TChan (TChan(..), isEmptyTChan, newTChanIO, readTChan, writeTChan)
 import Control.Exception
+import Control.Monad.STM (atomically)
 import Data.Array.IO
 import Data.IORef
 import Data.Unique
@@ -64,7 +66,7 @@ getTmpFile = do
     return ("/tmp/ginsu.puff." ++ show pid ++ "." ++ show (hashUnique u))
 
 data MainEvent = MainEventKey Curses.Key | MainEventPuff Puff | MainEventComposed (Either String Puff) (IO ())
-insertKeys ic s = mapM_ (\c -> writeChan ic (MainEventKey c)) (stringToKeys s)
+insertKeys ic s = mapM_ (\c -> atomically $ writeTChan ic (MainEventKey c)) (stringToKeys s)
 
 {-# NOTINLINE main #-}
 main = do
@@ -129,7 +131,7 @@ main = do
 
     withCursor CursorInvisible $ do
 
-    ic <- newChan
+    ic <- newTChanIO
     b <- configLookupBool "DISABLE_SIGWINCH"
 
     redraw_r <- newRenderContext
@@ -137,7 +139,7 @@ main = do
     Posix.installHandler Posix.sigINT Posix.Ignore Nothing
     Posix.installHandler Posix.sigPIPE Posix.Ignore Nothing
     case (b,cursesSigWinch) of
-        (False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (writeChan ic (MainEventKey KeyResize)))) Nothing >> return ()
+        (False,Just s) -> Posix.installHandler s (Posix.Catch (resizeRenderContext redraw_r (atomically $ writeTChan ic (MainEventKey KeyResize)))) Nothing >> return ()
         _ -> return ()
 
     gs <- fmap (concat . map words) $ configLookupList "GALE_SUBSCRIBE"
@@ -197,8 +199,8 @@ writePufflog ps = do
 
 
 
-puffLoop ic gc = repeatM_ $  galeNextPuff gc >>= \p -> (writeChan ic $ MainEventPuff p)
-getchLoop ic = repeatM_ (getCh >>= \x -> writeChan ic (MainEventKey x))
+puffLoop ic gc = repeatM_ $  galeNextPuff gc >>= \p -> atomically $ writeTChan ic $ MainEventPuff p
+getchLoop ic = repeatM_ (getCh >>= \x -> atomically $ writeTChan ic $ MainEventKey x)
 
 
 apHead f (x:xs) = f x:xs
@@ -370,7 +372,7 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
     keyTable <- buildKeyTable
     matchTable <- buildMatchTable
 
-    icmain <- newChan
+    icmain <- newTChanIO
 
     let fsw = newSVarWidget filter_r $ \fs ->
             widgetHorizontalBox False (intersperse (NoExpand, widgetText " ") $ map (\w -> (NoExpand,widgetAttr [AttrReverse] (widgetText w))) (map showFilter fs))
@@ -781,17 +783,17 @@ mainLoop gc ic yor psr next_r pcount_r rc = do
                         Just ml -> return $ "\nReceieved by:\n" ++ unlines (snub ml)
             v <- widgetScroll (widgetVerticalBox False [(NoExpand,widgetText $ chunkText (xs - 1) ((showPuff p) ++ wr)), (NoExpand, widgetText "\n\n\n"), (NoExpand, pv)])
             return v
-        justGetKey = readChan ic >>= \v -> case v of
+        justGetKey = atomically (readTChan ic) >>= \v -> case v of
             (MainEventPuff p) -> addPuff p >> justGetKey
             (MainEventKey k) -> do
                     getClockTime >>= writeVal userActionTime
                     return $ keyCanon k
-            _ -> writeChan icmain v >> justGetKey
+            _ -> atomically (writeTChan icmain v) >> justGetKey
         nextKey = do
-            ce <- isEmptyChan ic
+            ce <- atomically $ isEmptyTChan ic
             when ce $ tryDrawRenderContext rc
-            cemain <- isEmptyChan icmain
-            v <- if cemain then readChan ic else readChan icmain
+            cemain <- atomically $ isEmptyTChan icmain
+            v <- atomically $ if cemain then readTChan ic else readTChan icmain
             case v of
                 (MainEventPuff p) -> do
                     v <- is_at_end
@@ -961,7 +963,7 @@ callEditor :: String -> [String] -> IO (Either String ())
 callEditor prog argv =
   catchIOError (liftM Right (myRawSystem prog argv)) (return . Left . showCallEditorExn)
 
-editPuff :: Puff -> Chan MainEvent -> IO () -> IO ()
+editPuff :: Puff -> TChan MainEvent -> IO () -> IO ()
 editPuff puff ic done = do
     e <- getEditor
     fn <- getTmpFile
@@ -996,7 +998,7 @@ editPuff puff ic done = do
               Left err -> Left err
               Right _ -> Right puff
 
-editPuffDone :: String -> Chan MainEvent -> IO () -> [String] -> Either String Puff -> IO ()
+editPuffDone :: String -> TChan MainEvent -> IO () -> [String] -> Either String Puff -> IO ()
 editPuffDone fn ic done it epuff = do
     pn <- fmap (lines . bytesToString)$ readRawFile fn
     handle (\(_ :: IOException) -> return ()) (removeFile fn)
@@ -1012,7 +1014,7 @@ editPuffDone fn ic done it epuff = do
                         trimBlankLines (unlines $ (drop 2 pn))
              return $ if body == "" then cancelled else
                      Right puff { cats = ncats, fragments = noBodyWords (fragments puff) ++ [(f_messageBody,FragmentText (packString body))] ++ [ (f_messageKeyword,FragmentText (packString k)) | k <- kwds']}
-    writeChan ic $ MainEventComposed ep done
+    atomically $ writeTChan ic $ MainEventComposed ep done
 
 showDestination cs kwds = (map catShowNew cs ++ map ('/':) kwds)
 readDestination :: String -> ([Category],[String])
@@ -1038,7 +1040,7 @@ prettyPuff puff = unlines xs ++  body where
     xs = to ++ from ++ rr ++ ["-------"]
 
 
-puffConfirm ::  GaleContext -> IO () -> Puff -> Chan MainEvent -> IO Widget
+puffConfirm ::  GaleContext -> IO () -> Puff -> TChan MainEvent -> IO Widget
 puffConfirm gc done puff ic = do
     (_,xs) <- scrSize
     gid <- getGaleId

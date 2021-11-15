@@ -88,14 +88,16 @@ data Fragment =
 data Dest = DestPublic | DestUnknown [String] | DestEncrypted [Key]
     deriving(Eq,Show)
 
+instance Semigroup Dest where
+    DestUnknown a <> DestUnknown b = DestUnknown (a ++ b)
+    DestUnknown a <> _ = DestUnknown a
+    _ <> DestUnknown a  = DestUnknown a
+    DestPublic <> _ = DestPublic
+    _ <> DestPublic = DestPublic
+    DestEncrypted a <> DestEncrypted b = DestEncrypted (a ++ b)
+
 instance Monoid Dest where
     mempty = DestEncrypted []
-    DestUnknown a `mappend` DestUnknown b = DestUnknown (a ++ b)
-    DestUnknown a `mappend` _ = DestUnknown a
-    _ `mappend` DestUnknown a  = DestUnknown a
-    DestPublic `mappend` _ = DestPublic
-    _ `mappend` DestPublic = DestPublic
-    DestEncrypted a `mappend` DestEncrypted b = DestEncrypted (a ++ b)
 
 data Signature =
     RequestingKey (Async Dest) Key BS.ByteString BS.ByteString
@@ -182,12 +184,12 @@ showSignature s = case s of
 
 emptyPuff = Puff {cats = [], signature = [], fragments = []}
 
-fragmentData :: Monad m => Atom -> FragmentList -> m BS.ByteString
+fragmentData :: (Monad m, MonadFail m) => Atom -> FragmentList -> m BS.ByteString
 fragmentData s fl = case lookup s fl of
     Just (FragmentData xs) -> return xs
     _ -> fail $ "fragment not found: " ++ toString s
 
-fragmentString :: Monad m => Atom -> FragmentList -> m PackedString
+fragmentString :: (Monad m, MonadFail m) => Atom -> FragmentList -> m PackedString
 fragmentString s fl = case lookup s fl of
     Just (FragmentText xs) -> return xs
     _ -> fail $ "fragment not found: " ++ toString s
@@ -243,12 +245,12 @@ instance Show Fragment where
 showKey :: Key -> String
 showKey (Key n fl) = "Key: " ++ n ++ "\n" ++ (indentLines 4 $ showFragments fl)
 
-getFragmentData :: (Monad m,HasFragmentList fl) => fl -> Atom -> m BS.ByteString
+getFragmentData :: (Monad m, MonadFail m, HasFragmentList fl) => fl -> Atom -> m BS.ByteString
 getFragmentData fl s = case [xs | (s',FragmentData xs) <- getFragmentList fl, s' == s] of
     (s:_) -> return s
     [] -> fail $ "data fragment not found: " ++ toString s
 
-getFragmentString :: (Monad m, HasFragmentList fl)  => fl -> Atom -> m PackedString
+getFragmentString :: (Monad m, MonadFail m, HasFragmentList fl)  => fl -> Atom -> m PackedString
 getFragmentString fl s = case [xs | (s',FragmentText xs) <- getFragmentList fl, s' == s] of
     (s:_) -> return s
     [] -> fail $ "text fragment not found: " ++ toString s
@@ -257,7 +259,7 @@ hasFragmentString fl s = isJust (getFragmentString fl s)
 
 hasFragment fl s = s `elem` fsts (getFragmentList fl)
 
-getFragmentTime :: (Monad m, HasFragmentList fl)  => fl -> Atom -> m ClockTime
+getFragmentTime :: (Monad m, MonadFail m, HasFragmentList fl)  => fl -> Atom -> m ClockTime
 getFragmentTime fl s = case [xs | (s',FragmentTime xs) <- getFragmentList fl, s' == s] of
     (s:_) -> return s
     [] -> fail $ "time fragment not found: " ++ toString s

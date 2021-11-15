@@ -24,7 +24,9 @@ import System.Time
 
 import Control.Concurrent
 import Control.Concurrent.Async (async, wait)
+import Control.Concurrent.STM.TChan (TChan(..), newTChanIO, readTChan, writeTChan)
 import Control.Exception as E
+import Control.Monad.STM (atomically)
 import Data.Bits
 import Network.BSD
 import Network.Socket
@@ -65,7 +67,7 @@ type PuffStatus = ()
 
 data GaleContext = GaleContext {
     connectionStatus :: !(MVar (Either String String)),
-    channel :: !(Chan Puff),
+    channel :: !(TChan Puff),
     proxy :: !(MVar [String]),
     gThread :: ThreadId,
     gHandle :: !(MVar Handle),
@@ -94,7 +96,7 @@ withGale ps io = withSocketsDo $ do
 newGaleContext ps cs = do
     let ncs = map catParseNew cs
     cats <- newMVar $ ncs
-    c <- newChan
+    c <- newTChanIO
     ps <- return (case ps of [] -> snub (concatMap (hostStrings . categoryCell) ncs); _ -> ps)
     status <- newMVar $ Left $ "Attempting to connect to: " ++ unwords ps
     pmv <- newMVar ps
@@ -138,7 +140,7 @@ connectTo hostname port = do
     --proto <- getProtocolNumber "tcp"
     bracketOnError
         (socket AF_INET Stream 6)
-        (sClose)  -- only done if there's an error
+        (close)  -- only done if there's an error
         (\sock -> do
                 he <- getHostByName hostname
                 connect sock (SockAddrInet port (hostAddress he))
@@ -203,7 +205,7 @@ connectThread gc _ hv = retryIO 5.0 ("ConnectionError") doit where
                     finishPuff np
               where
                 finishPuff np = do
-                  writeChan (channel gc) np
+                  atomically $ writeTChan (channel gc) np
                   case getFragmentData np f_answerKey' of
                       Just d -> putKey (keyCache gc) d
                       Nothing -> return ()
@@ -233,7 +235,7 @@ decodePuff = do
 
 galeNextPuff :: GaleContext -> IO Puff
 galeNextPuff gc = do
-    p <- readChan $ channel gc
+    p <- atomically $ readTChan $ channel gc
     --p' <- galeDecryptPuff gc p
     --case getFragmentData p' f_answerKey' of
     --    Just d -> putKey (keyCache gc) d
@@ -250,7 +252,7 @@ galeSendPuff :: GaleContext -> Puff -> IO PuffStatus
 galeSendPuff gc puff = void $ forkIO $ do
     putLog LogInfo $ "sending puff:\n" ++ (indent 4 $ showPuff puff)
     puff' <- expandEncryptionList gc puff
-    writeChan (channel gc) puff'
+    atomically $ writeTChan (channel gc) puff'
     d <- createPuff  gc False puff'
     retryIO 3.0 "error sending puff" $ withMVar (gHandle gc) $ \h -> LBS.hPut h d >> hFlush h
 

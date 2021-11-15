@@ -25,9 +25,11 @@ import Data.Binary
 import PackedString
 
 
+instance Semigroup Atom where
+    x <> y = toAtom $ appendPS (fromAtom x)  (fromAtom y)
+
 instance Monoid Atom where
     mempty = toAtom nilPS
-    mappend x y = toAtom $ appendPS (fromAtom x)  (fromAtom y)
     mconcat xs = toAtom $ concatPS (map fromAtom xs)
 
 {-# NOINLINE table #-}
@@ -118,7 +120,7 @@ dumpAtomTable = do
     mapM_ putStrLn [ show i ++ " " ++ show ps  | (ps,Atom i) <- sort x]
 
 
-intToAtom :: Monad m => Int -> m Atom
+intToAtom :: (Monad m, MonadFail m) => Int -> m Atom
 intToAtom i = unsafePerformIO $  HT.lookup reverseTable i >>= \x -> case x of
     Just _ -> return (return $ Atom i)
     Nothing -> return $ fail $ "intToAtom: " ++ show i

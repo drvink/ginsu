@@ -344,11 +344,11 @@ repeatM_ x = sequence_ $ repeat x
 
 {-# SPECIALIZE maybeToMonad :: Maybe a -> IO a #-}
 -- | convert a maybe to an arbitrary failable monad
-maybeToMonad :: Monad m => Maybe a -> m a
+maybeToMonad :: (Monad m, MonadFail m) => Maybe a -> m a
 maybeToMonad (Just x) = return x
 maybeToMonad Nothing = fail "Nothing"
 
-toMonadM :: Monad m => m (Maybe a) -> m a
+toMonadM :: (Monad m, MonadFail m) => m (Maybe a) -> m a
 toMonadM action = join $ liftM maybeToMonad action
 
 foldlM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
@@ -380,7 +380,7 @@ isLeft _ = False
 isRight Right {} = True
 isRight _ = False
 
-perhapsM :: Monad m => Bool -> a -> m a
+perhapsM :: (Monad m, MonadFail m) => Bool -> a -> m a
 perhapsM True a = return a
 perhapsM False _ = fail "perhapsM"
 
@@ -537,7 +537,7 @@ shellQuote ss = unwords (map f ss) where
 
 -- | looks up an enviornment variable and returns it in an arbitrary Monad rather
 -- than raising an exception if the variable is not set.
-lookupEnv :: Monad m => String -> IO (m String)
+lookupEnv :: (Monad m, MonadFail m) => String -> IO (m String)
 lookupEnv s = catchJust (guard . IO.isDoesNotExistError) (fmap return $ System.getEnv s) (\e -> return (fail (show e)))
 
 {-# SPECIALIZE fmapLeft :: (a -> c) -> [(Either a b)] -> [(Either c b)] #-}
@@ -625,7 +625,7 @@ readHexChar a | a >= '0' && a <= '9' = return $ ord a - ord '0'
 readHexChar a | z >= 'a' && z <= 'f' = return $ 10 + ord z - ord 'a' where z = toLower a
 readHexChar x = fail $ "not hex char: " ++ [x]
 
-readHex :: Monad m => String -> m Int
+readHex :: (Monad m, MonadFail m) => String -> m Int
 readHex [] = fail "empty string"
 readHex cs = mapM readHexChar cs >>= \cs' -> return (rh $ reverse cs') where
     rh (c:cs) =  c + 16 * (rh cs)
@@ -675,7 +675,7 @@ getOptContents args = do
 
 
 -- | Process options with an option string like the standard C getopt function call.
-parseOpt :: Monad m =>
+parseOpt :: (Monad m, MonadFail m) =>
     String -- ^ Argument string, list of valid options with : after ones which accept an argument
     -> [String]  -- ^ Arguments
     -> m ([String],[Char],[(Char,String)])  -- ^ (non-options,flags,options with arguments)
@@ -699,13 +699,13 @@ parseOpt ps as = f ([],[],[]) as where
         z cs [] = f cs rs
     f (xs,ys,zs) (r:rs) = f (xs ++ [r], ys, zs) rs
 
-readM :: (Monad m, Read a) => String -> m a
+readM :: (Monad m, MonadFail m, Read a) => String -> m a
 readM cs = case [x | (x,t) <-  reads cs, ("","") <- lex t] of
     [x] -> return x
     [] -> fail "readM: no parse"
     _ -> fail "readM: ambiguous parse"
 
-readsM :: (Monad m, Read a) => String -> m (a,String)
+readsM :: (Monad m, MonadFail m, Read a) => String -> m (a,String)
 readsM cs = case readsPrec 0 cs of
     [(x,s)] -> return (x,s)
     _ -> fail "cannot readsM"
@@ -749,7 +749,7 @@ doTime str action = do
     putStrLn $ "Timing: " ++ str ++ " " ++ show ((end - start) `div` cpuTimePrecision)
     return x
 
-getPrefix :: Monad m => String -> String -> m String
+getPrefix :: (Monad m, MonadFail m) => String -> String -> m String
 getPrefix a b = f a b where
     f [] ss = return ss
     f _  [] = fail "getPrefix: value too short"

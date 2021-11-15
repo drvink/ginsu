@@ -85,7 +85,7 @@ newKeyCache galeDir = do
     pbk <- newMVar Map.empty
     return KeyCache { {- keyCache = kc, publicKeyCache = pkc,-} galeDir = galeDir, pkeyCache = pk, kkeyCache = kk, pubkeyCache = pbk }
 
-keyToRSAElems :: Monad m => Key -> m (RSAElems BS.ByteString)
+keyToRSAElems :: (Monad m, MonadFail m) => Key -> m (RSAElems BS.ByteString)
 keyToRSAElems fl = do
     if not (keyIsPubKey fl) then fail "key does not have bits" else do
     n <- getFragmentData fl f_rsaModulus

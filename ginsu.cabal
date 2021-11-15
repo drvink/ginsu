@@ -13,8 +13,8 @@ Description:	Ginsu is a client for the gale chat system. It is designed to be po
 Homepage:	http://repetae.net/computer/ginsu/
 Category:	Network,Console
 Build-Type:	Custom
-Cabal-Version:	>= 1.6
-tested-with:    GHC == 7.8.4, GHC == 7.10.2
+Cabal-Version:	>= 1.8
+tested-with:    GHC == 7.8.4, GHC == 7.10.2, GHC == 8.10.4
 extra-source-files:
                 configure
                 ginsu.buildinfo.in
@@ -95,8 +95,10 @@ Executable ginsu
                 utf8-string >= 0.3.1,
                 binary,
                 old-time,
+                stm,
                 syb,
-                network,
+                network >= 2.7 && < 3.2,
+                network-bsd >= 2.7 && < 2.9,
                 parsec,
                 process,
                 hashtables,

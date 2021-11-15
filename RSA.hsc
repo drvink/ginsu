@@ -125,21 +125,63 @@ evp_OpenFinal cctx = do
 
 
 
+foreign import ccall unsafe
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  "EVP_CIPHER_CTX_create"
+#else
+  "EVP_CIPHER_CTX_new"
+#endif
+  evpCipherCtxNew :: IO (Ptr EVP_CIPHER_CTX)
+
+foreign import ccall unsafe
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  "EVP_CIPHER_CTX_destroy"
+#else
+  "EVP_CIPHER_CTX_free"
+#endif
+  evpCipherCtxFree :: Ptr EVP_CIPHER_CTX -> IO ()
+
+foreign import ccall unsafe
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  "EVP_MD_CTX_create"
+#else
+  "EVP_MD_CTX_new"
+#endif
+  evpMdCtxNew :: IO (Ptr EVP_MD_CTX)
+
+foreign import ccall unsafe
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  "EVP_MD_CTX_destroy"
+#else
+  "EVP_MD_CTX_free"
+#endif
+  evpMdCtxFree :: Ptr EVP_MD_CTX -> IO ()
+
 foreign import ccall unsafe "EVP_PKEY_size" evpPKEYSize :: Ptr EVP_PKEY -> IO CInt
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 foreign import ccall unsafe "EVP_CIPHER_CTX_init" evpCipherCtxInit :: Ptr EVP_CIPHER_CTX -> IO ()
 -- some implementations have this return int, but not all so we must ignore the return value.
 foreign import ccall unsafe "EVP_CIPHER_CTX_cleanup" evpCipherCtxCleanup :: Ptr EVP_CIPHER_CTX -> IO ()
 
 withCipherCtx :: (Ptr EVP_CIPHER_CTX -> IO a) -> IO a
-withCipherCtx action = allocaBytes (#const sizeof(EVP_CIPHER_CTX)) $ \cctx ->
-            E.bracket_ (evpCipherCtxInit cctx)
-                (evpCipherCtxCleanup cctx)
-                    (action cctx)
+withCipherCtx action = E.bracket_ evpCipherCtxInit evpCipherCtxCleanup action
+#else
+foreign import ccall "EVP_CIPHER_CTX_free_hsfun" evpCipherCtxFreePtr :: FunPtr (Ptr EVP_CIPHER_CTX -> IO ())
+foreign import ccall "EVP_MD_CTX_free_hsfun" evpMdCtxFreePtr :: FunPtr (Ptr EVP_MD_CTX -> IO ())
+
+withCipherCtx :: (Ptr EVP_CIPHER_CTX -> IO a) -> IO a
+withCipherCtx action = do
+    ptr <- evpCipherCtxNew
+    fptr <- newForeignPtr evpCipherCtxFreePtr ptr
+    withForeignPtr fptr action
+#endif
 
 withMdCtx :: (Ptr EVP_MD_CTX -> IO a) -> IO a
-withMdCtx = allocaBytes (#const sizeof(EVP_MD_CTX))
-
+withMdCtx action = do
+    ptr <- evpMdCtxNew
+    fptr <- newForeignPtr evpMdCtxFreePtr ptr
+    withForeignPtr fptr action
 
 decryptAll :: BS.ByteString -> BS.ByteString -> EvpPkey -> BS.ByteString -> IO BS.ByteString
 decryptAll keydata iv pkey xs = withCipherCtx $ \cctx -> do
@@ -259,31 +301,82 @@ foreign import ccall unsafe pkeyNewRSA :: RSA -> IO (Ptr EVP_PKEY)
 -- foreign import ccall "&EVP_PKEY_free" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 foreign import ccall "get_KEY" evpPkeyFreePtr :: FunPtr (Ptr EVP_PKEY -> IO ())
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+foreign import ccall unsafe "RSA_get0_n" rsaGet0N :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_get0_e" rsaGet0E :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_get0_d" rsaGet0D :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_get0_dmp1" rsaGet0DMP1 :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_get0_dmq1" rsaGet0DMQ1 :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_get0_iqmp" rsaGet0IQMP :: RSA -> IO (Ptr BIGNUM)
+foreign import ccall unsafe "RSA_set0_key" rsaSet0Key :: RSA -> Ptr BIGNUM -> Ptr BIGNUM -> Ptr BIGNUM -> IO ()
+foreign import ccall unsafe "RSA_set0_factors" rsaSet0Factors :: RSA -> Ptr BIGNUM -> Ptr BIGNUM -> IO ()
+foreign import ccall unsafe "RSA_set0_crt_params" rsaSet0CrtParams :: RSA -> Ptr BIGNUM -> Ptr BIGNUM -> Ptr BIGNUM -> IO ()
+#endif
+
 createPkey :: RSAElems BS.ByteString -> IO EvpPkey
 createPkey re =  create_rsa re >>= create_pkey where
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     setBn pb d = do
         np <- peek pb
         n <- withData d (\a b -> bnBin2Bn a b np)
         poke pb n
-    create_private _ RSAElemsPublic {} = return ()
-    create_private rsa re = do
-        setBn ((#ptr RSA, d) rsa) (rsaD re)
-        setBn ((#ptr RSA, iqmp) rsa) (rsaIQMP re)
+
+    rsaGet0N rsa = (#peek RSA, n) rsa
+    rsaGet0E rsa = (#peek RSA, e) rsa
+    rsaGet0D rsa = (#peek RSA, d) rsa
+    rsaGet0DMP1 rsa = (#peek RSA, dmp1) rsa
+    rsaGet0DMQ1 rsa = (#peek RSA, dmq1) rsa
+    rsaGet0IQMP rsa = (#peek RSA, iqmp) rsa
+
+    rsaSet0Factors rsa p q = do
         setBn ((#ptr RSA, p) rsa) (rsaP re)
         setBn ((#ptr RSA, q) rsa) (rsaQ re)
+
+    rsaSet0CrtParams rsa dmp1 dmq1 iqmp = do
         setBn ((#ptr RSA, dmp1) rsa) (rsaDMP1 re)
         setBn ((#ptr RSA, dmq1) rsa) (rsaDMQ1 re)
+        setBn ((#ptr RSA, iqmp) rsa) (rsaIQMP re)
+#endif
+
+    setNED rsa n e d = do
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        when (n /= nullPtr) $ (#poke RSA, n) rsa n
+        when (e /= nullPtr) $ (#poke RSA, e) rsa e
+        when (d /= nullPtr) $ (#poke RSA, d) rsa d
+#else
+        rsaSet0Key rsa n e d
+#endif
+
+    create_private _ RSAElemsPublic {} = return ()
+    create_private rsa re = do
+        let d = rsaD re
+            iqmp = rsaIQMP re
+            p = rsaP re
+            q = rsaQ re
+            dmp1 = rsaDMP1 re
+            dmq1 = rsaDMQ1 re
+        _ <- copyBN d $ \dp -> setNED rsa nullPtr nullPtr dp
+        _ <- copyBN dmp1 $ \dmp1p ->
+               copyBN dmq1 $ \dmq1p ->
+                 copyBN iqmp $ \iqmpp ->
+                   rsaSet0CrtParams rsa dmp1p dmq1p iqmpp
+        _ <- copyBN p $ \pp -> copyBN q $ \qp ->
+               rsaSet0Factors rsa pp qp
         rsaCheckKey rsa
+      where
+        copyBN bs f =
+          withData bs (\a b -> do
+              p <- bnBin2Bn a b nullPtr
+              f p)
     create_rsa re = do
         let n = rsaN re
             e = rsaE re
         rsa <- rsaNew
-        np <- (#peek RSA, n) rsa
-        n <- withData n (\a b -> bnBin2Bn a b np)
-        (#poke RSA, n) rsa n
-        ep <- (#peek RSA, e) rsa
-        e <- withData e (\a b -> bnBin2Bn a b ep)
-        (#poke RSA, e) rsa e
+        np <- rsaGet0N rsa
+        n <- withData n (\a b -> bnBin2Bn a b $ castPtr np)
+        ep <- rsaGet0E rsa
+        e <- withData e (\a b -> bnBin2Bn a b $ castPtr ep)
+        setNED rsa n e nullPtr
         create_private rsa re
         return rsa
     create_pkey rsa = do
